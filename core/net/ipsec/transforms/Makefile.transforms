@@ -1,0 +1,3 @@
+CONTIKI_SOURCEFILES += aes-ctr.c \
+  aes-xcbc-mac.c cc2420-aes-mapping.c encr.c integ.c \
+  miracl-aes.c

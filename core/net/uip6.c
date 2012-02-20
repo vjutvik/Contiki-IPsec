@@ -77,6 +77,14 @@
 #include "net/uip-nd6.h"
 #include "net/uip-ds6.h"
 
+#include "ipsec.h"
+#include "ipsec/common_ipsec.h"
+#include "ipsec/spd.h"
+#include "ipsec/sad.h"
+#include "ipsec/filter.h"
+#include "ipsec/transforms/encr.h"
+#include "ipsec/transforms/integ.h"
+
 #include <string.h>
 
 /*---------------------------------------------------------------------------*/
@@ -409,6 +417,13 @@ uip_init(void)
 {
    
   uip_ds6_init();
+
+  #ifdef WITH_IPSEC
+  spd_conf_init();
+  sad_init();
+  PRINTF("SAD and SPD initialized\n");
+  //ike_init();
+  #endif
 
 #if UIP_TCP
   for(c = 0; c < UIP_LISTENPORTS; ++c) {
@@ -1209,21 +1224,237 @@ uip_process(uint8_t flag)
   uip_ext_bitmap = 0;
 #endif /* UIP_CONF_ROUTER */
 
+#ifdef WITH_IPSEC
+  /**
+    * IPsec: Processing of incoming packets
+    *
+    * This is an implementation of the processing behaviour as described by RFC 4301, section 5.2.
+    * Please see to that document for an explanation of the following code's rationale.
+    */  
+
+  // The sad_entry pointer is used for SAD lookup in regard to incoming as well as outgoing traffic
+  sad_entry_t *sad_entry = NULL; 
+
+  // packet_desc contains the salient properties of a packet's header.
+  // It's used for incoming as well as outgoing traffic.
+  ipsec_addr_t packet_desc = {
+    .addr = &UIP_IP_BUF->srcipaddr
+  };
+  
+  ipsec_addr_t packet_tag;
+#endif /* End of WITH_IPSEC */
+
   while(1) {
     switch(*uip_next_hdr){
+     
+      PRINTF("Proc hdr %hu\n", *uip_next_hdr);
+     
+#ifdef WITH_IPSEC_ESP
+      case UIP_PROTO_ESP:
+        /**
+          * ESP parsing. From RFC 4303 (IP Encapsulating Security Payload (ESP)):
+          *
+          * ESP HEADER FORMAT:
+   
+              0                   1                   2                   3
+              0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+            |               Security Parameters Index (SPI)                 |
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+            |                      Sequence Number                          |
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---
+            |                    IV (optional)                              | ^ p
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | a
+            |                    Rest of Payload Data  (variable)           | | y
+            ~                                                               ~ | l
+            |                                                               | | o
+            +               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | a
+            |               |         TFC Padding * (optional, variable)    | v d
+            +-+-+-+-+-+-+-+-+         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---
+            |                         |        Padding (0-255 bytes)        |
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+            |                               |  Pad Length   | Next Header   |
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+            |         Integrity Check Value-ICV   (variable)                |
+            ~                                                               ~
+            |                                                               |
+            +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   
+                        Figure 2. Substructure of Payload Data
+   
+   
+            OVERVIEW:
+   
+                           AFTER APPLYING ESP
+                  ---------------------------------------------------------
+            IPv6  | orig |hop-by-hop,dest*,|   |dest|   |    | ESP   | ESP|
+                  |IP hdr|routing,fragment.|ESP|opt*|TCP|Data|Trailer| ICV|
+                  ---------------------------------------------------------
+                                               |<--- encryption ---->|
+                                           |<------ integrity ------>|
+   
+                      * = if present, could be before ESP, after ESP, or both
+          *
+          *
+          * Please note that we're violating the order of input processing as specified in RFC 4303 (ESP) section 3.4.4.1.
+          * Notably, we're simplifying things by first decrypting the data, then asserting integrity. This makes this
+          * implementation more sensitive to DoS attacks.
+          * 
+          */
+        PRINTF(IPSEC "Processing incoming ESP header\n");
+   
+      #if UIP_CONF_IPV6_CHECKS
+        /* If we've seen one ESP header already, drop. */
+        if(uip_ext_bitmap & UIP_EXT_HDR_BITMAP_ESP)
+          goto bad_hdr;
+        else
+          uip_ext_bitmap |= UIP_EXT_HDR_BITMAP_ESP;
+      #endif /*UIP_CONF_IPV6_CHECKS*/
+   
+   
+        struct uip_esp_header *esp_header = UIP_ESP_BUF; //(struct uip_esp_header *) &uip_buf + UIP_LLH_LEN + UIP_IPH_LEN + uip_ext_len;
+        //PRINTF("&uip_buf %x\nUIP_TCP_BUF %x\nUIP_ESP_BUF %x\nUIP_LLIPH_LEN %x\nesp_header %x\nUIP_IP_BUF %x\n", &uip_buf, UIP_TCP_BUF, UIP_ESP_BUF, UIP_LLIPH_LEN, esp_header, UIP_IP_BUF);
+        
+        // The packet is protected. Follow step 3a p. 61 in the RFC.
+   
+        // No network-to-host conversion of the SPI as we store our SPIs in network byte order internally
+        //PRINTF("uIP6 SPI %u esp_header %x uip_buf %x UIP_ESP_BUF %x\n", esp_header->spi, esp_header, &uip_buf, UIP_ESP_BUF);
+        PRINTF(IPSEC "ESP: SPI %lx Sequence no %lu\n", uip_ntohl(esp_header->spi), uip_ntohl(esp_header->seqno));
+        if ((sad_entry = sad_get_incoming(esp_header->spi)) == NULL) {
+          // Protected packets whose SAD entry we cannot find must be discarded according to the RFC.
+          PRINTF(IPSEC "Dropping incoming protected packet because of missing SAD entry\n");
+          goto drop;
+        }
+      
+        /**
+          * Derive variables that are SA dependent
+          */
+        const u8_t icvlen = sad_entry->sa.integ ? IPSEC_ICVLEN : 0;
+        u8_t *iv = ((u8_t *) esp_header) + sizeof(struct uip_esp_header);
+   
+        // auth_data_len = Packet buffer - (lower layers + IP Header length) - length of extension headers - ICV size
+        u16_t auth_data_len = uip_len - UIP_LLIPH_LEN - uip_ext_len - icvlen; 
+        //printf("auth data len: %u uip_ext_len: %u\n", auth_data_len, uip_ext_len);
+        
+        // Prepare encryption data
+        encr_data_t encr_data;
+        integ_data_t integ_data;
+        
+        // Assert integrity (if protected)
+        if (sad_entry->sa.integ) {
+          integ_data.type = sad_entry->sa.integ;
+          integ_data.data = (u8_t *) esp_header;
+          integ_data.datalen = auth_data_len;
+          integ_data.keymat = &sad_entry->sa.sk_a;
+          integ_data.keylen = SA_INTEG_KEYMATLEN_BY_TYPE(sad_entry->sa.integ);
+          integ_data.out = (u8_t *) &encr_data.icv;          
+          integ(&integ_data);
+        }
+
+        // Confidentiality
+        /*
+        printf("Before unpack\n");
+        memprint(esp_header, 100);*/
+        encr_data.type = sad_entry->sa.encr;
+        encr_data.keymat = &sad_entry->sa.sk_e;
+        encr_data.keylen = sad_entry->sa.encr_keylen;
+        encr_data.integ_data = (u8_t *) esp_header;
+        encr_data.encr_data = iv;
+        encr_data.encr_datalen = auth_data_len - sizeof(struct uip_esp_header);
+        encr_data.ip_next_hdr = uip_next_hdr; // Non-zero to indicate ESP header
+        //PRINTF("uIP6 sad entry\n"); PRINTSADENTRY(sad_entry);
+        //PRINTF("encr_data.type: %hu\n", encr_data.type);
+        espsk_unpack(&encr_data);
+
+        //printf("After unpack\n");
+        //memprint(esp_header, 100);
+        
+        /**
+          * Verify ICV
+          */
+          /*
+        printf("ICV: Computed\n");
+        memprint(&encr_data.icv, sizeof(encr_data.icv));
+        printf("ICV: From ESP header\n");
+        memprint((u8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
+        printf("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (u8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
+        */
+
+        // FIX: Removed due to size constraints
+          /*
+        if (memcmp((u8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv))) {
+          PRINTF("IPsec: ICV mismatch, dropping packet.\n");
+          goto drop;
+        }
+       */
+        /**
+          * Replay protection (dynamic SAs only!)
+          */
+        /*
+        if (SAD_ENTRY_IS_DYNAMIC(sad_entry) && sad_incoming_replay(sad_entry, esp_header->seqno)) {          
+          PRINTF(IPSEC "Error: This packet is a replay\n");
+          goto drop;
+        }*/
+
+
+        /**
+          * Update state variables in order to prepare for the next header
+          */
+        /* Get ESP encrypted fields (pad length, next header) */
+        //pad_len = esp_header->data[encrypted_data_len - 2];
+        uip_next_hdr = encr_data.ip_next_hdr;
+
+        /* Update ext len variables */
+        uip_ext_len += sizeof(struct uip_esp_header) + SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr); // ESP header + IV
+        //uip_ext_end_len += encr_data.padlen + 2 + IPSEC_ICVLEN;  // padding, padlen and nextheader fields, ICV
+      
+        PRINTF("IPsec-ESP: pl %hu nh %hu uip_ext_len %hu uip_ext_end_len %hu\n", encr_data.padlen,  *uip_next_hdr, uip_ext_len, uip_ext_end_len);
+        break;
+#endif /* WITH_IPSEC_ESP */
+      
 #if UIP_TCP
       case UIP_PROTO_TCP:
         /* TCP, for both IPv4 and IPv6 */
+        
+  #ifdef WITH_IPSEC
+        packet_desc.nextlayer_type = *uip_next_hdr;
+        packet_desc.dest_port = UIP_TCP_BUF->destport;
+        if (ipsec_filter(sad_entry, &packet_desc))
+          goto drop;
+  #endif /* End of WITH_IPSEC */
+  
         goto tcp_input;
 #endif /* UIP_TCP */
 #if UIP_UDP
       case UIP_PROTO_UDP:
         /* UDP, for both IPv4 and IPv6 */
+        
+  #ifdef WITH_IPSEC
+        /* See comment in UIP_PROTO_TCP for clarification */
+        packet_desc.nextlayer_type = *uip_next_hdr;
+        packet_desc.dest_port = UIP_UDP_BUF->destport;
+        /*
+        printf("src + dst:\n");
+        memprint(&UIP_IP_BUF->srcipaddr, 30);
+        printf("packet_desc:\n");
+        memprint(packet_desc.addr, 40);*/
+        if (ipsec_filter(sad_entry, &packet_desc))
+          goto drop;
+  #endif /* End of WITH_IPSEC */
+        
         goto udp_input;
+
 #endif /* UIP_UDP */
       case UIP_PROTO_ICMP6:
         /* ICMPv6 */
-        goto icmp6_input;
+         /* See comment in UIP_PROTO_TCP for clarification */
+ #ifdef WITH_IPSEC
+       packet_desc.nextlayer_type = *uip_next_hdr;
+     
+       if (ipsec_filter(sad_entry, &packet_desc))
+         goto drop;
+ #endif /* End of WITH_IPSEC */
+       goto icmp6_input;
       case UIP_PROTO_HBHO:
         PRINTF("Processing hbh header\n");
         /* Hop by hop option header */
@@ -1538,6 +1769,11 @@ uip_process(uint8_t flag)
     UIP_UDP_BUF->udpchksum = 0xffff;
   }
 #endif /* UIP_UDP_CHECKSUMS */
+
+#if WITH_IPSEC
+  packet_tag.dest_port = UIP_UDP_BUF->destport;
+#endif
+
   UIP_STAT(++uip_stat.udp.sent);
   goto ip_send_nolen;
 #endif /* UIP_UDP */
@@ -2244,6 +2480,10 @@ uip_process(uint8_t flag)
   UIP_TCP_BUF->tcpchksum = 0;
   UIP_TCP_BUF->tcpchksum = ~(uip_tcpchksum());
   UIP_STAT(++uip_stat.tcp.sent);
+  
+#if WITH_IPSEC
+  packet_tag.dest_port = UIP_TCP_BUF->destport;
+#endif
 
 #endif /* UIP_TCP */
 #if UIP_UDP
@@ -2253,6 +2493,124 @@ uip_process(uint8_t flag)
   UIP_IP_BUF->tcflow = 0x00;
   UIP_IP_BUF->flow = 0x00;
  send:
+ 
+#if WITH_IPSEC
+  // Protect packets that are sourced from us, not ones routed on the behalf of others
+  if(! uip_ds6_is_my_addr(&UIP_IP_BUF->srcipaddr))
+    goto bypass;
+
+  // Fetch applicable SA
+  packet_tag.addr = &UIP_IP_BUF->destipaddr;
+  packet_tag.direction = SPD_OUTGOING_TRAFFIC;
+  packet_tag.nextlayer_type = UIP_IP_BUF->proto;
+ 
+  // We use the SAD as an SPD-S cache (RFC 4301).
+  // Is there an SA entry that matches this traffic?
+  sad_entry = sad_get_outgoing(&packet_tag);
+
+  // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
+  if (sad_entry == NULL) {
+    spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
+    void *argv[2] = { &packet_tag, spd_entry };
+    
+    switch (spd_entry->proc_action) {
+      case SPD_ACTION_PROTECT:
+      // Traffic of this type must be protected, but no SA for this traffic have been established yet.
+      // Try to negotiate one and drop the triggering packet in the meantime (in accordance with RFC 4301)
+      PRINTF(IPSEC "Triggering the IKEv2 service");
+      //process_post_synch(&ike2_service, ike_negotiate_event, &argv);
+      
+      /**
+        * RFC 4301 grants us the permission to drop the packet triggering an IKE handshake
+        * 
+        * from p. 53 part 3b:
+        * "If the SPD entry calls for PROTECT, i.e., creation of an SA, the key management mechanism (e.g., IKEv2) 
+        * is invoked to create the SA. If SA creation succeeds, a new outbound (SPD-S) cache entry is created, 
+        * along with outbound and inbound SAD entries, otherwise the packet is discarded. 
+        * (A packet that triggers an SPD lookup MAY be discarded by the implementation, or it MAY be processed 
+        * against the newly created cache entry, if one is created.)"
+        *
+        */
+      goto drop;
+      
+      case SPD_ACTION_BYPASS:
+      PRINTF(IPSEC "Allowing incoming packet to bypass in accordance with the SPD policy\n");
+      goto bypass;
+
+      case SPD_ACTION_DISCARD:
+      PRINTF(IPSEC "Discarding outgoing packet due to SPD policy\n");
+      goto drop;
+    }
+  }
+  // We will now proceed to protect this packet with the SA in sad_entry
+#endif
+
+#if WITH_IPSEC_ESP
+  if (sad_entry->sa.proto == SA_PROTO_ESP) {
+    struct uip_esp_header* esp_header = UIP_ESP_BUF;
+    u8_t next_header;
+    
+    u16_t data_len = uip_len - UIP_LLIPH_LEN;
+
+    /* Backup next header before updating to "ESP" */
+    next_header = UIP_IP_BUF->proto;
+    UIP_IP_BUF->proto = UIP_PROTO_ESP;
+    
+    /* Move IP payload, leaving space to ESP header */
+    memmove(((u8_t *) UIP_ESP_BUF) + sizeof(struct uip_esp_header), UIP_ESP_BUF, data_len);
+
+    /* Set ESP header */
+    esp_header->spi = sad_entry->spi;
+    esp_header->seqno = uip_htonl(++sad_entry->seqno);
+    
+    if (!esp_header->seqno) {
+      PRINTF(IPSEC "Error: Sequence number overflow. Removing SA.\n");
+      sad_remove_outgoing_entry(sad_entry);
+      goto drop;
+    }
+    
+    encr_data_t encr_data = {
+      .type = sad_entry->sa.encr,
+      .keymat = sad_entry->sa.sk_e,
+      .keylen = sad_entry->sa.encr_keylen,
+      .integ_data = (u8_t *) esp_header,
+      .encr_data = (u8_t *) esp_header + sizeof(struct uip_esp_header),
+      .encr_datalen = data_len,
+      .ops = sad_entry->seqno,
+      .ip_next_hdr = &next_header,
+    };
+    espsk_pack(&encr_data);
+    /*
+    printf("After pack:\n");
+    memprint((u8_t *) esp_header, data_len + 30);
+*/
+    /**
+      * Extend IP length
+      *
+      * At this point uip_len accounts for the IP header, everything in L2, and the data itself.
+      * In addition to that we have: ESP header + Padding + Padding length field + Next header field + ICV
+      */
+    uip_len += sizeof(struct uip_esp_header) + encr_data.padlen + 2 + IPSEC_ICVLEN;
+    u16_t authenticated_data_len = uip_len - UIP_LLIPH_LEN - IPSEC_ICVLEN;
+    PRINTF("encr_data.padlen: %hu uip_len: %u\n", encr_data.padlen, authenticated_data_len);
+    
+    /**
+      * Integrity
+      */
+    if (sad_entry->sa.integ) {
+      integ_data_t integ_data = {
+        .type = sad_entry->sa.integ,
+        .data = (u8_t *) esp_header,                               // The start of the data
+        .datalen = authenticated_data_len,                // the length of the data
+        .keymat = sad_entry->sa.sk_a,                     // The start of the KEYMAT
+        .out = (u8_t *) esp_header + authenticated_data_len        // Where the output will be written. Always IPSEC_ICVLEN bytes.
+      };
+      integ(&integ_data);
+    }
+  }
+  bypass:
+#endif /* WITH_IPSEC_ESP */
+ 
   PRINTF("Sending packet with length %d (%d)\n", uip_len,
          (UIP_IP_BUF->len[0] << 8) | UIP_IP_BUF->len[1]);
   

@@ -74,12 +74,20 @@ ifdef UIP_CONF_IPV6
     CFLAGS += -DUIP_CONF_IPV6_RPL=1
     include $(CONTIKI)/core/net/rpl/Makefile.rpl
   endif # UIP_CONF_RPL
+  
+  # IPsec Makefiles
+  include $(CONTIKI)/core/net/ipsec/Makefile.ipsec
+  include $(CONTIKI)/core/net/ipsec/transforms/Makefile.transforms
+  #include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
+  # end IPsec
 else # UIP_CONF_IPV6
   UIP   = uip.c uiplib.c resolv.c tcpip.c psock.c hc.c uip-split.c uip-fw.c \
           uip-fw-drv.c uip_arp.c tcpdump.c uip-neighbor.c uip-udp-packet.c \
           uip-over-mesh.c dhcpc.c simple-udp.c
   NET   += $(UIP) uaodv.c uaodv-rt.c
 endif # UIP_CONF_IPV6
+
+
 
 CTK     = ctk.c
 CTKVNC  = $(CTK) ctk-vncserver.c libconio.c vnc-server.c vnc-out.c ctk-vncfont.c
@@ -93,7 +101,7 @@ endif
 CONTIKI_SOURCEFILES += $(CONTIKIFILES)
 
 CONTIKIDIRS += ${addprefix $(CONTIKI)/core/,dev lib net net/mac net/rime \
-                 net/rpl sys cfs ctk lib/ctk loader . }
+                 net/rpl net/ipsec net/ipsec/ike net/ipsec/transforms sys cfs ctk lib/ctk loader . }
 
 oname = ${patsubst %.c,%.o,${patsubst %.S,%.o,$(1)}}
 
@@ -175,7 +183,7 @@ sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 rm -f $(@:.o=.$$$$)
 endef
 
- clean:
+clean:
 	rm -f *~ *core core *.srec \
 	*.lst *.map \
         *.cprg *.bin *.data contiki*.a *.firmware core-labels.S *.ihex *.ini \

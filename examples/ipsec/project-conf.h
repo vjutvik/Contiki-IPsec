@@ -25,64 +25,39 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * $Id: project-conf.h,v 1.1 2011/09/28 13:11:08 simonduq Exp $
  */
 
-#ifndef __PROJECT_CONF_H__
-#define __PROJECT_CONF_H__
+#ifndef __PROJECT_H__
+#define __PROJECT_H__
 
-#undef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM          4
-
-#undef UIP_CONF_BUFFER_SIZE
-#define UIP_CONF_BUFFER_SIZE    140
-
-#undef UIP_CONF_ROUTER
-#define UIP_CONF_ROUTER                 0
-
-#undef UIP_CONF_IPV6_RPL
-#define UIP_CONF_IPV6_RPL               0
-
-#define CMD_CONF_OUTPUT slip_radio_cmd_output
-
-/* add the cmd_handler_cc2420 + some sensors if TARGET_SKY */
-#ifdef CONTIKI_TARGET_SKY
-#define CMD_CONF_HANDLERS slip_radio_cmd_handler,cmd_handler_cc2420
-#define SLIP_RADIO_CONF_SENSORS slip_radio_sky_sensors
-#else
-#define CMD_CONF_HANDLERS slip_radio_cmd_handler
+#ifndef UIP_FALLBACK_INTERFACE
+#define UIP_FALLBACK_INTERFACE rpl_interface
 #endif
 
+/* Save some memory */
+#define UIP_CONF_TCP                    0
+#undef UIP_CONF_DS6_NBR_NBU
+#define UIP_CONF_DS6_NBR_NBU            12
+#undef UIP_CONF_DS6_ROUTE_NBU
+#define UIP_CONF_DS6_ROUTE_NBU          12
 
-/* configuration for the slipradio/network driver */
-#undef NETSTACK_CONF_MAC
-#define NETSTACK_CONF_MAC     nullmac_driver
+/* Tmote Sky's serial works better with DMA */
+#define UART1_CONF_RX_WITH_DMA          0
 
-#undef NETSTACK_CONF_RDC
-/* #define NETSTACK_CONF_RDC     nullrdc_noframer_driver */
-#define NETSTACK_CONF_RDC     contikimac_driver
-
-#undef NETSTACK_CONF_NETWORK
-#define NETSTACK_CONF_NETWORK slipnet_driver
-
-#undef NETSTACK_CONF_FRAMER
-#define NETSTACK_CONF_FRAMER no_framer
-
-#undef CC2420_CONF_AUTOACK
-#define CC2420_CONF_AUTOACK              1
-
-#undef UART1_CONF_RX_WITH_DMA
-#define UART1_CONF_RX_WITH_DMA           0
-
-/* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
 #define WITH_CONF_IPSEC_AH              0
-#define WITH_CONF_IPSEC_ESP             1
+#define WITH_CONF_IPSEC_ESP             0
 
 /* The IKE subsystem is optional if the SAs are manually configured */
-#define WITH_CONF_IKE                   1
+#define WITH_CONF_IKE                   0
 
 /* Configuring an AES implementation */
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes
+/* Configuring a cipher block mode of operation (encryption/decryption) */
+#define IPSEC_CONF_BLOCK aesctr
+/* Configuring a cipher block MAC mode of operation (authentication) */
+#define IPSEC_CONF_MAC aesxcbc_mac
 
-
-#endif /* __PROJECT_CONF_H__ */
+#endif /* __PROJECT_H__ */

@@ -1,0 +1,26 @@
+CONTIKI_SOURCEFILES += common_ipsec.c \
+  filter.c sa.c sad.c sad_conf.c spd.c \
+  spd_conf.c
+
+#CONTIKI_SOURCEFILES += ipsec.c
+#      \
+#  transforms/aes-ctr.c              \
+#  transforms/aes-xcbc-mac.c         \
+#  transforms/auth.c                 \
+#  transforms/cc2420-aes-mapping.c   \
+#  transforms/encr.c                 \
+#  transforms/integ.c                \
+#  transforms/sha1.c                 \
+#  ike/common.c               \
+#  sa.c                       \
+#  sad.c                      \
+#  spd.c                      \
+#  spd_conf.c
+#
+##ifdef CONF_WITH_IKE
+#CONTIKI_SOURCEFILES += ike/ike.c  \
+#  ike/initiator.c            \
+#  ike/responder.c            \
+#  ike/machine.c
+##endif
+#

@@ -1,0 +1,97 @@
+/**
+ * \file
+ *         IPsec constant values, headers, ...
+ * \author
+ *         Simon Duquennoy <simonduq@sics.se>
+ */
+
+#ifndef __IPSEC_H__
+#define __IPSEC_H__
+
+#include <contiki-conf.h>
+#include "net/uip.h"
+// #include "ipsec/spd.h"
+// #include "ipsec/sad.h"
+// #include "ipsec/ike/ike.h"
+// #include "ipsec/common_ipsec.h"
+// #include "aes-moo.h"
+
+#ifdef WITH_CONF_IPSEC_AH
+#define WITH_IPSEC_AH     WITH_CONF_IPSEC_AH
+#else
+#define WITH_IPSEC_AH     0
+#endif
+
+#ifdef WITH_CONF_IPSEC_ESP
+#define WITH_IPSEC_ESP     WITH_CONF_IPSEC_ESP
+#else
+#define WITH_IPSEC_ESP     0
+#endif
+
+#define WITH_IPSEC    (WITH_IPSEC_ESP | WITH_IPSEC_AH)
+
+
+#define IPSEC_KEYSIZE_FIXTHIS   16  // Old bad code. Make this dynamic.
+/*
+#define IPSEC_IVSIZE    8
+*/
+
+/**
+  * Debbugging for IKEv2 and IPsec
+  */
+#define IKE "IKEv2: "
+#define IPSEC "IPsec: "
+
+#define DEBUG 0
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#define PRINT6ADDR(addr) PRINTF(" %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x ", ((u8_t *)addr)[0], ((u8_t *)addr)[1], ((u8_t *)addr)[2], ((u8_t *)addr)[3], ((u8_t *)addr)[4], ((u8_t *)addr)[5], ((u8_t *)addr)[6], ((u8_t *)addr)[7], ((u8_t *)addr)[8], ((u8_t *)addr)[9], ((u8_t *)addr)[10], ((u8_t *)addr)[11], ((u8_t *)addr)[12], ((u8_t *)addr)[13], ((u8_t *)addr)[14], ((u8_t *)addr)[15])
+#define PRINTLLADDR(lladdr) PRINTF(" %02x:%02x:%02x:%02x:%02x:%02x ",lladdr->addr[0], lladdr->addr[1], lladdr->addr[2], lladdr->addr[3],lladdr->addr[4], lladdr->addr[5])
+#else
+#define PRINTF(...)
+#define PRINT6ADDR(addr)
+#endif
+
+/**
+  * The length (in bytes) of the ICV field in the ESP header and that of IKEv2's SK payload.
+  *
+  * The length of this field is in fact dependent upon the integrity transform, but as most IKEv2 / IPsec
+  * transforms uses the below length I figure that it's safe to make it static.
+  */
+#define IPSEC_ICVLEN   12
+
+#define UIP_PROTO_ESP   50
+#define UIP_PROTO_AH    51
+
+#define UIP_ESP_BUF ((struct uip_esp_header *)&uip_buf[uip_l2_l3_hdr_len])
+#define UIP_AH_BUF ((struct uip_ah_header *)&uip_buf[UIP_LLIPH_LEN])
+
+/* ESP header as defined in RFC 2406 */
+struct uip_esp_header {
+  uint32_t          spi;
+  uint32_t          seqno;
+  /**
+    * IV and the data will now follow. These are both of variable length.
+  */  
+  /*
+  unsigned char     iv[IPSEC_IVSIZE];
+  unsigned char     data[0];
+  */
+};
+
+/* AH header as defined in RFC 4302 */
+struct uip_ah_header {
+  unsigned char     next;
+  unsigned char     len;
+  uint16_t          reserved;
+  uint32_t          spi;
+  uint32_t          seqno;
+  unsigned char     mac[IPSEC_ICVLEN];
+};
+
+/* The length of extension headers data coming after the payload */
+extern u8_t uip_ext_end_len;
+
+
+#endif /* __IPSEC_H__ */

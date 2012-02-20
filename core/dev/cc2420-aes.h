@@ -41,6 +41,8 @@
 #ifndef __CC2420_AES_H__
 #define __CC2420_AES_H__
 
+#include "contiki-conf.h"
+
 /**
  * \brief      Setup an AES key
  * \param key  A pointer to a 16-byte AES key
