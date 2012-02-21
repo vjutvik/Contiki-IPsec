@@ -91,7 +91,7 @@
 /* For Debug, logging, statistics                                            */
 /*---------------------------------------------------------------------------*/
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #if UIP_CONF_IPV6_RPL
@@ -1408,7 +1408,7 @@ uip_process(uint8_t flag)
         uip_ext_len += sizeof(struct uip_esp_header) + SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr); // ESP header + IV
         //uip_ext_end_len += encr_data.padlen + 2 + IPSEC_ICVLEN;  // padding, padlen and nextheader fields, ICV
       
-        PRINTF("IPsec-ESP: pl %hu nh %hu uip_ext_len %hu uip_ext_end_len %hu\n", encr_data.padlen,  *uip_next_hdr, uip_ext_len, uip_ext_end_len);
+        PRINTF("IPsec-ESP: pl %hu nh %hu uip_ext_len %hu/* uip_ext_end_len %hu*/\n", encr_data.padlen,  *uip_next_hdr, uip_ext_len/*, uip_ext_end_len*/);
         break;
 #endif /* WITH_IPSEC_ESP */
       
