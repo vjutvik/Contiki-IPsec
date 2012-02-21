@@ -1,35 +1,32 @@
-all: ipsec-example border-router
+CONTIKI_PROJECT=ipsec-example
+all: $(CONTIKI_PROJECT)
+APPS = slip-cmd
 
-ifndef TARGET
-TARGET=sky
+CONTIKI=../..
+TARGET=native
+
+WITH_UIP6=1
+UIP_CONF_IPV6=1
+CFLAGS+= -DUIP_CONF_IPV6_RPL
+
+#linker optimizations
+SMALL=1
+
+CFLAGS += -DPROJECT_CONF_H=\"ipsec-conf.h\"
+PROJECTDIRS += $(CONTIKI)/examples/ipv6/native-border-router
+CONTIKI_SOURCEFILES += border-router-cmds.c tun-bridge.c border-router-rdc.c \
+slip-config.c slip-dev.c border-router.c
+
+WITH_WEBSERVER=1
+ifeq ($(WITH_WEBSERVER),1)
+CFLAGS += -DWEBSERVER=1
+PROJECT_SOURCEFILES += httpd-simple.c
+else ifneq ($(WITH_WEBSERVER), 0)
+APPS += $(WITH_WEBSERVER)
+CFLAGS += -DWEBSERVER=2
 endif
 
-# APPS += ipsec contikiecc
-
-# For Contiki ECC
-CONTIKI_ECC_DIR=contikiecc
-
-CONTIKI = ../..
-#CONTIKI = /home/user/ipsectng/contiki-2.x/
-
-UIP_CONF_IPV6=1
-
-CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
-CFLAGS += -DLOCAL_PLATFORM_CONF_H=1
-PROJECT_SOURCEFILES += slip-bridge.c
-SMALL = 1
-
 include $(CONTIKI)/Makefile.include
-#include Makefile.include
 
-$(CONTIKI)/tools/tunslip6:	$(CONTIKI)/tools/tunslip6.c
-	(cd $(CONTIKI)/tools && $(MAKE) tunslip6)
-
-connect-router:	$(CONTIKI)/tools/tunslip6
-	sudo $(CONTIKI)/tools/tunslip6 aaaa::1/64
-
-connect-router-cooja: $(CONTIKI)/tools/tunslip6
-	sudo $(CONTIKI)/tools/tunslip6 -a $(COOJA_HOST) aaaa::1/64
-
-realclean: clean
-	rm -rf obj_* symbols.c symbols.h *.sky *.log
+connect-router:	$(CONTIKI_PROJECT).native
+	sudo ./$(CONTIKI_PROJECT).native -s /dev/null aaaa::1/64

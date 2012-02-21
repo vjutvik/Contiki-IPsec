@@ -90,7 +90,7 @@ void espsk_pack(encr_data_t *data)
     // Confidentiality only
 
     espsk_pad(data, 16);  // CBC has a block size of 16 bytes
-    random(data->encr_data, 16, NULL); // CBC prefers a random IV FIX: Assert that MR doesn't write the IV
+    random_ike(data->encr_data, 16, NULL); // CBC prefers a random IV FIX: Assert that MR doesn't write the IV
 
     // Calculate the number of blocks to encrypt.
     // (data->datalen / 16) - 1 (for the IV whose length is part of datalen) + 1 (one extra block since integer division rounds downwards)
@@ -114,7 +114,7 @@ void espsk_pack(encr_data_t *data)
     // AES encryption using MIRACLE start
     aes a;
     espsk_pad(data, 16);  // CBC has a block size of 16 bytes
-    random(data->encr_data, 16, NULL); // CBC prefers a random IV FIX: Assert that MR doesn't write the IV
+    random_ike(data->encr_data, 16, NULL); // CBC prefers a random IV FIX: Assert that MR doesn't write the IV
     aes_init(&a, MR_CBC, data->keymatlen, data->keymat, data->encr_data); // We ignore the exit status
 
     // Calculate the number of blocks to encrypt.

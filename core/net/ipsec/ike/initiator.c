@@ -76,7 +76,7 @@ void ike_statem_trans_initreq(ike_statem_session_t *session)
   SET_GENPAYLOADHDR(ninr_genpayloadhdr, payload_arg, IKE_PAYLOAD_NiNr);
 
   // Write nonce
-  random(payload_arg->start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);
+  random_ike(payload_arg->start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);
   ninr_genpayloadhdr->len = UIP_HTONS(payload_arg->start - (u8_t *) ninr_genpayloadhdr);
   // End nonce payload
     

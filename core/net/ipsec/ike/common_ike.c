@@ -491,7 +491,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, u8_t *peer_pub_key)
     *
     */
   u8_t skeyseed[prf_keylen];
-  random(&mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);
+  random_ike(&mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);
   memcpy(peernonce_start, session->ephemeral_info->peer_nonce, session->ephemeral_info->peernonce_len);
 
   prf_data_t prf_data =
@@ -515,7 +515,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, u8_t *peer_pub_key)
   /**
     * Compile the second message
     */
-  random(ni_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);      
+  random_ike(ni_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);      
   memcpy(nr_start, session->epehemeral_info->peernonce, session->epehemeral_info->peernonce_len);
   *((u32_t *) spii_start) = IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session);
   *(((u32_t *) spii_start) + 1) = IKE_STATEM_MYSPI_GET_MYSPI_LOW(session);

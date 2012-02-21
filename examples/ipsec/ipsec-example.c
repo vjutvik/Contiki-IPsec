@@ -45,8 +45,27 @@
 
 #include <stdio.h> /* For printf() */
 
+// test start
+
+#include "border-router.h"
+#include "net/uip-ds6.h"
+
 PROCESS(ipsec_example_process, "IPsec Example");
-AUTOSTART_PROCESSES(&ipsec_example_process);
+//AUTOSTART_PROCESSES(&ipsec_example_process);
+
+PROCESS_NAME(border_router_process);
+PROCESS_NAME(border_router_cmd_process);
+PROCESS_NAME(webserver_nogui_process);
+
+#if WEBSERVER==0
+/* No webserver */
+AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process, &ipsec_example_process);
+#else
+AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
+		    &webserver_nogui_process, &ipsec_example_process);
+#endif
+
+// test end
 
 #define DEBUG 0
 #if DEBUG
@@ -95,6 +114,8 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
 {
   PROCESS_BEGIN();
 
+  border_router_set_mac((uint8_t *) &uip_lladdr.addr);
+
   /* new connection with remote host */
   server_conn = udp_new(NULL, UIP_HTONS(0), NULL);
   udp_bind(server_conn, UIP_HTONS(MOTE_PORT));
@@ -109,10 +130,4 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
 
   PROCESS_END();
 }
-/*---------------------------------------------------------------------------*/
-/*---------------------------------------------------------------------------*/
-void dummy(void) {}
-const struct uip_fallback_interface rpl_interface = {
-    dummy, dummy
-};
 /*---------------------------------------------------------------------------*/

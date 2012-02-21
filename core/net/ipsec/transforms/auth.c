@@ -51,7 +51,7 @@ u8_t *mynonce(u8_t *start, ike_statem_ephemeral_info_t *ephemeral_info)
 /**
   * Get a random string. Any given output will be reproduced for the same seed and len.
   */
-void random(u8_t *out, u16_t len, u16_t *seed)
+void random_ike(u8_t *out, u16_t len, u16_t *seed)
 {
   if (seed == NULL)
     srand(get_time());
