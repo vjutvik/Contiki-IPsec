@@ -74,6 +74,7 @@ void sad_conf()
     0x3b, 0xda, 0x5b, 0x6c, 0x05, 0x59, 0x5d, 0xe5, 0x64, 0x2b, 0xf6, 0x13, 0xf8, 0xd1, 0xaf, 0xd4,  // 128 bit key
     0xd4, 0xa8, 0x07, 0x59 // 32 bit nonce
   };
+  my_incoming_entry->sa.proto = SA_PROTO_ESP;
   my_incoming_entry->sa.encr = SA_ENCR_AES_CTR;
   my_incoming_entry->sa.integ = SA_INTEG_AES_XCBC_MAC_96;
   memcpy(my_incoming_entry->sa.sk_a, &integ_key, sizeof(integ_key));                        
@@ -110,6 +111,7 @@ void sad_conf()
   /**
     * Set the parameters of the SA. We use the same key as that of the incoming because we're lazy.
     */
+  my_outgoing_entry->sa.proto = SA_PROTO_ESP;
   my_outgoing_entry->sa.encr = SA_ENCR_AES_CTR;
   my_outgoing_entry->sa.integ = SA_INTEG_AES_XCBC_MAC_96;
   memcpy(my_outgoing_entry->sa.sk_a, &integ_key, sizeof(integ_key));                          // 12 bytes

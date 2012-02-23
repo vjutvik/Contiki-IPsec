@@ -35,7 +35,7 @@ u8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *addr)
     }
       
     // Drop the packet
-    PRINTF("Dropping packet because the SAD's (referenced by the packet's SPI) selector didn't match the packet\n");
+    PRINTF("Dropping packet because the SAD entry's (referenced by the packet's SPI) selector didn't match the packet\n");
   }
   else {
     /*

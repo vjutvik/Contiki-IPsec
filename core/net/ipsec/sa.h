@@ -54,7 +54,7 @@ typedef enum {
 typedef enum {                   // RFC4307      Status of this implementation
   SA_ENCR_RESERVED = 0,
   SA_ENCR_3DES = 3,             // MUST-          Status of this implementation
-  SA_ENCR_NULL = 11,            // MAY            NOT IMPLEMENTED
+  SA_ENCR_NULL = 11,            // MAY            IMPLEMENTED
   SA_ENCR_AES_CBC = 12,         // SHOULD+        FIX: IN PROGRESS
   SA_ENCR_AES_CTR = 13,         // SHOULD         IMPLEMENTED
   SA_ENCR_UNASSIGNED = 255                        

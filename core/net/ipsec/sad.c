@@ -163,13 +163,13 @@ void sad_remove_outgoing_entry(sad_entry_t *entry)
 sad_entry_t *sad_get_outgoing(ipsec_addr_t *addr)
 {
   sad_entry_t *entry;
+  PRINTF(IPSEC "sad_get_outgoing: looking up SAD for addr:\n");
   PRINTADDR(addr);
   for (entry = list_head(sad_outgoing); entry != NULL; entry = list_item_next(entry)) {    
     PRINTSADENTRY(entry);    
     if (ipsec_a_is_member_of_b(addr, &entry->traffic_desc))
       return entry;
   }
-  #define PRINTF
   return NULL;
 }
 
@@ -186,7 +186,7 @@ sad_entry_t *sad_get_incoming(u32_t spi)
 {
   sad_entry_t *entry;
   for (entry = list_head(sad_incoming); entry != NULL; entry = list_item_next(entry)) {
-    PRINTF("==== SAD entry at %x ====\n Looking for SPI no %lx\n", entry, spi);
+    //PRINTF("==== SAD entry at %x ====\n  SPI no %lx\n", entry, uip_ntohl(spi));
     //PRINTSADENTRY(entry);
     if (entry->spi == spi)
       return entry;
