@@ -91,6 +91,12 @@
 /* For Debug, logging, statistics                                            */
 /*---------------------------------------------------------------------------*/
 
+// IPsec stuff start
+#define IPSECDBG_PRINTF //printf
+#define MEMPRINT //memprint
+
+// IPsec stuff ends
+
 #define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
@@ -373,11 +379,11 @@ upper_layer_chksum(uint8_t proto)
   
   upper_layer_len = (((uint16_t)(UIP_IP_BUF->len[0]) << 8) + UIP_IP_BUF->len[1] - uip_ext_len - uip_ext_end_len);
   
-  PRINTF("Mem starting after IPH\n");
-  memprint(&uip_buf[UIP_IPH_LEN + UIP_LLH_LEN], upper_layer_len + uip_ext_len + uip_ext_end_len);
+  IPSECDBG_PRINTF("Mem starting after IPH\n");
+  MEMPRINT(&uip_buf[UIP_IPH_LEN + UIP_LLH_LEN], upper_layer_len + uip_ext_len + uip_ext_end_len);
   
-  PRINTF("Upper layer checksum len: %d from: %d, proto: %u\n", upper_layer_len,
-	 UIP_IPH_LEN + UIP_LLH_LEN + uip_ext_len + uip_ext_end_len, proto);
+  IPSECDBG_PRINTF("Upper layer checksum len: %d from: %d, proto: %u\n", upper_layer_len,
+	  UIP_IPH_LEN + UIP_LLH_LEN + uip_ext_len + uip_ext_end_len, proto);
 
   /* First sum pseudoheader. */
   /* IP protocol and length fields. This addition cannot carry. */
@@ -1370,8 +1376,8 @@ uip_process(uint8_t flag)
         //PRINTF("encr_data.type: %hu\n", encr_data.type);
         espsk_unpack(&encr_data);
 
-        PRINTF("After unpack\n");
-        memprint(esp_header, 100);
+        IPSECDBG_PRINTF("Incoming after unpack\n");
+        MEMPRINT(esp_header, 100);
         
         /**
           * Verify ICV
@@ -1410,7 +1416,7 @@ uip_process(uint8_t flag)
         uip_ext_len += sizeof(struct uip_esp_header) + SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr); // ESP header + IV
         uip_ext_end_len = encr_data.padlen + 2 + IPSEC_ICVLEN;  // padding, padlen and nextheader fields, ICV
       
-        PRINTF("IPsec-ESP: pl %hu nh %hu uip_ext_len %hu/* uip_ext_end_len %hu*/\n", encr_data.padlen,  *uip_next_hdr, uip_ext_len/*, uip_ext_end_len*/);
+        PRINTF(IPSEC "ESP: pl %hu nh %hu uip_ext_len %hu/* uip_ext_end_len %hu*/\n", encr_data.padlen,  *uip_next_hdr, uip_ext_len/*, uip_ext_end_len*/);
         break;
 #endif /* WITH_IPSEC_ESP */
       
@@ -1779,7 +1785,6 @@ uip_process(uint8_t flag)
 #endif
 
   UIP_STAT(++uip_stat.udp.sent);
-  PRINTF("goto ip_send_nolen\n");
   goto ip_send_nolen;
 #endif /* UIP_UDP */
 
@@ -2502,7 +2507,7 @@ uip_process(uint8_t flag)
 #ifdef WITH_IPSEC
   // Protect packets that are sourced from us, not ones routed on the behalf of others
   if(! uip_ds6_is_my_addr(&UIP_IP_BUF->srcipaddr)) {
-    PRINTF(IPSEC "Looks like a packet that we're forwarding. Bypassing IPsec stack.");
+    PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
     goto bypass;
   }
 
@@ -2524,7 +2529,7 @@ uip_process(uint8_t flag)
       case SPD_ACTION_PROTECT:
       // Traffic of this type must be protected, but no SA for this traffic have been established yet.
       // Try to negotiate one and drop the triggering packet in the meantime (in accordance with RFC 4301)
-      PRINTF(IPSEC "Triggering the IKEv2 service");
+      PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry found. Invoking the IKEv2 service for peer negotiation.\n");
       //process_post_synch(&ike2_service, ike_negotiate_event, &argv);
       
       /**
@@ -2541,11 +2546,11 @@ uip_process(uint8_t flag)
       goto drop;
       
       case SPD_ACTION_BYPASS:
-      PRINTF(IPSEC "Allowing incoming packet to bypass in accordance with the SPD policy\n");
+      PRINTF(IPSEC "SPD: Outgoing packet targeted for BYPASS\n");
       goto bypass;
 
       case SPD_ACTION_DISCARD:
-      PRINTF(IPSEC "Discarding outgoing packet due to SPD policy\n");
+      PRINTF(IPSEC "SPD: Outgoing packet targeted for DISCARD\n");
       goto drop;
     }
   }
@@ -2554,7 +2559,7 @@ uip_process(uint8_t flag)
 
 #ifdef WITH_IPSEC_ESP
   u16_t blah = UIP_IPUDPH_LEN;
-  PRINTF("uip_slen: %u, uip_len: %u UIP_IPUDPH_LEN: %u\n", uip_slen, uip_len, blah);
+  IPSECDBG_PRINTF("uip_slen: %u, uip_len: %u UIP_IPUDPH_LEN: %u\n", uip_slen, uip_len, blah);
 
   if (sad_entry->sa.proto == SA_PROTO_ESP) {
     struct uip_esp_header* esp_header = UIP_ESP_BUF;
@@ -2574,13 +2579,13 @@ uip_process(uint8_t flag)
     esp_header->seqno = uip_htonl(++sad_entry->seqno);
     
     if (!esp_header->seqno) {
-      PRINTF(IPSEC "Error: Sequence number overflow. Removing SA.\n");
+      IPSECDBG_PRINTF(IPSEC "Error: Sequence number overflow. Removing SAD entry.\n");
       sad_remove_outgoing_entry(sad_entry);
       goto drop;
     }
-
-    PRINTF("Before pack:\n");
-    memprint((u8_t *) esp_header, data_len + 30);
+    
+    IPSECDBG_PRINTF("Outgoing before pack:\n");
+    MEMPRINT((u8_t *) esp_header, data_len + 30);
     encr_data_t encr_data = {
       .type = sad_entry->sa.encr,
       .keymat = sad_entry->sa.sk_e,
@@ -2592,9 +2597,9 @@ uip_process(uint8_t flag)
       .ip_next_hdr = &next_header
     };
     espsk_pack(&encr_data);
-    PRINTF("After pack:\n");
-    memprint((u8_t *) esp_header, data_len + 30);
-
+    IPSECDBG_PRINTF("Outgoing after pack:\n");
+    MEMPRINT((u8_t *) esp_header, data_len + 30);
+    
     /**
       * Extend IP length
       *
@@ -2602,15 +2607,15 @@ uip_process(uint8_t flag)
       * In addition to that we have: ESP header + IV + Padding + Padding length field + Next header field
       */
     data_len += sizeof(struct uip_esp_header) + ivlen + encr_data.padlen + 2;
-    PRINTF("encr_data.padlen: %hu data_len: %u\n", encr_data.padlen, data_len);
+    IPSECDBG_PRINTF("encr_data.padlen: %hu data_len: %u\n", encr_data.padlen, data_len);
     
     /**
       * Integrity
       */
     if (sad_entry->sa.integ) {
-      PRINTF("data_len: %u\n", data_len);
-      PRINTF("Before integ:\n");
-      memprint((u8_t *) esp_header, data_len + 30);
+      IPSECDBG_PRINTF("data_len: %u\n", data_len);
+      IPSECDBG_PRINTF("Before integ:\n");
+      MEMPRINT((u8_t *) esp_header, data_len + 30);
       integ_data_t integ_data = {
         .type = sad_entry->sa.integ,
         .data = (u8_t *) esp_header,                      // The start of the data
@@ -2619,8 +2624,8 @@ uip_process(uint8_t flag)
         .out = (u8_t *) esp_header + data_len              // Where the output will be written. Always IPSEC_ICVLEN bytes.
       };
       integ(&integ_data);
-      PRINTF("After integ:\n");
-      memprint((u8_t *) esp_header, data_len + 30);
+      IPSECDBG_PRINTF("After integ:\n");
+      MEMPRINT((u8_t *) esp_header, data_len + 30);
 
       /**
         * Extend IP length to accomodate the ICV

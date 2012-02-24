@@ -13,10 +13,10 @@ extern void aes_ctr(encr_data_t *encr_data);
   */
 static void espsk_pad(encr_data_t *data, u8_t blocklen)
 {
-  PRINTF("Pad: adjusting encr_datalen %u B (+ 1 + ip_next_hdr) to %u B boundary\n", data->encr_datalen, blocklen);
-  PRINTF("data->encr_data %4x\n", data->encr_data);
+  //PRINTF("Pad: adjusting encr_datalen %u B (+ 1 + ip_next_hdr) to %u B boundary\n", data->encr_datalen, blocklen);
+  //PRINTF("data->encr_data %4x\n", data->encr_data);
   u8_t *tail = data->encr_data + data->encr_datalen;
-  PRINTF("tail at %4x\n", tail);
+  //PRINTF("tail at %4x\n", tail);
 
   u8_t hdrlen = 1 + (data->ip_next_hdr > 0);
   u8_t pad = blocklen - (data->encr_datalen + hdrlen) % 4;
@@ -29,7 +29,7 @@ static void espsk_pad(encr_data_t *data, u8_t blocklen)
   tail += pad + hdrlen;
   data->encr_datalen += pad + hdrlen;
   data->padlen = pad;
-  PRINTF("tail at %4x\n", tail);
+  //PRINTF("tail at %4x\n", tail);
   if (data->ip_next_hdr) {
     // negative indices... undefined behaviour across compilers, but this works in mspgcc
     tail[-1] = *data->ip_next_hdr;

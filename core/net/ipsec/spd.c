@@ -27,14 +27,13 @@
   * 
   */
 spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr) {
-  PRINTF("SPD_GET_ENTRY_BY_ADDR: Entering\n");
   u8_t n;
   for (n = 0; n < SPD_ENTRIES; ++n) {
     //PRINTSPDENTRY(&spd_table[n]);
     if (ipsec_a_is_member_of_b(addr, &spd_table[n].selector))
       return &spd_table[n];
   }
-  PRINTF("SPD_GET_ENTRY_BY_ADDR: Error: Nothing found\n");
+  PRINTF(IPSEC "Error: Nothing found\n");
   return NULL;
 }
 

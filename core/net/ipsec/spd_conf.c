@@ -157,7 +157,7 @@ const spd_entry_t spd_table[SPD_ENTRIES] =
         .direction = SPD_OUTGOING_TRAFFIC,
         set_any_ip6addr(),        
         .nextlayer_type = UIP_PROTO_UDP,
-        .nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
+        //.nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
         set_src_port(1234),
         set_any_dest_port()
       },
@@ -165,6 +165,19 @@ const spd_entry_t spd_table[SPD_ENTRIES] =
       .offer = NULL                         // N/A
     },
     */
+
+    // BYPASS outgoing ICMP6 traffic
+    {
+      .selector =
+      {
+        .direction = SPD_OUTGOING_TRAFFIC,
+        set_any_ip6addr(),        
+        .nextlayer_type = UIP_PROTO_ICMP6,
+        set_any_dest_port()
+      },
+      .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
+      .offer = NULL                         // N/A
+    },
     
     // DISCARD all traffic which haven't matched any prior policy rule
     // All IPSec implementations SHOULD exhibit this behaviour (p. 60 RFC 4301)

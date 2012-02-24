@@ -35,7 +35,7 @@ u8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *addr)
     }
       
     // Drop the packet
-    PRINTF("Dropping packet because the SAD entry's (referenced by the packet's SPI) selector didn't match the packet\n");
+    PRINTF(IPSEC "Dropping incoming packet because the SAD entry's (referenced by the packet's SPI) selector didn't match the address of the packet\n");
   }
   else {
     /*
@@ -55,11 +55,11 @@ u8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *addr)
         *   2) there should not be any attempt of negotiating an SA
         * (3b. p. 62)
         */
-      PRINTF("Dropping unprotected packet (policy PROTECT)\n");
+      PRINTF(IPSEC "Dropping unprotected incoming packet (policy PROTECT)\n");
       break;
       
       case SPD_ACTION_DISCARD:
-      PRINTF("Dropping unprotected packet (policy DISCARD)\n");
+      PRINTF(IPSEC "Dropping unprotected incoming packet (policy DISCARD)\n");
     }
   }
       #define PRINTF
