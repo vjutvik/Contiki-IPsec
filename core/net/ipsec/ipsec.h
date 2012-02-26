@@ -28,6 +28,12 @@
 #define WITH_IPSEC_ESP     0
 #endif
 
+#ifdef WITH_CONF_IPSEC_IKE
+#define WITH_IPSEC_IKE  1
+#else
+#define WITH_IPSEC_IKE  0
+#endif
+
 #define WITH_IPSEC    (WITH_IPSEC_ESP | WITH_IPSEC_AH)
 
 

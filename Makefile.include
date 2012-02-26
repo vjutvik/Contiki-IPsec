@@ -77,8 +77,7 @@ ifdef UIP_CONF_IPV6
   
   # IPsec Makefiles
   include $(CONTIKI)/core/net/ipsec/Makefile.ipsec
-  include $(CONTIKI)/core/net/ipsec/transforms/Makefile.transforms
-  #include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
+  include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
   # end IPsec
 else # UIP_CONF_IPV6
   UIP   = uip.c uiplib.c resolv.c tcpip.c psock.c hc.c uip-split.c uip-fw.c \

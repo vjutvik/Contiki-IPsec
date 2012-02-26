@@ -84,6 +84,7 @@
 #include "ipsec/filter.h"
 #include "ipsec/transforms/encr.h"
 #include "ipsec/transforms/integ.h"
+#include "ipsec/ike/ike.h"
 
 #include <string.h>
 
@@ -431,8 +432,11 @@ uip_init(void)
   #ifdef WITH_IPSEC
   spd_conf_init();
   sad_init();
-  PRINTF("SAD and SPD initialized\n");
-  //ike_init();
+  PRINTF(IPSEC "SAD and SPD initialized\n");
+#ifdef WITH_IPSEC_IKE
+  ike_init();
+  PRINTF(IPSEC "IKEv2 service initialized\n");
+#endif
   #endif
 
 #if UIP_TCP
@@ -2522,15 +2526,23 @@ uip_process(uint8_t flag)
 
   // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
   if (sad_entry == NULL) {
-    spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
-    void *argv[2] = { &packet_tag, spd_entry };
+    // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
+    spd_entry_t *spd_entry; 
     
     switch (spd_entry->proc_action) {
       case SPD_ACTION_PROTECT:
       // Traffic of this type must be protected, but no SA for this traffic have been established yet.
       // Try to negotiate one and drop the triggering packet in the meantime (in accordance with RFC 4301)
-      PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry found. Invoking the IKEv2 service for peer negotiation.\n");
-      //process_post_synch(&ike2_service, ike_negotiate_event, &argv);
+      //#if WITH_IPSEC_IKE
+      PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
+        " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
+      
+      spd_entry = spd_get_entry_by_addr(&packet_tag);
+      void *argv[2] = { &packet_tag, spd_entry };
+      process_post_synch(&ike2_service, ike_negotiate_event, &argv);      
+      //#else
+      // FIX: Broken #if parsing
+      // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet." \
       
       /**
         * RFC 4301 grants us the permission to drop the packet triggering an IKE handshake
