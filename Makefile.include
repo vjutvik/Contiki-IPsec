@@ -76,8 +76,11 @@ ifdef UIP_CONF_IPV6
   endif # UIP_CONF_RPL
   
   # IPsec Makefiles
+  CONTIKI_ECC_DIR = $(CONTIKI)/core/lib/contikiecc
+
   include $(CONTIKI)/core/net/ipsec/Makefile.ipsec
   include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
+  include $(CONTIKI_ECC_DIR)/Makefile.contikiecc
   # end IPsec
 else # UIP_CONF_IPV6
   UIP   = uip.c uiplib.c resolv.c tcpip.c psock.c hc.c uip-split.c uip-fw.c \

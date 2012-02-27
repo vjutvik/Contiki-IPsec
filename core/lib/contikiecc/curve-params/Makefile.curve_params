@@ -1,0 +1,9 @@
+
+# Changed the key size to 192 bits  -Ville 111007
+ifeq ($(DOMIAN_PARAMS),)
+  DOMIAN_PARAMS = SECP192R1
+endif
+
+CURVE_PARAMS_SOURCEFILES = ${addsuffix .c, $(shell echo $(DOMIAN_PARAMS) | tr A-Z a-z)}
+
+CONTIKI_ECC_SOURCEFILES += $(CURVE_PARAMS_SOURCEFILES)

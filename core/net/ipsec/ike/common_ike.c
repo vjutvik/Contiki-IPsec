@@ -1,6 +1,6 @@
 #include <lib/random.h>
 #include "machine.h"
-#include "ecc.h"
+#include "contikiecc/ecc/ecc.h"
 #include "transforms/integ.h"
 #include "transforms/encr.h"
 #include "payload.h"
