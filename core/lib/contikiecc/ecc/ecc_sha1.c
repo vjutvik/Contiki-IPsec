@@ -386,7 +386,7 @@ SHA1ProcessMessageBlock(SHA1Context *context)
   * \param hash Output address
   */
 /*
-void sha1(u8_t *msg, u16_t len, u8_t *hash)
+void sha1(uint8_t *msg, uint16_t len, uint8_t *hash)
 {
   SHA1Context ctx;
   

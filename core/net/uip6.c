@@ -362,7 +362,7 @@ uip_ipchksum(void)
 }
 #endif
 /*---------------------------------------------------------------------------*/
-u8_t uip_ext_end_len = 0;
+uint8_t uip_ext_end_len = 0;
 static uint16_t
 upper_layer_chksum(uint8_t proto)
 {
@@ -1343,11 +1343,11 @@ uip_process(uint8_t flag)
         /**
           * Derive variables that are SA dependent
           */
-        const u8_t icvlen = sad_entry->sa.integ ? IPSEC_ICVLEN : 0;
-        u8_t *iv = ((u8_t *) esp_header) + sizeof(struct uip_esp_header);
+        const uint8_t icvlen = sad_entry->sa.integ ? IPSEC_ICVLEN : 0;
+        uint8_t *iv = ((uint8_t *) esp_header) + sizeof(struct uip_esp_header);
    
         // auth_data_len = Packet buffer - (lower layers + IP Header length) - length of extension headers - ICV size
-        u16_t auth_data_len = uip_len - UIP_LLIPH_LEN - uip_ext_len - icvlen; 
+        uint16_t auth_data_len = uip_len - UIP_LLIPH_LEN - uip_ext_len - icvlen; 
         //printf("auth data len: %u uip_ext_len: %u\n", auth_data_len, uip_ext_len);
         
         // Prepare encryption data
@@ -1357,11 +1357,11 @@ uip_process(uint8_t flag)
         // Assert integrity (if protected)
         if (sad_entry->sa.integ) {
           integ_data.type = sad_entry->sa.integ;
-          integ_data.data = (u8_t *) esp_header;
+          integ_data.data = (uint8_t *) esp_header;
           integ_data.datalen = auth_data_len;
           integ_data.keymat = &sad_entry->sa.sk_a;
           integ_data.keylen = SA_INTEG_KEYMATLEN_BY_TYPE(sad_entry->sa.integ);
-          integ_data.out = (u8_t *) &encr_data.icv;          
+          integ_data.out = (uint8_t *) &encr_data.icv;          
           integ(&integ_data);
         }
 
@@ -1372,7 +1372,7 @@ uip_process(uint8_t flag)
         encr_data.type = sad_entry->sa.encr;
         encr_data.keymat = &sad_entry->sa.sk_e;
         encr_data.keylen = sad_entry->sa.encr_keylen;
-        encr_data.integ_data = (u8_t *) esp_header;
+        encr_data.integ_data = (uint8_t *) esp_header;
         encr_data.encr_data = iv;
         encr_data.encr_datalen = auth_data_len - sizeof(struct uip_esp_header);
         encr_data.ip_next_hdr = uip_next_hdr; // Non-zero to indicate ESP header
@@ -1390,12 +1390,12 @@ uip_process(uint8_t flag)
         printf("ICV: Computed\n");
         memprint(&encr_data.icv, sizeof(encr_data.icv));
         printf("ICV: From ESP header\n");
-        memprint((u8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
-        printf("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (u8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
+        memprint((uint8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
+        printf("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
         */
 
         // FIX: Removed due to size constraints
-        if (memcmp((u8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv))) {
+        if (memcmp((uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv))) {
           PRINTF("IPsec: ICV mismatch, dropping packet.\n");
           goto drop;
         }
@@ -2570,21 +2570,21 @@ uip_process(uint8_t flag)
 #endif
 
 #ifdef WITH_IPSEC_ESP
-  u16_t blah = UIP_IPUDPH_LEN;
+  uint16_t blah = UIP_IPUDPH_LEN;
   IPSECDBG_PRINTF("uip_slen: %u, uip_len: %u UIP_IPUDPH_LEN: %u\n", uip_slen, uip_len, blah);
 
   if (sad_entry->sa.proto == SA_PROTO_ESP) {
     struct uip_esp_header* esp_header = UIP_ESP_BUF;
-    u8_t next_header;
-    const u8_t ivlen = sa_encr_ivlen[sad_entry->sa.encr];
-    u16_t data_len = uip_len - UIP_IPH_LEN; // This leaves the data and the next layer headers
+    uint8_t next_header;
+    const uint8_t ivlen = sa_encr_ivlen[sad_entry->sa.encr];
+    uint16_t data_len = uip_len - UIP_IPH_LEN; // This leaves the data and the next layer headers
     
     /* Backup next header before updating to "ESP" */
     next_header = UIP_IP_BUF->proto;
     UIP_IP_BUF->proto = UIP_PROTO_ESP;
     
     /* Move IP payload, leaving space to ESP header */
-    memmove(((u8_t *) UIP_ESP_BUF) + sizeof(struct uip_esp_header) + ivlen, UIP_ESP_BUF, data_len);
+    memmove(((uint8_t *) UIP_ESP_BUF) + sizeof(struct uip_esp_header) + ivlen, UIP_ESP_BUF, data_len);
 
     /* Set ESP header */
     esp_header->spi = sad_entry->spi;
@@ -2597,20 +2597,20 @@ uip_process(uint8_t flag)
     }
     
     IPSECDBG_PRINTF("Outgoing before pack:\n");
-    MEMPRINT((u8_t *) esp_header, data_len + 30);
+    MEMPRINT((uint8_t *) esp_header, data_len + 30);
     encr_data_t encr_data = {
       .type = sad_entry->sa.encr,
       .keymat = sad_entry->sa.sk_e,
       .keylen = sad_entry->sa.encr_keylen,
-      .integ_data = (u8_t *) esp_header,
-      .encr_data = (u8_t *) esp_header + sizeof(struct uip_esp_header),
+      .integ_data = (uint8_t *) esp_header,
+      .encr_data = (uint8_t *) esp_header + sizeof(struct uip_esp_header),
       .encr_datalen = data_len + ivlen,
       .ops = sad_entry->seqno,
       .ip_next_hdr = &next_header
     };
     espsk_pack(&encr_data);
     IPSECDBG_PRINTF("Outgoing after pack:\n");
-    MEMPRINT((u8_t *) esp_header, data_len + 30);
+    MEMPRINT((uint8_t *) esp_header, data_len + 30);
     
     /**
       * Extend IP length
@@ -2627,17 +2627,17 @@ uip_process(uint8_t flag)
     if (sad_entry->sa.integ) {
       IPSECDBG_PRINTF("data_len: %u\n", data_len);
       IPSECDBG_PRINTF("Before integ:\n");
-      MEMPRINT((u8_t *) esp_header, data_len + 30);
+      MEMPRINT((uint8_t *) esp_header, data_len + 30);
       integ_data_t integ_data = {
         .type = sad_entry->sa.integ,
-        .data = (u8_t *) esp_header,                      // The start of the data
+        .data = (uint8_t *) esp_header,                      // The start of the data
         .datalen = data_len,                               // the length of the data
         .keymat = sad_entry->sa.sk_a,                     // The start of the KEYMAT
-        .out = (u8_t *) esp_header + data_len              // Where the output will be written. Always IPSEC_ICVLEN bytes.
+        .out = (uint8_t *) esp_header + data_len              // Where the output will be written. Always IPSEC_ICVLEN bytes.
       };
       integ(&integ_data);
       IPSECDBG_PRINTF("After integ:\n");
-      MEMPRINT((u8_t *) esp_header, data_len + 30);
+      MEMPRINT((uint8_t *) esp_header, data_len + 30);
 
       /**
         * Extend IP length to accomodate the ICV

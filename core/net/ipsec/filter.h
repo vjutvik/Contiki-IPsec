@@ -4,6 +4,6 @@
 #include "sad.h"
 #include "spd.h"
 
-u8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *tag);
+uint8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *tag);
 
 #endif

@@ -43,17 +43,17 @@ static NN_DIGIT mask[NUM_MASKS];
 /*
  * Pseudorandom functions. Not beautiful.
  */
-u32_t rand32()
+uint32_t rand32()
 {
   // This should be independent of host byte order
-  u32_t rtvl;
-  ((u16_t *) &rtvl)[0] = random_rand();
-  ((u16_t *) &rtvl)[1] = random_rand();
+  uint32_t rtvl;
+  ((uint16_t *) &rtvl)[0] = random_rand();
+  ((uint16_t *) &rtvl)[1] = random_rand();
   
   return rtvl;
 }
 
-u16_t rand16()
+uint16_t rand16()
 {
   return random_rand();
 }
@@ -124,7 +124,7 @@ p_equal(point_t * P1, point_t * P2)
 static int
 Z_is_one(NN_DIGIT *z)
 {
-  u8_t i;
+  uint8_t i;
     
   for(i = 1; i < NUMWORDS; i++) {
     if(z[i]) {
@@ -471,7 +471,7 @@ ecc_add_proj(point_t * P0, NN_DIGIT *Z0, point_t * P1, NN_DIGIT * Z1, point_t * 
 void 
 ecc_win_precompute(point_t * baseP, point_t * pointArray)
 {
-  u8_t i;
+  uint8_t i;
     
   NN_Assign(pointArray[0].x, baseP->x, NUMWORDS);
   NN_Assign(pointArray[0].y, baseP->y, NUMWORDS);   
@@ -530,9 +530,9 @@ ecc_mul(point_t * P0, point_t * P1, NN_DIGIT * n)
 }
 /*---------------------------------------------------------------------------*/
 void 
-ecc_m_dbl_projective(point_t * P0, NN_DIGIT *Z0, u8_t m)
+ecc_m_dbl_projective(point_t * P0, NN_DIGIT *Z0, uint8_t m)
 {
-  u8_t i;
+  uint8_t i;
   NN_DIGIT W[NUMWORDS];
   NN_DIGIT A[NUMWORDS];
   NN_DIGIT B[NUMWORDS];
@@ -686,7 +686,7 @@ ecc_gen_private_key(NN_DIGIT *PrivateKey)
 {
   NN_UINT order_digit_len, order_bit_len;
   bool done = FALSE;
-  u8_t ri;
+  uint8_t ri;
   NN_DIGIT digit_mask;
   
   order_bit_len = NN_Bits(param.r, NUMWORDS);

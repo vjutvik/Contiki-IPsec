@@ -13,7 +13,7 @@
 
 // Only used in this file's scope
 #define PRINTDIR(dir)                                   \
-  u8_t str[3][9] = {                                    \
+  uint8_t str[3][9] = {                                    \
     { "INCOMING" },                                     \
     { "OUTGOING" },                                     \
     { "ANY" }                                           \
@@ -92,12 +92,12 @@ typedef struct {
     *
     * A value of SPD_SELECTOR_NL_ANY_PROTOCOL is magic and should be interpreted as ANY protocol.
     */
-  u8_t nextlayer_type; // Type of next layer protocol
+  uint8_t nextlayer_type; // Type of next layer protocol
   
   direction_t direction;
 
-  u16_t dest_port_from, dest_port_to; // Next layer destination port range
-  // u16_t nextlayer_dst_port_range_from, nextlayer_dst_port_range_to; 
+  uint16_t dest_port_from, dest_port_to; // Next layer destination port range
+  // uint16_t nextlayer_dst_port_range_from, nextlayer_dst_port_range_to; 
 } ipsec_addr_set_t;
 
 
@@ -114,8 +114,8 @@ typedef struct {
 typedef struct {
   uip_ip6addr_t *addr;
   direction_t direction;
-  u8_t nextlayer_type;
-  u16_t dest_port;
+  uint8_t nextlayer_type;
+  uint16_t dest_port;
 } ipsec_addr_t;
 
 // Please note that the following next header value can be interpreted as "IPv6 Hop-by-Hop Option".
@@ -164,6 +164,6 @@ typedef struct {
 #define a_is_in_closed_interval_bc(a, b, c) \
   a >= b && a <= c
 
-u8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b);
+uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b);
 
 #endif

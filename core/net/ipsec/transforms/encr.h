@@ -13,33 +13,33 @@
 typedef struct {
   // Algorithm
   sa_encr_transform_type_t type;
-  u8_t *keymat; // KEYMAT is the source of the key + other necessary information
+  uint8_t *keymat; // KEYMAT is the source of the key + other necessary information
   
   // Length of the _key_ in bytes. Always assigned, irrespective of if the transform has static or dynamic key length.
   // Please note that the key is merely a subset of keymat which may contain more information such as nonce values etc.
-  u8_t keylen;
+  uint8_t keylen;
   
   // Integrity
   // integ_datalen will be encr_datalen + (encr_data - integ_data)
-  u8_t *integ_data;       // Beginning of the ESP header (ESP) or the IKEv2 header (SK)
+  uint8_t *integ_data;       // Beginning of the ESP header (ESP) or the IKEv2 header (SK)
   
   // Confidentiality
-  u8_t *encr_data;        // The beginning of the IV
-  u16_t encr_datalen;     // From the beginning of the IV to the IP next header field (ESP) or the padding field (SK).
+  uint8_t *encr_data;        // The beginning of the IV
+  uint16_t encr_datalen;     // From the beginning of the IV to the IP next header field (ESP) or the padding field (SK).
   
   // Next Header for ESP. If this pointer is set to NULL the IKE SK format is used, ESP otherwise.
   // Is to be trusted on output.
-  u8_t *ip_next_hdr;
+  uint8_t *ip_next_hdr;
   
-  u32_t ops;          // Number of operations that have been performed utilizing this key. Used for IV in some transforms.
+  uint32_t ops;          // Number of operations that have been performed utilizing this key. Used for IV in some transforms.
   
   /**
     * Information that is to be filled by the called (callee) function (encr_pad and encr_unpad).
     * The caller can leave the fields as-is upon calling the functions.
     */
   // ICV information to be filled by the callee. Only used in unpacking.
-  u8_t icv[IPSEC_ICVLEN];
-  u8_t padlen;  // Length of padding (number of bytes between end of decrypted data and padding field)
+  uint8_t icv[IPSEC_ICVLEN];
+  uint8_t padlen;  // Length of padding (number of bytes between end of decrypted data and padding field)
 } encr_data_t;
 
 
@@ -55,9 +55,9 @@ write ESP header
 write iv
 write encr. prot. data
 
-u8_t icv[max_icvlen]
-u8_t icvlen
-u16_t encr_data_len
+uint8_t icv[max_icvlen]
+uint8_t icvlen
+uint16_t encr_data_len
 
 // Encrypt payload, pad, write pad length field and next_hdr. Will pad according to algo. and IPv6 constraints
 // Will write ICV
@@ -73,8 +73,8 @@ packet_len += icvlen
 
 UNPACK:
 if (integ) {
-  u8_t icv[max_icvlen]
-  u8_t icvlen
+  uint8_t icv[max_icvlen]
+  uint8_t icvlen
   
   integ(integ_data, integ_data_len, integ_type, integ_key, &icv, &icvlen)
   if(memcmp(&icv, data_last - icvlen, icvlen))

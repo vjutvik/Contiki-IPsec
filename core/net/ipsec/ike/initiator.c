@@ -67,7 +67,7 @@ void ike_statem_trans_initreq(ike_statem_session_t *session)
 
   // Write key exchange data (varlen)
   ptr = ecdh_encode_public_key(ptr + sizeof(ike_payload_ke_t), session->ephemeral_info->my_prv_key);
-  ke_genpayloadhdr->len = UIP_HTONS((ptr - ((u8_t *) ke_genpayloadhdr));
+  ke_genpayloadhdr->len = UIP_HTONS((ptr - ((uint8_t *) ke_genpayloadhdr));
   // End KE payload
   
   // Start nonce payload
@@ -77,7 +77,7 @@ void ike_statem_trans_initreq(ike_statem_session_t *session)
 
   // Write nonce
   random_ike(payload_arg->start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);
-  ninr_genpayloadhdr->len = UIP_HTONS(payload_arg->start - (u8_t *) ninr_genpayloadhdr);
+  ninr_genpayloadhdr->len = UIP_HTONS(payload_arg->start - (uint8_t *) ninr_genpayloadhdr);
   // End nonce payload
     
   // Wrap up the IKE header and exit state
@@ -108,14 +108,14 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
   COPY_FIRST_MSG(session, ike_hdr);
   
   // We process the payloads one by one
-  u8_t *peer_pub_key;
-  u16_t ke_dh_group = 0;  // 0 is NONE according to IANA
+  uint8_t *peer_pub_key;
+  uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA
   ptr += udp_buf + sizeof(ike_payload_ike_hdr_t);
   ike_payload_type_t payload_type = ike_hdr->next_payload;
   while (ptr - udp_buf < udp_buf_len) { // Payload loop
     const ike_payload_generic_hdr_t *genpayloadhdr = ptr;
-    const u8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-    const u8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
+    const uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
+    const uint8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
     
     switch (payload_type) {
       case IKE_PAYLOAD_N:
@@ -144,17 +144,17 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
       spd_proposal_tuple_t *proposal_tuple = session->ephemeral_info->triggering_pkt->spd_entry->offer;
       while (ptr < payload_end) { // Start proposals
         ike_payload_proposal_t *thisproposal = ptr;
-        u8_t *thisproposal_end = ptr + UIP_NTOHS(thisproposal->proposal_len);
+        uint8_t *thisproposal_end = ptr + UIP_NTOHS(thisproposal->proposal_len);
 /*        
         typedef struct {
-          u8_t last_more;
-          u8_t clear;
-          u16_t proposal_len;
+          uint8_t last_more;
+          uint8_t clear;
+          uint16_t proposal_len;
 
-          u8_t proposal_number;
-          u8_t proto_id;
-          u8_t spi_size;
-          u8_t numtransforms;
+          uint8_t proposal_number;
+          uint8_t proto_id;
+          uint8_t spi_size;
+          uint8_t numtransforms;
 */
   
         // Assert properties
@@ -164,24 +164,24 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
 
         /*
         typedef struct {
-          u8_t last_more;
-          u8_t clear;
-          u16_t transform_len;
+          uint8_t last_more;
+          uint8_t clear;
+          uint16_t transform_len;
 
-          u8_t type;
-          u8_t clear;
-          u16_t id;
+          uint8_t type;
+          uint8_t clear;
+          uint16_t id;
         } ike_payload_transform_t;
         */
         
         // Loop over the transforms
         bool esn_required = true;
-        u8_t accepted_transforms = 0;
+        uint8_t accepted_transforms = 0;
         SA_UNASSIGN_SA(&session->sa); // Prepare the responder's SA entry for this proposal
 
         while (ptr < thisproposal_end) {  // Transform loop
           ike_payload_transform_t *thistransform = ptr;
-          u8_t *thistranform_end = ptr + UIP_NTOHS(thistransform->len);
+          uint8_t *thistranform_end = ptr + UIP_NTOHS(thistransform->len);
           ptr += sizeof(ike_payload_transform_t); // ptr should now be at the beginning of whatever comes after this transform
           
           // Edge case: The KE payload _might_ have been processed, and in that case we've already
@@ -299,7 +299,7 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
       }
       
       // Store the address to the beginning of the peer's public key
-      peer_pub_key = ((u8_t *) ke_payload) + sizeof(ke_payload);
+      peer_pub_key = ((uint8_t *) ke_payload) + sizeof(ke_payload);
       break;
       
       case IKE_PAYLOAD_CERTREQ:
@@ -383,7 +383,7 @@ void ike_statem_trans_authreq(ike_statem_session_t *session) {
   SET_IDPAYLOAD(id_payload, &payload_arg, some_suitable_id_type);   // FIX
   
   // FIX: Write the ID payload data  
-  u8_t id_payload_len = sizeof(id_payload) + bogus_idpayload_data_len; // FIX: This len must be the size of the ID payload + its data
+  uint8_t id_payload_len = sizeof(id_payload) + bogus_idpayload_data_len; // FIX: This len must be the size of the ID payload + its data
 
   // Set the size
   id_genpayloadhdr->len = UIP_HTONS(id_payload_len);
@@ -403,12 +403,12 @@ void ike_statem_trans_authreq(ike_statem_session_t *session) {
   payload_arg->start += sizeof(auth_payload);
   
   // Assemble the data string that is to be hashed using the UDP buffer as the temporary storage
-  u8_t *assembly_start = payload_arg->start + 40; // Offset must be at a sufficient margin for the rest of the AUTH payload  
-  u8_t *assembly_ptr = assembly_start;
+  uint8_t *assembly_start = payload_arg->start + 40; // Offset must be at a sufficient margin for the rest of the AUTH payload  
+  uint8_t *assembly_ptr = assembly_start;
 
   // RealMessage1
   // (We assume that RealMessage1 is our very first message to the peer (and not any subsequent message including a cookie))
-  u8_t *udp_buf_save = udp_buf;  // ike_statem_trans_initreq() writes to the address of udp_buf
+  uint8_t *udp_buf_save = udp_buf;  // ike_statem_trans_initreq() writes to the address of udp_buf
   udp_buf = assembly_start;
   ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start
   assembly_ptr += ((ike_hdr_t *) assembly_start)->len;
@@ -484,12 +484,12 @@ void ike_statem_state_authrespwait(ike_statem_session_t *session)
   ike_payload_ike_hdr_t *ike_hdr = udp_buf;
   
   ike_ts_payload_t *tsi, *tsr;
-  u8_t *ptr = ike_hdr + sizeof(ike_payload_ike_hdr_t);
+  uint8_t *ptr = ike_hdr + sizeof(ike_payload_ike_hdr_t);
   ike_payload_type_t payload_type = ike_hdr->next_payload;
   while (ptr - udp_buf < udp_buf_len) { // Payload loop
     ike_payload_generic_hdr_t *genpayloadhdr = ptr;
-    u8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-    u8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
+    uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
+    uint8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
     
     switch (payload_type) {
       case IKE_PAYLOAD_SK:
@@ -527,7 +527,7 @@ void ike_statem_state_authrespwait(ike_statem_session_t *session)
   /**
     * Assert values of traffic selectors
     */
-  u8_t tmp[100];
+  uint8_t tmp[100];
   ike_statem_write_tsitsr(session, &tmp);
   
   // Assert Traffic Selectors' syntax
@@ -559,8 +559,8 @@ void ike_statem_state_authrespwait(ike_statem_session_t *session)
   ptr += udp_buf + sizeof(ike_payload_ike_hdr_t);
   while (ptr - udp_buf < udp_buf_len) { // Payload loop
     ike_payload_generic_hdr_t *genpayloadhdr = ptr;
-    u8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-    u8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
+    uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
+    uint8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
     
     switch (genpayloadhdr->next_type) {
 
@@ -602,7 +602,7 @@ void ike_statem_state_authrespwait(ike_statem_session_t *session)
   
   
   // First attempt: Try to match the wide second traffic selectors
-  u8_t i = IKE_PAYLOADFIELD_MAX_TS_COUNT;
+  uint8_t i = IKE_PAYLOADFIELD_MAX_TS_COUNT;
   do {
     if (tsi[i] != NULL && ipsec_assert_ts_invariants(tsi[i]) &&
       tsr[i] != NULL && ipsec_assert_ts_invariants(tsr[i]) &&    

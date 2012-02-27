@@ -45,12 +45,12 @@
 #ifdef EIGHT_BIT_PROCESSOR
 
 /* Type definitions */
-typedef u8_t NN_DIGIT;
-typedef u16_t NN_DOUBLE_DIGIT;
+typedef uint8_t NN_DIGIT;
+typedef uint16_t NN_DOUBLE_DIGIT;
 
 /* Types for length */
-typedef u8_t NN_UINT;
-typedef u16_t NN_UINT2;
+typedef uint8_t NN_UINT;
+typedef uint16_t NN_UINT2;
 
 /* Length of digit in bits */
 #define NN_DIGIT_BITS 8
@@ -84,12 +84,12 @@ typedef u16_t NN_UINT2;
 #ifdef SIXTEEN_BIT_PROCESSOR
 
 /* Type definitions */
-typedef u16_t NN_DIGIT;
-typedef u32_t NN_DOUBLE_DIGIT;
+typedef uint16_t NN_DIGIT;
+typedef uint32_t NN_DOUBLE_DIGIT;
 
 /* Types for length */
-typedef u8_t NN_UINT;
-typedef u16_t NN_UINT2;
+typedef uint8_t NN_UINT;
+typedef uint16_t NN_UINT2;
 
 /* Length of digit in bits */ 
 #define NN_DIGIT_BITS 16
@@ -123,12 +123,12 @@ typedef u16_t NN_UINT2;
 #ifdef THIRTYTWO_BIT_PROCESSOR
 
 /* Type definitions */
-typedef u32_t NN_DIGIT;
-typedef u64_t NN_DOUBLE_DIGIT;
+typedef uint32_t NN_DIGIT;
+typedef uint64_t NN_DOUBLE_DIGIT;
 
 /* Types for length */
-typedef u8_t NN_UINT;
-typedef u16_t NN_UINT2;
+typedef uint8_t NN_UINT;
+typedef uint16_t NN_UINT2;
 
 /* Length of digit in bits */
 #define NN_DIGIT_BITS 32

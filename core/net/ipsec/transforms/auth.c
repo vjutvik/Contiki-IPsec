@@ -1,8 +1,8 @@
 #include "contiki-conf.h"
 #include <lib/random.h>
 
-static const u8_t auth_sharedsecret[] = "aa280649dc17aa821ac305b5eb09d445";
-static const u8_t auth_keypad[] = "Key Pad for IKEv2";
+static const uint8_t auth_sharedsecret[] = "aa280649dc17aa821ac305b5eb09d445";
+static const uint8_t auth_keypad[] = "Key Pad for IKEv2";
 
 /**
   * Compute the hash as described in RFC 5996, p. 49:
@@ -14,7 +14,7 @@ static const u8_t auth_keypad[] = "Key Pad for IKEv2";
   * \parameter in Pointer to InitiatorSignedOctets
   * \parameter out The address to where the hash will be written.
   */
-void ike_auth_presharedkey_hash(ike_statem_session_t *session, u8_t *in, u16_t in_len, u8_t *out)
+void ike_auth_presharedkey_hash(ike_statem_session_t *session, uint8_t *in, uint16_t in_len, uint8_t *out)
 {
   switch(session->sa->prf) {
     //case SA_PRF_HMAC_MD5:          // MAY-
@@ -36,12 +36,12 @@ void ike_auth_presharedkey_hash(ike_statem_session_t *session, u8_t *in, u16_t i
   * Write a (sort of) random nonce
   */
 /*
-u8_t *mynonce(u8_t *start, ike_statem_ephemeral_info_t *ephemeral_info)
+uint8_t *mynonce(uint8_t *start, ike_statem_ephemeral_info_t *ephemeral_info)
 {
   srand(ephemeral_info->my_nonce_seed);
 
-  u16_t ptr = (u16_t *) start;
-  u16_t end = ptr + IKE_PAYLOAD_MYNONCE_2OCTET_LEN  
+  uint16_t ptr = (uint16_t *) start;
+  uint16_t end = ptr + IKE_PAYLOAD_MYNONCE_2OCTET_LEN  
   for (; ptr < end; ++ptr)
     ptr = rnd16();
   return ptr; 
@@ -51,16 +51,16 @@ u8_t *mynonce(u8_t *start, ike_statem_ephemeral_info_t *ephemeral_info)
 /**
   * Get a random string. Any given output will be reproduced for the same seed and len.
   */
-void random_ike(u8_t *out, u16_t len, u16_t *seed)
+void random_ike(uint8_t *out, uint16_t len, uint16_t *seed)
 {
   if (seed == NULL)
     srand(get_time());
   else
     srand(*seed);
   
-  u8_t *ptr;
+  uint8_t *ptr;
   for (ptr = out; ptr < out + len; ++ptr)
-    *ptr = (u8_t) random_rand();
+    *ptr = (uint8_t) random_rand();
 }
 
 /**
@@ -122,21 +122,21 @@ void prf(prf_data_t *data)
 
 void prf_plus(prfplus_data_t *plus_data)
 {
-  const u8_t prf_keylen = sa_prf_keymatlen[plus_data->prf];
+  const uint8_t prf_keylen = sa_prf_keymatlen[plus_data->prf];
   
   // Loop over chunks_len and find the longest chunk
-  u8_t chunk_maxlen = 0;
+  uint8_t chunk_maxlen = 0;
   for (int i = 0; i < no_chunks; ++i) {
     if (chunks_len[i] > chunk_maxlen)
       msg_maxlen = chunks_len[i];
   }
   
   // Set up the buffers
-  u16_t outbuf_maxlen = chunk_maxlen + prf_keylen;
-  u16_t msgbuf_maxlen = prf_keylen + plus_data->keylen + 1;   // Maximum length of TN + S + 0xNN
-  u8_t outbuf[outbuf_maxlen];   // The buffer for intermediate storage of the output from the PRF. To be copied into the chunks.
-  u8_t msgbuf[msgbuf_maxlen];   // Assembly buffer for the message
-  u8_t lastout[prf_keylen];
+  uint16_t outbuf_maxlen = chunk_maxlen + prf_keylen;
+  uint16_t msgbuf_maxlen = prf_keylen + plus_data->keylen + 1;   // Maximum length of TN + S + 0xNN
+  uint8_t outbuf[outbuf_maxlen];   // The buffer for intermediate storage of the output from the PRF. To be copied into the chunks.
+  uint8_t msgbuf[msgbuf_maxlen];   // Assembly buffer for the message
+  uint8_t lastout[prf_keylen];
 
   // Loop over the chunks
   prf_data_t prf_data = {
@@ -145,10 +145,10 @@ void prf_plus(prfplus_data_t *plus_data)
     .keylen = plus_data->keylen,
     .data = &msgbuf
   };
-  u8_t outbuf_len = 0;  
-  u8_t prf_ctr = 1;
-  for (u8_t curr_chunk = 0; curr_chunk < data->no_chunks; ++curr_chunk) {
-    u8_t curr_chunk_len = plus_data->chunks_len[curr_chunk];
+  uint8_t outbuf_len = 0;  
+  uint8_t prf_ctr = 1;
+  for (uint8_t curr_chunk = 0; curr_chunk < data->no_chunks; ++curr_chunk) {
+    uint8_t curr_chunk_len = plus_data->chunks_len[curr_chunk];
     
     // Now, how much PRF output data do we need for this chunk? If we don't have enough generate more data.
     if (curr_chunk_len > outbuf_len) {
@@ -156,7 +156,7 @@ void prf_plus(prfplus_data_t *plus_data)
       
       for (; outbuf_len < curr_chunk_len; outbuf_len += prf_keylen, ++prf_ctr) {
         // Prepare the next message
-        u8_t *ptr = &msgbuf;
+        uint8_t *ptr = &msgbuf;
         if (prf_ctr > 1) {
           // The message is T(N - 1) | S | 0xN where N is ptr_ctr
           memcpy(ptr, &lastout, prf_keylen); // Copy TN (the last PRF output)

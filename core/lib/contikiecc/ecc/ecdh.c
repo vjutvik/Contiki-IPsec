@@ -1,10 +1,10 @@
 /**
   * Encodes the public key beginning at start.
   */
-u8_t *ecdh_encode_public_key(u32_t *start, NN_DIGIT *myPrvKey)
+uint8_t *ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey)
 {
-  u8_t *ptr = start;
-  u16_t len = KEYDIGITS * NN_DIGIT_LEN;
+  uint8_t *ptr = start;
+  uint16_t len = KEYDIGITS * NN_DIGIT_LEN;
   point_t pubKey;
 
   ecc_gen_public_key(&pubKey, myPrvKey);
@@ -23,7 +23,7 @@ u8_t *ecdh_encode_public_key(u32_t *start, NN_DIGIT *myPrvKey)
   * \parameter peerPubKey The public key (commonly that of the other party). 48 B long (2 * 192 bits)
   * \parameter myPrvKey The private key (commonly ours). 24 bytes long.
   */
-void ecdh_get_shared_secret(u8_t *shared_key, point_t *peerPubKey, NN_DIGIT *myPrvKey) 
+void ecdh_get_shared_secret(uint8_t *shared_key, point_t *peerPubKey, NN_DIGIT *myPrvKey) 
 {
   // Multiplicate
   

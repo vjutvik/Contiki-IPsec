@@ -1,9 +1,9 @@
 #define IKE_STATEM_ASSERT_COOKIE(payload_arg) do { \
     if (payload_arg->session->ephemeral_info->cookie_data != NULL) { \
       ike_payload_generic_hdr_t *genpayload_hdr = (ike_payload_generic_hdr_t *) payload_arg->start; \
-      u8_t offset = sizeof(genpayload_hdr) + sizeof(ike_payload_notify_t); \
-      u8_t *cookie_data = genpayload_hdr + offset; \
-      u8_t cookie_data_len = UIP_NTOHS(genpayload_hdr->len) - offset; \
+      uint8_t offset = sizeof(genpayload_hdr) + sizeof(ike_payload_notify_t); \
+      uint8_t *cookie_data = genpayload_hdr + offset; \
+      uint8_t cookie_data_len = UIP_NTOHS(genpayload_hdr->len) - offset; \
       ike_statem_write_notification(payload_arg, \
         SA_PROTO_IKE, \
         0, \

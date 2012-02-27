@@ -53,10 +53,10 @@
 //
 /*
 typedef struct {
-  u8_t ip6_lsb_addr
-  u8_t layer4_lsb_src_port
-  u8_t layer4_lsb_dst_port
-  u8_t layer4_type
+  uint8_t ip6_lsb_addr
+  uint8_t layer4_lsb_src_port
+  uint8_t layer4_lsb_dst_port
+  uint8_t layer4_type
 } sad_spds_key_t;
 */
 
@@ -105,7 +105,7 @@ typedef struct x2 {
     
   // The author can't see any reason as to why we should store the SPIs in host byte order.
   // Therefore the SPI below is stored in network byte order. This saves some memory by eliding the conversion.
-  u32_t spi; // Suggestion for the future: 16 bits for incoming traffic, 32 bits for outoing
+  uint32_t spi; // Suggestion for the future: 16 bits for incoming traffic, 32 bits for outoing
   
   // Encryption
   sa_child_t sa;
@@ -119,11 +119,11 @@ typedef struct x2 {
     */
   // Incoming traffic: Highest verified sequence number of this SA. The right edge of the window.  
   // Outgoing traffic: Sequence number of the last transmitted packet
-  u32_t seqno;
+  uint32_t seqno;
   
   // Incoming traffic: 32 positions long window mask
   // Outgoing traffic: Unused
-  u32_t win;
+  uint32_t win;
       
   /**
     * Timestamp indicating the time of creation of the SA. It also serves the purpose of distinguishing between manual SAs
@@ -134,10 +134,10 @@ typedef struct x2 {
     * between the hosts across reboots etc. This is not a problem in the automatic case though as the SAs are synchronized upon creation
     * and discarded at reboot.
     */
-  u32_t time_of_creation;
+  uint32_t time_of_creation;
 
   // The number of bytes transported over the SA
-  u32_t bytes_transported;
+  uint32_t bytes_transported;
 } sad_entry_t;
 
 
@@ -147,11 +147,11 @@ typedef struct x2 {
   *
   */
 void sad_init(void);
-u8_t sad_incoming_replay(sad_entry_t *entry, u32_t seqno);
+uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno);
 sad_entry_t *sad_get_outgoing(ipsec_addr_t *outgoing_pkt);
-sad_entry_t *sad_get_incoming(u32_t spi);
-sad_entry_t *sad_create_incoming_entry(u32_t time_of_creation);
-sad_entry_t *sad_create_outgoing_entry(u32_t time_of_creation);
+sad_entry_t *sad_get_incoming(uint32_t spi);
+sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation);
+sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation);
 void sad_remove_outgoing_entry(sad_entry_t *sad_entry);
 void sad_remove_incoming_entry(sad_entry_t *sad_entry);
 void sad_conf();

@@ -22,8 +22,8 @@
 
 /*---------------------------------------------------------------------------*/
 static void
-aes_ctr_init(u8_t *ctr_blk, const u8_t *key,
-    const u8_t *iv, const u8_t *nonce)
+aes_ctr_init(uint8_t *ctr_blk, const uint8_t *key,
+    const uint8_t *iv, const uint8_t *nonce)
 {
   /* Set key */
   CRYPTO_AES.init(key);
@@ -33,7 +33,7 @@ aes_ctr_init(u8_t *ctr_blk, const u8_t *key,
   
   // Null counter
   memset(ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE, 0, 4);
-  //*((u32_t *) ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE) = UIP_HTONL(1);
+  //*((uint32_t *) ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE) = UIP_HTONL(1);
 
 /*
   printf("ctr_init blk:\n");
@@ -42,7 +42,7 @@ aes_ctr_init(u8_t *ctr_blk, const u8_t *key,
 /*---------------------------------------------------------------------------*/
 
 static void
-aes_ctr_step(u8_t *ctr_blk, u8_t *data, u16_t ctr, int len)
+aes_ctr_step(uint8_t *ctr_blk, uint8_t *data, uint16_t ctr, int len)
 {
   // Set the counter in ctr_blk
   ctr = uip_htons(ctr);
@@ -53,7 +53,7 @@ aes_ctr_step(u8_t *ctr_blk, u8_t *data, u16_t ctr, int len)
   memprint(ctr_blk, 15);
   */
   // tmp = ctr_blk 
-  u8_t tmp[AESCTR_BLOCKSIZE];
+  uint8_t tmp[AESCTR_BLOCKSIZE];
   memcpy(tmp, ctr_blk, AESCTR_BLOCKSIZE);
 
   // AES encrypt tmp 
@@ -72,24 +72,24 @@ aes_ctr_step(u8_t *ctr_blk, u8_t *data, u16_t ctr, int len)
   // FIX: Is this 32 bit casting violating byte boundaries?
 
   /*
-  u32_t counter = uip_ntohl(*((u32_t *) (ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE)));
-  *((u32_t *) (ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE)) = uip_htonl(counter + 1);
+  uint32_t counter = uip_ntohl(*((uint32_t *) (ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE)));
+  *((uint32_t *) (ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE)) = uip_htonl(counter + 1);
   */
 }
 
 /*---------------------------------------------------------------------------*/
 void aes_ctr(encr_data_t *encr_data)
 {
-  u8_t ctr_blk[AESCTR_BLOCKSIZE]; //[IPSEC_KEYSIZE];
+  uint8_t ctr_blk[AESCTR_BLOCKSIZE]; //[IPSEC_KEYSIZE];
   
-  u8_t *data = encr_data->encr_data + AESCTR_IVSIZE;
-  u16_t datalen = encr_data->encr_datalen - AESCTR_IVSIZE;
+  uint8_t *data = encr_data->encr_data + AESCTR_IVSIZE;
+  uint16_t datalen = encr_data->encr_datalen - AESCTR_IVSIZE;
   //printf("ctrl_blk: %p, encr_data->keymat: %p, encr_data->encr_data: %p, nonce: %p\n", ctr_blk, encr_data->keymat, encr_data->encr_data, &encr_data->keymat[encr_data->keylen]);
   aes_ctr_init(ctr_blk, encr_data->keymat, encr_data->encr_data, &encr_data->keymat[encr_data->keylen]);
   
-  u16_t n = 0;
+  uint16_t n = 0;
   for (n = 0; n * AESCTR_BLOCKSIZE < datalen; ++n) {
-    u8_t len = AESCTR_BLOCKSIZE;
+    uint8_t len = AESCTR_BLOCKSIZE;
     if ((n + 1) * AESCTR_BLOCKSIZE > datalen) {
       //printf("diff: %u\n", (n + 1) * AESCTR_BLOCKSIZE - datalen);
       len = len - ((n + 1) * AESCTR_BLOCKSIZE - datalen);

@@ -7,11 +7,11 @@
 /**
   * DEBUG stuff
   */
-void memprint(u8_t *ptr, const u16_t len)
+void memprint(uint8_t *ptr, const uint16_t len)
 {
-  u16_t r,s,t;
+  uint16_t r,s,t;
   for (r = 0; r < (len / 16) + 1; ++r) { // Row
-    printf("%p (%4u) ", (u8_t *) ptr + r * 16, r * 16);
+    printf("%p (%4u) ", (uint8_t *) ptr + r * 16, r * 16);
     for (s = 0; s < 4; ++s) { // Group
       for (t = 0; t < 4; ++t)
         printf("%.2hx", ptr[r * 16 + s * 4 + t]);
@@ -49,7 +49,7 @@ ipsec_addr_set_t *ipsec_addr_to_addr_set(ipsec_addr_set_t *addr_set, ipsec_addr_
   * Assert TS invariants
   */
 /*
-u8_t ipsec_assert_ts_invariants(ike_ts_t *ts)
+uint8_t ipsec_assert_ts_invariants(ike_ts_t *ts)
 {
   return (uip6_addr_a_is_leq_than_b(ts->start_addr, ts->end_addr) &&
     ts->start_port <= ts->end_port);
@@ -57,13 +57,13 @@ u8_t ipsec_assert_ts_invariants(ike_ts_t *ts)
 */
 
 /*
-u8_t uip6_addr_a_is_geq_than_b(uip_ip6addr_t *a, uip_ip6addr_t *b)
+uint8_t uip6_addr_a_is_geq_than_b(uip_ip6addr_t *a, uip_ip6addr_t *b)
 {
   return memcmp(a, b, sizeof(uip_ip6addr_t)) >= 0;
 }
 */
 
-u8_t uip6_addr_a_is_in_closed_interval_bc(uip_ip6addr_t *a, uip_ip6addr_t *b, uip_ip6addr_t *c)
+uint8_t uip6_addr_a_is_in_closed_interval_bc(uip_ip6addr_t *a, uip_ip6addr_t *b, uip_ip6addr_t *c)
 {
   return memcmp(a, b, sizeof(uip_ip6addr_t)) >= 0 && memcmp(a, c, sizeof(uip_ip6addr_t)) <= 0;  
 }
@@ -74,7 +74,7 @@ u8_t uip6_addr_a_is_in_closed_interval_bc(uip_ip6addr_t *a, uip_ip6addr_t *b, ui
   *
   * \return  1 if \b a is a \b member of \b b, 0 otherwise.
   */
-u8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b)
+uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b)
 {
   return  (a->direction == b->direction || b->direction == SPD_ANY_TRAFFIC) &&
       uip6_addr_a_is_in_closed_interval_bc(a->addr, b->addr_from, b->addr_to) && 
@@ -89,7 +89,7 @@ u8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b)
   * FIX: Broken
   */
 /*
-u8_t ipsec_ts_is_subset_of_addr_set(ike_ts_t *ts_dst, ike_ts_t *ts_src, ipsec_addr_set_t *selector)
+uint8_t ipsec_ts_is_subset_of_addr_set(ike_ts_t *ts_dst, ike_ts_t *ts_src, ipsec_addr_set_t *selector)
 {
   return
     (selector->nextlayer_type == SPD_SELECTOR_NL_ANY_PROTOCOL || selector->nextlayer_type == ts->proto) &&
@@ -112,7 +112,7 @@ u8_t ipsec_ts_is_subset_of_addr_set(ike_ts_t *ts_dst, ike_ts_t *ts_src, ipsec_ad
   *
   * \return  1 if \b a is a \b subset (sic! not a strict subset) of \b b, 0 otherwise.
   */
-u8_t ipsec_a_is_subset_of_b(ipsec_addr_set_t *a, ipsec_addr_set_t *b)
+uint8_t ipsec_a_is_subset_of_b(ipsec_addr_set_t *a, ipsec_addr_set_t *b)
 {
   return 0;//ip6addr_src_range_from
 }

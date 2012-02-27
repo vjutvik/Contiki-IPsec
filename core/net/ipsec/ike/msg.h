@@ -31,15 +31,15 @@
 #define IKS_MSG_CLEAR(val) val = 0x0 // The compiler will try to fit hexadecimal constants in unsigned integers first
 
 // Write a one byte int to some position (0-3) in a 32 bit word
-// macro(u32_t *, u8_t, u8_t)
-#define IKE_MSG_32WR8(ptr, pos, val) *((u8_t *) ptr + pos) = val 
+// macro(uint32_t *, uint8_t, uint8_t)
+#define IKE_MSG_32WR8(ptr, pos, val) *((uint8_t *) ptr + pos) = val 
 
 // Write a two byte int to lower or upper part of a 32 bit word, converting to network byte order
-// macro(u32_t *, u8_t, u16_t)
-#define IKE_MSG_32WR16_HTON(ptr, upper, val) *((u16_t *) ptr + upper) = UIP_HTONS(val)
+// macro(uint32_t *, uint8_t, uint16_t)
+#define IKE_MSG_32WR16_HTON(ptr, upper, val) *((uint16_t *) ptr + upper) = UIP_HTONS(val)
 
 // Write a four byte int to a 32 bit word, converting to network byte order
-// macro(u32_t *, u8_t, u8_t)
+// macro(uint32_t *, uint8_t, uint8_t)
 #define IKE_MSG_32WR32_HTON(ptr, val) *ptr = UIP_HTONL(val)
 
 
@@ -52,17 +52,17 @@
 // uip_buf and elide the code below if it's a 16/32-bit one.) 
 #define IKE_MSG_WRITE16(ptr, n) \
   { \ // Don't we need do { ... } while(0) in this macro for safe expansion?
-    register u8_t t = UIP_HTONS(n); \
-    *ptr = *((u8_t) &t); \
-    *(ptr + 1) = *((u8_t) &t) + 1); \
+    register uint8_t t = UIP_HTONS(n); \
+    *ptr = *((uint8_t) &t); \
+    *(ptr + 1) = *((uint8_t) &t) + 1); \
   }
 */
 
 // ptr _must_ start at a 16-bit word boundary
-#define IKE_MSG_WRITE16(ptr, n) *((u16_t *) ptr) = UIP_HTONS(n)
+#define IKE_MSG_WRITE16(ptr, n) *((uint16_t *) ptr) = UIP_HTONS(n)
 
 // ptr _must_ start at a 32-bit word boundary
-#define IKE_MSG_WRITE32(ptr, n) *((u32_t *) ptr) = UIP_HTONL(n)
+#define IKE_MSG_WRITE32(ptr, n) *((uint32_t *) ptr) = UIP_HTONL(n)
 
 /**
   * Append part2 to the tail of part1, returning the address of part1
@@ -71,9 +71,9 @@
 void ike_msg_app(ike_msg_t *part1, ike_msg_t *part2);
 
 typedef struct {
-  u16_t msg_bitlen;   // Length of message in number of bits. A character is 8 bits long.
-  u16_t buff_size;    // Buff size in bytes
+  uint16_t msg_bitlen;   // Length of message in number of bits. A character is 8 bits long.
+  uint16_t buff_size;    // Buff size in bytes
   
-  u8_t *msg;
+  uint8_t *msg;
 } ike_msg_t;
 */

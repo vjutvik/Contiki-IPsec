@@ -21,7 +21,7 @@ LIST(sad_outgoing);
   * which we don't). This is possible since we're the one assigning this value in the SAi2 payload of
   * the IKE exchange. next_sad_initiator_spi keeps track of the highest value we've assigned so far.
   */
-static u32_t next_sad_local_spi;
+static uint32_t next_sad_local_spi;
 
 
 void sad_init()
@@ -41,10 +41,10 @@ void sad_init()
   * Anti-replay: Assert that the sequence number fits in the window of this SA
   * and update it.
   */
-u8_t sad_incoming_replay(sad_entry_t *entry, u32_t seqno)
+uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
 {
   // Get offset to the highest registered sequence number
-  // u32_t offset = entry->seqno - seqno;
+  // uint32_t offset = entry->seqno - seqno;
 
   PRINTF("SAD_INC_REPL: seqno %u spi %u\n", entry->seqno, entry->spi);
 
@@ -56,8 +56,8 @@ u8_t sad_incoming_replay(sad_entry_t *entry, u32_t seqno)
   }
   else {
     // Sequence number is below the high end of the window
-    u32_t offset = entry->seqno - seqno;
-    u32_t mask = 1U << offset;
+    uint32_t offset = entry->seqno - seqno;
+    uint32_t mask = 1U << offset;
     if (offset > 31 || entry->win & mask)
       return 1; // The sequence number is outside the window or the window position is occupied
 
@@ -72,7 +72,7 @@ u8_t sad_incoming_replay(sad_entry_t *entry, u32_t seqno)
   */
 /*
 Not needed
-u32_t sad_get_seqno(sad_entry *entry)
+uint32_t sad_get_seqno(sad_entry *entry)
 {
   return ++entry->seqno;
 }
@@ -99,7 +99,7 @@ sad_spds_key sad_hdr_to_spds_key(struct uip_ip_hdr *hdr) {
   * \param spi SPI value
   * \param sa The SA's datastructure
   */
-sad_entry_t *sad_create_outgoing_entry(u32_t time_of_creation)
+sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
 {
   sad_entry_t *newentry = malloc(sizeof(sad_entry_t));
   
@@ -126,7 +126,7 @@ sad_entry_t *sad_create_outgoing_entry(u32_t time_of_creation)
 /**
   * Create a new SAD entry for incoming traffic, insert it into the incomming SAD and allocate a new SPI
   */
-sad_entry_t *sad_create_incoming_entry(u32_t time_of_creation)
+sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation)
 {
   sad_entry_t *newentry = malloc(sizeof(sad_entry_t));
 
@@ -184,7 +184,7 @@ sad_entry_t *sad_get_outgoing(ipsec_addr_t *addr)
   * \return A pointer to the SAD entry whose SPI match that of \c spi. NULL is returned if there's no such match.
   *
   */
-sad_entry_t *sad_get_incoming(u32_t spi)
+sad_entry_t *sad_get_incoming(uint32_t spi)
 {
   sad_entry_t *entry;
   for (entry = list_head(sad_incoming); entry != NULL; entry = list_item_next(entry)) {
@@ -215,5 +215,5 @@ void sad_remove_incoming_entry(sad_entry_t *sad_entry)
 
 /**
   * Asserts that the address tag is a subset of the traffic pattern determined by sad_entry.
-u8_t sad_entry_fits_tag(ipsec_addr_t *tag, sad_entry_t *sad_entry);
+uint8_t sad_entry_fits_tag(ipsec_addr_t *tag, sad_entry_t *sad_entry);
 */

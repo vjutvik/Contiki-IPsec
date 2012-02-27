@@ -32,7 +32,7 @@
 /**
   * Global buffers used for communicating information with the state machine
   */
-u32_t *udp_buf; // Pointing at the first word of the UDP datagram's data areas
+uint32_t *udp_buf; // Pointing at the first word of the UDP datagram's data areas
 uip_ip6addr_t *uip_addr6_remote; // IPv6 address of remote peer
 
 /**
@@ -44,7 +44,7 @@ uip_ip6addr_t *uip_addr6_remote; // IPv6 address of remote peer
   * and buffers containing UDP messages etc are made available to it.
   */
 /*
-typedef void ike_statem_statefn_ret_t;//u16_t *ike_statem_statefn_ret_t;
+typedef void ike_statem_statefn_ret_t;//uint16_t *ike_statem_statefn_ret_t;
 typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 */
 // Macro for declaring a state function
@@ -68,7 +68,7 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 
 #define IKE_STATEM_MYSPI_GET_MYSPI(session) session->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK
 #define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
-#define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) UIP_HTONL(((u32_t ) IKE_STATEM_MYSPI_GET_MYSPI(session)))
+#define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) UIP_HTONL(((uint32_t ) IKE_STATEM_MYSPI_GET_MYSPI(session)))
 #define IKE_STATEM_MYSPI_GET_I(var) var = var & IKE_STATEM_MYSPI_I_MASK
 #define IKE_STATEM_IS_INITIATOR(session) IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi)
 #define IKE_STATEM_MYSPI_SET_I(var) var = var | IKE_STATEM_MYSPI_I_MASK
@@ -95,11 +95,11 @@ typedef struct {
   ipsec_addr_t triggering_pkt;
   spd_entry_t *spd_entry;
 
-  u32_t local_spi;
+  uint32_t local_spi;
 
   // Used for generating the AUTH payload. Length MUST equal the key size of the negotiated PRF.
-  u8_t sk_pi[SA_PRF_MAX_KEYMATLEN];   
-  u8_t sk_pr[SA_PRF_MAX_KEYMATLEN];
+  uint8_t sk_pi[SA_PRF_MAX_KEYMATLEN];   
+  uint8_t sk_pr[SA_PRF_MAX_KEYMATLEN];
 
   /**
     * Seed for generating our Nonce. This will effectively cause our multibyte nonce to become a
@@ -111,14 +111,14 @@ typedef struct {
     * Instead of using a single seed value we can add semi-static, semi-random, data from the network layer, the radio,
     * the OS etc.
     */
-  u16_t my_nonce_seed;
-  u8_t peer_nonce[IKE_PAYLOAD_PEERNONCE_LEN];
-  u8_t peernonce_len;
+  uint16_t my_nonce_seed;
+  uint8_t peer_nonce[IKE_PAYLOAD_PEERNONCE_LEN];
+  uint8_t peernonce_len;
 
-  u8_t peer_first_msg[IKE_STATEM_FIRSTMSG_MAXLEN];
-  u16_t peer_first_msg_len;
+  uint8_t peer_first_msg[IKE_STATEM_FIRSTMSG_MAXLEN];
+  uint16_t peer_first_msg_len;
 
-  u8_t my_prv_key[IKE_DH_PRVKEY_LEN];
+  uint8_t my_prv_key[IKE_DH_PRVKEY_LEN];
 } ike_statem_ephemeral_info_t;
 
 
@@ -155,11 +155,11 @@ typedef struct ike_statem_session {
    *
    * The My SPI -value is also the key of the linked list.
    */
-  u16_t initiator_and_my_spi;
+  uint16_t initiator_and_my_spi;
   
   // The peer's IKE SPI. Is not unique as it's decided by the peer.
   // (Can we remove this 8 B lump? We can't initiate requests without it.)
-  u32_t peer_spi_high, peer_spi_low;
+  uint32_t peer_spi_high, peer_spi_low;
 
 
   /**
@@ -169,7 +169,7 @@ typedef struct ike_statem_session {
     * to any IKE SA. The SA will be closed, or rekeyed (will we implement this?), in the event 
     * of an overflow (in line with the RFC).
     */
-  u8_t my_msg_id, peer_msg_id;
+  uint8_t my_msg_id, peer_msg_id;
 
   // Message retransmission timer 
   struct ctimer retrans_timer;
@@ -219,7 +219,7 @@ typedef struct {
   * Common argument for payload writing functions
   */
 typedef struct {
-  u8_t *start;                                    // The address at which the paylaod should start
+  uint8_t *start;                                    // The address at which the paylaod should start
   ike_statem_session_t *session;                  // Session pointer
   ike_payload_type_t *prior_next_payload;         // Pointer that stores the address of the last "next payload" -field 
 } payload_arg_t;
@@ -236,11 +236,11 @@ void *ike_statem_remove_session(ike_statem_session_t *);
 /*
 typedef union {
   ike_state_t fromto[2];
-  u16_t fromto_big; // Store for two states. Assumes that ike_state_t is one byte long.
+  uint16_t fromto_big; // Store for two states. Assumes that ike_state_t is one byte long.
 } ike_statem_edge_t;
 */
 /*
-typedef u16_t *ike_statem_edgefn_ret_t;
+typedef uint16_t *ike_statem_edgefn_ret_t;
 typedef (void *) *ike_statem_edgefn_args_t;
 */
 

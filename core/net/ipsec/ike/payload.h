@@ -105,18 +105,18 @@ typedef enum {
 
 typedef struct {
   // Please note that we treat the IKE SPIs as 4 byte values internally
-  u32_t sa_initiator_spi_high;
-  u32_t sa_initiator_spi_low;
-  u32_t sa_responder_spi_high;
-  u32_t sa_responder_spi_low;
+  uint32_t sa_initiator_spi_high;
+  uint32_t sa_initiator_spi_low;
+  uint32_t sa_responder_spi_high;
+  uint32_t sa_responder_spi_low;
   
   ike_payload_type_t next_payload;
-  u8_t version;
+  uint8_t version;
   ike_payloadfield_ikehdr_exchtype_t exchange_type;
-  u8_t flags;
+  uint8_t flags;
   
-  u32_t message_id;
-  u32_t len; // Length of header + payload
+  uint32_t message_id;
+  uint32_t len; // Length of header + payload
 } ike_payload_ike_hdr_t;
 
 
@@ -146,8 +146,8 @@ typedef struct {
                      *payload_arg->prior_next_payload = IKE_PAYLOAD_NO_NEXT
 typedef struct {
   ike_payload_type_t next_payload;
-  u8_t clear;
-  u16_t len; // Length of payload header + payload
+  uint8_t clear;
+  uint16_t len; // Length of payload header + payload
 } ike_payload_generic_hdr_t;
 
 
@@ -172,14 +172,14 @@ typedef struct {
 #define IKE_PAYLOADFIELD_PROPOSAL_LAST 0
 #define IKE_PAYLOADFIELD_PROPOSAL_MORE 2
 typedef struct {
-  u8_t last_more;
-  u8_t clear;
-  u16_t proposal_len;
+  uint8_t last_more;
+  uint8_t clear;
+  uint16_t proposal_len;
   
-  u8_t proposal_number;
+  uint8_t proposal_number;
   sa_ipsec_proto_type_t proto_id;
-  u8_t spi_size;
-  u8_t numtransforms;
+  uint8_t spi_size;
+  uint8_t numtransforms;
   
   // The SPI field is not included since it is omitted from this
   // payload in the case of IKE negotiation proposal.
@@ -206,13 +206,13 @@ typedef struct {
 #define IKE_PAYLOADFIELD_TRANSFORM_LAST 0
 #define IKE_PAYLOADFIELD_TRANSFORM_MORE 3
 typedef struct {
-  u8_t last_more;
-  u8_t clear1;
-  u16_t len;
+  uint8_t last_more;
+  uint8_t clear1;
+  uint16_t len;
 
-  u8_t type;
-  u8_t clear2;
-  u16_t id;
+  uint8_t type;
+  uint8_t clear2;
+  uint16_t id;
 } ike_payload_transform_t;
 
 
@@ -233,10 +233,10 @@ typedef struct {
 
                   Figure 9:  Data Attributes
   */
-#define IKE_PAYLOADFIELD_ATTRIB_VAL (((u16_t) 1) << 15) | UIP_HTONS((u16_t) SA_ATTRIBUTE_KEYLEN_ID)
+#define IKE_PAYLOADFIELD_ATTRIB_VAL (((uint16_t) 1) << 15) | UIP_HTONS((uint16_t) SA_ATTRIBUTE_KEYLEN_ID)
 typedef struct {
-  u16_t af_attribute_type; // The first bit should always be set
-  u16_t attribute_value;
+  uint16_t af_attribute_type; // The first bit should always be set
+  uint16_t attribute_value;
 } ike_payload_attribute_t;
 
 
@@ -259,8 +259,8 @@ typedef struct {
             Figure 10:  Key Exchange Payload Format
   */
 typedef struct {
-  u16_t dh_group_num;
-  u16_t clear;
+  uint16_t dh_group_num;
+  uint16_t clear;
 } ike_payload_ke_t;
 
 
@@ -281,11 +281,11 @@ typedef struct {
 
              Figure 14:  Authentication Payload Format
   */
-//#define SET_AUTHPAYLOAD(authpayload, auth_method) *((u8_t *) authpayload = (u32_t) auth_method << 24
+//#define SET_AUTHPAYLOAD(authpayload, auth_method) *((uint8_t *) authpayload = (uint32_t) auth_method << 24
 typedef struct {
   ike_auth_type_t auth_type;
-  u8_t clear1;
-  u16_t clear2;
+  uint8_t clear1;
+  uint16_t clear2;
 } ike_payload_auth_t;
 
 
@@ -333,8 +333,8 @@ typedef struct {
   */
 typedef struct {
   sa_ipsec_proto_type_t proto_id;
-  u8_t spi_size;
-  u16_t notify_msg_type;
+  uint8_t spi_size;
+  uint16_t notify_msg_type;
 } ike_payload_notify_t;
 
 typedef enum {
@@ -437,15 +437,15 @@ typedef enum {
       */
 } id_type_t;
 
-#define SET_IDPAYLOAD(id_payload, payload_arg, id) (u32_t *) \
+#define SET_IDPAYLOAD(id_payload, payload_arg, id) (uint32_t *) \
   id_payload = payload_arg->start; \
-  *((u8_t *) id_payload) = id; \
+  *((uint8_t *) id_payload) = id; \
   payload_arg->start += sizeof(ike_id_payload_t)
 
 typedef struct {
   id_type_t id_type;
-  u8_t clear1;
-  u16_t clear2;
+  uint8_t clear1;
+  uint16_t clear2;
 } ike_id_payload_t;
 
 
@@ -470,12 +470,12 @@ typedef struct {
 // This value can NOT be changed without altering the algorithm for T
 #define IKE_PAYLOADFIELD_MAX_TS_COUNT 2 
 #define SET_TSPAYLOAD(ts_payload, number_of_ts) \
-           *((u32_t *) ts_payload) = IKE_MSG_ZERO; \
+           *((uint32_t *) ts_payload) = IKE_MSG_ZERO; \
            ts_payload->number_of_ts = number_of_ts
 typedef struct {
-  u8_t number_of_ts;
-  u8_t clear1;
-  u16_t clear2;
+  uint8_t number_of_ts;
+  uint8_t clear1;
+  uint16_t clear2;
 } ike_ts_payload_t;
 
 
@@ -539,11 +539,11 @@ typedef struct {
 typedef struct {
   uip_ip6addr_t start_addr;
   uip_ip6addr_t end_addr;
-  u8_t ts_type;
-  u8_t proto; // nextlayer protocol
-  u16_t selector_len;
-  u16_t start_port;
-  u16_t end_port;
+  uint8_t ts_type;
+  uint8_t proto; // nextlayer protocol
+  uint16_t selector_len;
+  uint16_t start_port;
+  uint16_t end_port;
 } ike_ts_t;
 
 

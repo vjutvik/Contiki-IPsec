@@ -19,7 +19,7 @@
       For example, these transforms include ENCR_RC5 and ENCR_BLOWFISH."
   
   */
-const u8_t sa_encr_keymat_extralen[] =
+const uint8_t sa_encr_keymat_extralen[] =
 {
   0,  // NOT IN USE
   0,  // NOT IN USE
@@ -44,7 +44,7 @@ const u8_t sa_encr_keymat_extralen[] =
   * This includes IVs of block as well as stream ciphers. In the former case
   * the IV size is also the same as the transform's block size.
   */
-const u8_t sa_encr_ivlen[] = 
+const uint8_t sa_encr_ivlen[] = 
 { 
   0,
   0,
@@ -67,7 +67,7 @@ const u8_t sa_encr_ivlen[] =
 // The input data must be of the same length or longer. When sourcing data for KEYMAT, the length must be equal.
 //
 // THe ouput length (authenticator length) is also the preferred input length.
-const u8_t sa_prf_keymatlen[] = 
+const uint8_t sa_prf_keymatlen[] = 
 {
   0,
   0,            // MD5
@@ -83,7 +83,7 @@ const u8_t sa_prf_keymatlen[] =
   * As of RFC 5996, no transform of type 2 nor 3 uses variable key length (p. 85). The same passage also recommends this as the
   * future behaviour of type 2 and 3 transforms.
   */
-const u8_t sa_integ_keymatlen[] = 
+const uint8_t sa_integ_keymatlen[] = 
 { 
   0,
   12, // MD5, not implemented as of now

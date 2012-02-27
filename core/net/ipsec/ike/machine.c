@@ -50,7 +50,7 @@ LIST(sessions);
 /**
   * Next free value for SPI allocation. To be incremented upon creation of a new IKE SA.
   */
-static u16_t next_my_spi;
+static uint16_t next_my_spi;
 
 // Initialize the state machine
 void ike_statem_init()
@@ -116,7 +116,7 @@ ike_statem_session_t *ike_statem_get_session_by_addr(uip_ip6addr_t *addr)
   for (session = list_head(sessions);
       session != NULL;
       session = list_item_next(session)) {
-    u8_t i;
+    uint8_t i;
     for(i = 0; i < sizeof(uip_ip6addr_t); ++i) {
       if(memcmp(session->peer, addr, sizeof(addr)) == 0)
         return session;
@@ -130,7 +130,7 @@ ike_statem_session_t *ike_statem_get_session_by_addr(uip_ip6addr_t *addr)
   * Get a session by the initiator's SPI
   */
 /*
-ike_statem_session_t *ike_statem_find_session(u32_t initiator_spi) {
+ike_statem_session_t *ike_statem_find_session(uint32_t initiator_spi) {
   ike_statem_session_t *session;
   for (session = list_head(sessions); 
         session != NULL && session->initiator_spi != initiator_spi; 
@@ -148,7 +148,7 @@ ike_statem_session_t *ike_statem_find_session(u32_t initiator_spi) {
   */
   
 
-void ike_statem_incoming_data_handler()//u32_t *start, u16_t len)
+void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
 {
   // Get the IKEv2 header
   ike_payload_ike_hdr_t *ike_hdr = udp_buf;
@@ -167,8 +167,8 @@ void ike_statem_incoming_data_handler()//u32_t *start, u16_t len)
   }
   
   // So, the request is concerns an existing session. Find the session struct by matching the SPIs.
-  u32_t *my_spi;
-  u32_t 
+  uint32_t *my_spi;
+  uint32_t 
   if ( IKE_PAYLOADFIELD_IKEHDR_FLAGS_ISORIGALINITIATOR_BM & ike_hdr->flags) {
     // The other party is the original initiator
     my_spi = &ike_hdr->sa_responder_spi_low;

@@ -4,7 +4,7 @@
   * \parameter  start Start of the public key. 48 bytes (2 * 192 bits) will be written.
   * \parameter  myPrvKey My private key of 24 bytes length (192 bits)
   */
-void ecdh_encode_public_key(u32_t *start, NN_DIGIT *myPrvKey);
+void ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey);
 
 
 /**
@@ -15,4 +15,4 @@ void ecdh_encode_public_key(u32_t *start, NN_DIGIT *myPrvKey);
   * \parameter peerPubKey The public key (commonly that of the other party)
   * \parameter myPrvKey The private key (commonly ours). 24 bytes long.
   */
-void ecdh_get_shared_secret(u8_t *shared_key, point_t *peerPubKey, NN_DIGIT *myPrvKey);
+void ecdh_get_shared_secret(uint8_t *shared_key, point_t *peerPubKey, NN_DIGIT *myPrvKey);

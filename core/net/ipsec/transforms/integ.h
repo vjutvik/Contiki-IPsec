@@ -13,15 +13,15 @@
 
 typedef struct {
   sa_integ_transform_type_t type;
-  u8_t *data;         // The start of the data
-  u16_t datalen;      // the length of the data
-  u8_t *keymat;       // The start of the KEYMAT
+  uint8_t *data;         // The start of the data
+  uint16_t datalen;      // the length of the data
+  uint8_t *keymat;       // The start of the KEYMAT
 
   // Length of the _key_ in bytes. Doesn't need to be assigned when calling integ().
   // Please note that the key is merely a subset of keymat which may contain more information such as nonce values etc.
-  u8_t keylen;
+  uint8_t keylen;
   
-  u8_t *out;         // Where the output will be written. IPSEC_ICVLEN bytes will be written.
+  uint8_t *out;         // Where the output will be written. IPSEC_ICVLEN bytes will be written.
 } integ_data_t;
 
 void integ(integ_data_t *data); 

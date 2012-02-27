@@ -38,7 +38,7 @@
   do {                                                  \
     PRINTF("Selector: ");                               \
     PRINTADDRSET(&(spd_entry)->selector);               \
-    u8_t str[3][8] = {                                  \
+    uint8_t str[3][8] = {                                  \
       { "PROTECT" },                                    \
       { "BYPASS" },                                     \
       { "DISCARD" }                                     \
@@ -136,7 +136,7 @@ typedef enum {
   */
 typedef struct {
 	sa_ctrl_t type;
-  u8_t value;
+  uint8_t value;
 } spd_proposal_tuple_t;
 
 
@@ -192,7 +192,7 @@ typedef struct {
 /*
   * The SPD table is implemented as a linked list consisting of spd_entry_t variables.
 typedef struct {
-  u8_t len;
+  uint8_t len;
   spd_entry_t table[];
 } spd_table_t;
 */

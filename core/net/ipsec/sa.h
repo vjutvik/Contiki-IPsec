@@ -71,8 +71,8 @@ typedef enum {                   // RFC4307      Status of this implementation
   */
 #define SA_ENCR_MAX_KEYMATLEN 20
 
-extern const u8_t sa_encr_ivlen[];
-extern const u8_t sa_encr_keymat_extralen[];
+extern const uint8_t sa_encr_ivlen[];
+extern const uint8_t sa_encr_keymat_extralen[];
 #define SA_ENCR_CURRENT_IVLEN(session) sa_encr_ivlen[session->sa.encr]
 #define SA_ENCR_IVLEN_BY_TYPE(encr) sa_encr_ivlen[encr]
 #define SA_ENCR_CURRENT_KEYLEN(session) SA_ENCR_MAX_KEYMATLEN
@@ -109,7 +109,7 @@ typedef enum {                            // RFC4307      RFC4835       Status o
   SA_INTEG_UNASSIGNED = 255
 } sa_integ_transform_type_t;
 
-extern const u8_t sa_integ_keymatlen[];
+extern const uint8_t sa_integ_keymatlen[];
 
 // #define SA_INTEG_KEYLEN 12 // True for all integrity transforms as for now
 
@@ -181,7 +181,7 @@ typedef struct {
      "The lengths of SK_d, SK_pi, and SK_pr MUST be the preferred key length of the PRF agreed upon."
      */
   // Used for derivation of further keying material for Child SAs. Length MUST equal the key size of the PRF.   
-  u8_t sk_d[SA_PRF_MAX_KEYMATLEN];
+  uint8_t sk_d[SA_PRF_MAX_KEYMATLEN];
   
   /**
     * IKE SA authentication / integrity KEYMAT. (Often the K in PRF(K, M))
@@ -189,8 +189,8 @@ typedef struct {
     * If the key length of the transform denoted by integ is shorter than SA_INTEG_MAX_KEYMATLEN
     * the residual bytes will be ignored.
     */
-  u8_t sk_ai[SA_INTEG_MAX_KEYMATLEN];
-  u8_t sk_ar[SA_INTEG_MAX_KEYMATLEN];
+  uint8_t sk_ai[SA_INTEG_MAX_KEYMATLEN];
+  uint8_t sk_ar[SA_INTEG_MAX_KEYMATLEN];
   
   /**
     * IKE SA encryption KEYMAT.
@@ -198,10 +198,10 @@ typedef struct {
     * If the key length, denoted by encr_keylen, is shorter than SA_INTEG_MAX_KEYMATLEN
     * the residual bytes will be ignored.
     */
-  u8_t sk_ei[SA_ENCR_MAX_KEYMATLEN];
-  u8_t sk_er[SA_ENCR_MAX_KEYMATLEN];
+  uint8_t sk_ei[SA_ENCR_MAX_KEYMATLEN];
+  uint8_t sk_er[SA_ENCR_MAX_KEYMATLEN];
   
-  u8_t encr_keylen; // Length of key _in bytes_
+  uint8_t encr_keylen; // Length of key _in bytes_
 
 } sa_ike_t;
 
@@ -213,15 +213,15 @@ typedef struct {
   // DH: IKE, AH (optional), ESP (optional) (We don't support new DH secrets for child SAs)
   
   // IKE SA integrity
-  u8_t sk_a[SA_INTEG_MAX_KEYMATLEN];
+  uint8_t sk_a[SA_INTEG_MAX_KEYMATLEN];
 
   // IKE SA encryption
-  u8_t sk_e[SA_ENCR_MAX_KEYMATLEN];
+  uint8_t sk_e[SA_ENCR_MAX_KEYMATLEN];
 
   // Length of sk_e key _in bytes_. Only used by ESP. A value of 0 signifies that this SA is used in conjunction with the AH protocol.
   // (We can do this as the key length of the ESP protocol is given by its attribute, while the key length of the AH protocol
   // is solely determined by its transform type).
-  u8_t encr_keylen;
+  uint8_t encr_keylen;
 } sa_child_t;
 
 // Macro that returns true if the sa_child_t at child_sa_ptr is for the AH protocol, false if it's ESP.
@@ -251,8 +251,8 @@ typedef struct {
 /*
 typedef union {
   sa_t strct;
-  u8_t arr[4];
-  u32_t val;
+  uint8_t arr[4];
+  uint32_t val;
 } sa_t;
 */
 
@@ -265,7 +265,7 @@ typedef union {
   *
   * sa should be of type sa_child_t or sa_ike_t
   */
-#define SA_UNASSIGN_SA(sa_ptr) *((u32_t *) sa_ptr) = ULONG_MAX
+#define SA_UNASSIGN_SA(sa_ptr) *((uint32_t *) sa_ptr) = ULONG_MAX
 
 /**
   * Access the algorithm properties of the sa* structs by index
@@ -273,6 +273,6 @@ typedef union {
   * sa_ptr is a pointer of either sa_child_t or sa_ike_t
   * type is of type sa_ctrl_t
   */
-#define SA_GET_PARAM_BY_INDEX(sa_ptr, type) *(((u8_t *) sa_ptr) + type - 1)
+#define SA_GET_PARAM_BY_INDEX(sa_ptr, type) *(((uint8_t *) sa_ptr) + type - 1)
 
 #endif

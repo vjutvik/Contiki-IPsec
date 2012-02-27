@@ -27,7 +27,7 @@
   * 
   */
 spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr) {
-  u8_t n;
+  uint8_t n;
   for (n = 0; n < SPD_ENTRIES; ++n) {
     //PRINTSPDENTRY(&spd_table[n]);
     if (ipsec_a_is_member_of_b(addr, &spd_table[n].selector))

@@ -11,18 +11,18 @@ extern void aes_ctr(encr_data_t *encr_data);
   *
   * data.encr_datalen and data.tail will be updated accordingly.
   */
-static void espsk_pad(encr_data_t *data, u8_t blocklen)
+static void espsk_pad(encr_data_t *data, uint8_t blocklen)
 {
   //PRINTF("Pad: adjusting encr_datalen %u B (+ 1 + ip_next_hdr) to %u B boundary\n", data->encr_datalen, blocklen);
   //PRINTF("data->encr_data %4x\n", data->encr_data);
-  u8_t *tail = data->encr_data + data->encr_datalen;
+  uint8_t *tail = data->encr_data + data->encr_datalen;
   //PRINTF("tail at %4x\n", tail);
 
-  u8_t hdrlen = 1 + (data->ip_next_hdr > 0);
-  u8_t pad = blocklen - (data->encr_datalen + hdrlen) % 4;
+  uint8_t hdrlen = 1 + (data->ip_next_hdr > 0);
+  uint8_t pad = blocklen - (data->encr_datalen + hdrlen) % 4;
   
   // Write the 1, 2, 3... pattern
-  u8_t n;
+  uint8_t n;
   for (n = 0; n <= pad; ++n)
     tail[n] = n + 1;
   
@@ -98,8 +98,8 @@ void espsk_pack(encr_data_t *data)
     // Calculate the number of blocks to encrypt.
     // (data->datalen / 16) - 1 (for the IV whose length is part of datalen) + 1 (one extra block since integer division rounds downwards)
     // This will also allow space for the one byte padding field.
-    u16_t blocks = data->encr_datalen >> 4;
-    u16_t total_bytes = blocks << 4;
+    uint16_t blocks = data->encr_datalen >> 4;
+    uint16_t total_bytes = blocks << 4;
 
     // Write padding information to the last byte of the last block
     data->encr_data[total_bytes - 1] = total_bytes - data->encr_datalen - 1;
@@ -108,7 +108,7 @@ void espsk_pack(encr_data_t *data)
     CRYPTO_AES.init(data->keymat);
    
     // Iterate over the 128 bit blocks
-    u16_t n;
+    uint16_t n;
     for (n = 1; n < blocks; ++n)
       CRYPTO_AES.encrypt(data->encr_data[n << 4]);
       */
@@ -123,8 +123,8 @@ void espsk_pack(encr_data_t *data)
     // Calculate the number of blocks to encrypt.
     // (data->datalen / 16) - 1 (for the IV whose length is part of datalen) + 1 (one extra block since integer division rounds downwards)
     // This will also allow space for the one byte padding field.
-    u16_t blocks = data->datalen >> 4;  // This shift operation (unfortunately) shares information with SA_ENCR_CURRENT_IVLEN(session)
-    u16_t total_bytes = blocks << 4;
+    uint16_t blocks = data->datalen >> 4;  // This shift operation (unfortunately) shares information with SA_ENCR_CURRENT_IVLEN(session)
+    uint16_t total_bytes = blocks << 4;
 
     // FIX: Padding needs to be taken care of. What facilities are there in MR for this?
     
@@ -132,7 +132,7 @@ void espsk_pack(encr_data_t *data)
     data->data[total_bytes - 1] = total_bytes - data->datalen - 1;
     
     // Iterate over the 128 bit blocks
-    for (u16_t n = 1; n < blocks; ++n)
+    for (uint16_t n = 1; n < blocks; ++n)
       aes_encrypt(&a, data->data[n << 4]);
       
     aes_end(&a);
@@ -145,7 +145,7 @@ void espsk_pack(encr_data_t *data)
 
     // Pad the data for 32 bit-word alignment, add trailing headers and adjust encr_datalen accordingly
     espsk_pad(data, 4);
-    *((u32_t *) data->encr_data) = data->ops; // AES CTR's IV must be unique, but not necessarily random.
+    *((uint32_t *) data->encr_data) = data->ops; // AES CTR's IV must be unique, but not necessarily random.
 
     // Encrypt everything from encr_data continuing for encr_datalen bytes
     aes_ctr(data);
@@ -201,10 +201,10 @@ void espsk_unpack(encr_data_t *data)
     /*
     CRYPTO_AES.init(data->keymat);
     
-    u8_t num_blocks = data->encr_datalen >> 4;
+    uint8_t num_blocks = data->encr_datalen >> 4;
 
     // Iterate over the 128 bit blocks
-    u16_t n;
+    uint16_t n;
     for (n = 1; n < num_blocks; ++n)
       CRYPTO_AES.encrypt(&data->encr_data[n << 4]);
     */
@@ -215,10 +215,10 @@ void espsk_unpack(encr_data_t *data)
     aes a;
     aes_init(&a, MR_CBC, data->keymatlen, data->keymat, data->data); // We ignore the exit status
 
-    u8_t num_blocks = data->datalen >> 4; // This shift operation (unfortunately) shares information with SA_ENCR_CURRENT_IVLEN(session)
+    uint8_t num_blocks = data->datalen >> 4; // This shift operation (unfortunately) shares information with SA_ENCR_CURRENT_IVLEN(session)
 
     // Iterate over the 128 bit blocks
-    for (u16_t n = 1; n < num_blocks; ++n)
+    for (uint16_t n = 1; n < num_blocks; ++n)
       aes_decrypt(&a, data->data[n << 4]);
 
     aes_end(&a);

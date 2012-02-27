@@ -4,7 +4,7 @@
 #include "sa.h"
 
 typedef struct {
-  u8_t transform;       // Transform type
+  uint8_t transform;       // Transform type
   uint8_t *out;         // Address to which the output will be written
 //  uint8_t outlen;       // Desired length of the output (in bytes) (individual restricitions applies to each transforms)
 //  uint8_t *keymat;      // Address of the key FIX: Why this field?
@@ -63,6 +63,6 @@ typedef enum {
 
 void prf(sa_prf_transform_type_t prf_type, prf_data_t *data);
 void prf_plus(prfplus_data_t *data);
-void random_ike(u8_t *out, u16_t len, u16_t *seed);
+void random_ike(uint8_t *out, uint16_t len, uint16_t *seed);
 
 #endif
