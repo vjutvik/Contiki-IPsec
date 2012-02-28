@@ -81,7 +81,7 @@ ifdef UIP_CONF_IPV6
   include $(CONTIKI)/core/net/ipsec/Makefile.ipsec
   include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
   include $(CONTIKI_ECC_DIR)/Makefile.contikiecc
-  include $(CONTIKI)core/lib/hmac_sha1/Makefile.hmac_sha1
+  include $(CONTIKI)/core/lib/hmac_sha1/Makefile.hmac_sha1
   # end IPsec
 else # UIP_CONF_IPV6
   UIP   = uip.c uiplib.c resolv.c tcpip.c psock.c hc.c uip-split.c uip-fw.c \
