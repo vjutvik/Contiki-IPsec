@@ -73,6 +73,7 @@ typedef enum {                   // RFC4307      Status of this implementation
 
 extern const uint8_t sa_encr_ivlen[];
 extern const uint8_t sa_encr_keymat_extralen[];
+extern const uint8_t sa_prf_keymatlen[];
 #define SA_ENCR_CURRENT_IVLEN(session) sa_encr_ivlen[session->sa.encr]
 #define SA_ENCR_IVLEN_BY_TYPE(encr) sa_encr_ivlen[encr]
 #define SA_ENCR_CURRENT_KEYLEN(session) SA_ENCR_MAX_KEYMATLEN
@@ -93,7 +94,7 @@ typedef enum {                  // RFC4307      Status of this implementation
 
 
 #define SA_PRF_MAX_KEYMATLEN 20   // This value must be the maximum value of sa_prf_keymatlen
-#define SA_PRF_CURRENT_KEYMATLEN(session) sa_prf_keymatlen[session->sa->prf]
+#define SA_PRF_CURRENT_KEYMATLEN(session) sa_prf_keymatlen[session->sa.prf]
 
 
 /**
@@ -114,7 +115,7 @@ extern const uint8_t sa_integ_keymatlen[];
 // #define SA_INTEG_KEYLEN 12 // True for all integrity transforms as for now
 
 #define SA_INTEG_MAX_KEYMATLEN 20    // This value must be the maximum value of sa_integ_keymatlen
-#define SA_INTEG_CURRENT_KEYMATLEN(session) sa_integ_keymatlen[session->sa->integ]
+#define SA_INTEG_CURRENT_KEYMATLEN(session) sa_integ_keymatlen[session->sa.integ]
 #define SA_INTEG_KEYMATLEN_BY_TYPE(integ) sa_integ_keymatlen[integ]
 
 // Extended Sequence Numbers (4 vs 6 bytes).

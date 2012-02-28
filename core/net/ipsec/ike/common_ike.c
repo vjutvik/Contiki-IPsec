@@ -1,9 +1,15 @@
+/**
+  * Pertains to Contiki's implementation of RFC 5996 (IKEv2)
+  */
+
 #include <lib/random.h>
 #include "machine.h"
 #include "contikiecc/ecc/ecc.h"
+#include "contikiecc/ecc/ecdh.h"
 #include "transforms/integ.h"
 #include "transforms/encr.h"
 #include "payload.h"
+#include "common_ike.h"
 
 /**
   * State machine for servicing an established session
@@ -29,7 +35,12 @@ void ike_statem_state_common_createchildsa(session, addr_t triggering_pkt, spd_e
   * \parameter notify_payload Address of the payload. Null if none.
   * \parameter notify_payload_len Length of the payload starting at notify_payload.
   */
-void ike_statem_write_notification(payload_arg_t *payload_arg, sa_ipsec_proto_type_t proto_id, uint32_t spi, notify_msg_type_t type, uint8_t *notify_payload, uint8_t notify_payload_len)
+void ike_statem_write_notification(payload_arg_t *payload_arg, 
+                                sa_ipsec_proto_type_t proto_id,
+                                uint32_t spi, 
+                                notify_msg_type_t type, 
+                                uint8_t *notify_payload, 
+                                uint8_t notify_payload_len)
 {
   uint8_t *beginning = payload_arg->start;
   
@@ -42,8 +53,8 @@ void ike_statem_write_notification(payload_arg_t *payload_arg, sa_ipsec_proto_ty
   payload_arg->start += sizeof(ike_payload_notify_t);
   if (spi != 0) {
     notifyhdr->spi_size = 4;
-    (uint32_t) *payload_arg->start = spi;
-    payload_arg->start += 4;
+    *payload_arg->start = spi;
+    *payload_arg->start += 4;
   }
   else
     notifyhdr->spi_size = 0;
@@ -155,11 +166,12 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   // Loop over the offers associated with this policy
   uint8_t *ptr = payload_arg->start;
   uint8_t numtransforms = 0;
+  
   ike_payload_transform_t *transform = NULL;
   ike_payload_proposal_t *proposal = NULL;
   uint8_t proposal_number = 1;
   do {  // Loop over the offer's tuples
-      switch(offer->type) {
+    switch(offer->type) {
         
       case SA_CTRL_NEW_PROPOSAL:
       case SA_CTRL_END_OF_OFFER:
@@ -241,13 +253,17 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       }
       transform->len = UIP_HTONS(ptr - (uint8_t *) transform);
       ++numtransforms;
+      break;
+      
+      default:
+      PRINTF(IPSEC_IKE ": ike_statem_write_sa_payload: Error: Unexpected SA_CTRL_TRANSFORM_TYPE\n");
     } // End switch (offer)
-  } while ((offer++)->type != SA_CTRL_END_OF_OFFER) // End while (offer)
+  } while((offer++)->type != SA_CTRL_END_OF_OFFER); // End while (offer)
   
   // Set the length of the offer in the generic payload header and
   // mark the last proposal as the last.
   proposal->last_more = IKE_PAYLOADFIELD_PROPOSAL_LAST;
-  sa_genpayloadhdr->len = UIP_HTONS(ptr - (uint8_t *) sa_genpayloadhdr);
+  sa_genpayloadhdr->len = uip_htons(ptr - (uint8_t *) sa_genpayloadhdr);
     
   // End of SA payload
   payload_arg->start = ptr;
@@ -276,7 +292,7 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   // Generate the IV
   uint8_t n;
   for (n = 0; n < SA_ENCR_CURRENT_IVLEN(payload_arg->session); n += 2)
-    payload_arg->start[n] = rnd16();
+    payload_arg->start[n] = random_rand();
 
   sk_genpayloadhdr->len = UIP_HTONS(payload_arg->start - (uint8_t *) sk_genpayloadhdr);
 }
@@ -319,18 +335,21 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   * \parameter sk_genpayloadhdr The generic payload header of the SK payload, as created by \c ike_statem_prepare_sk()
   * \parameter len The length of the payloads to be encrypted
   */
+/*
 void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t len)
 {
   // Encrypt
   encr_data_t encr_data = {
     .type = session->sa.encr,                              // This determines transform and block size among other things
-    .encr_data = sk_genpayloadhdr + sizeof(sk_genpayloadhdr),   // Address of IV. The actual data is expected to follow one block size after.
+    .encr_data = (uint8_t *) sk_genpayloadhdr + sizeof(sk_genpayloadhdr),   // Address of IV. The actual data is expected to follow one block size after.
     .encr_datalen = len,                                         // Length of the data (not including the IV)
-    .keymat = (IKE_STATEM_IS_INITIATOR(session) ? 
-              session->sa.sk_ei :
-              session->sa.sk_er),                // Address of the key
+    .keymat = 
     .keylen = session->sa.encr_keylen                      // Length of the key _in bytes_
   };
+  IKE_STATEM_IS_INITIATOR(session) ? 
+          encr_data.keymat = session->sa.sk_ei :
+          encr_data.keymat = session->sa.sk_er;                // Address of the keying material
+
   uint8_t *integ_chksum = encr(&encr_data);                      // This will write Encrypted Payloads, padding and pad length
   
   // Write Integrity Checksum Data
@@ -347,6 +366,7 @@ void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_h
   };
   integ(payload_arg->session->sa.integ, &data);
 }
+*/
 
 
 /**
@@ -391,45 +411,45 @@ void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_h
   *
   * \return 1 upon failure, 0 upon success
   */
-uint8_t ike_statem_unpack_sk(payload_arg_t *payload_arg, ike_generic_payload_hdr_t *sk_genpayload_hdr)
-{ 
-  /**
-    * Verify the intergrity checksum data
-    */
-  uint8_t integ_len = SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session);
-  uint8_t *integ_chksum = sk_genpayload_hdr + UIP_NTOHS(sk_genpayload_hdr->len) - integ_len;
-  uint8_t out[integ_len];
-
-  prf_data_t data = {
-    .out = &out,
-    .outlen = integ_len,
-    .key = IKE_STATEM_GET_PEER_SK_A(payload_arg->session),
-    .keylen = integ_len,
-    .data = &udp_buf,
-    .datalen = integ_chksum - udp_buf;
-  };
-  integ(payload_arg->session->sa.integ, &data);
-    
-  // Hash computed. Assert its correctness.
-  if (memcmp(&out, integ_chksum, integ_len))
-    return 1; // Cryptographic hash mismatch
-  
-  /**
-    * Decrypt the IKE payloads
-    */
-  encr_data_t encr_data = {
-    .encr = payload_arg->session.sa.encr,                                                   // This determines transform and block size among other things
-    .start = sk_genpayload_hdr + sizeof(sk_genpayload_hdr),                                 // Address of IV. The actual data is expected to follow one block size after.
-    .datalen = UIP_NTOHS(sk_genpayload_hdr->len) - integ_len - sizeof(sk_genpayload_hdr),   // Length of the IV and the data
-    .key = IKE_STATEM_GET_PEER_SK_E(paylod_arg->session),                                   // Address of the key
-    .keylen = payload_arg->session->sa.encr_keylen                                          // Length of the key _in bytes_
-  }
-  decr(&encr_data);
-
-  // We have now verified the Integrity Checksum and decrypted the IKE payloads.
-  // Adjust the length field of the SK payload so that it "points" to the following IKE payload.
-  sk_genpayload_hdr->len = UIP_HTONS(sizeof(sk_genpayload_hdr) + encr_data->datalen);
-}
+// uint8_t ike_statem_unpack_sk(payload_arg_t *payload_arg, ike_generic_payload_hdr_t *sk_genpayload_hdr)
+// {
+//   /**
+//     * Verify the intergrity checksum data
+//     */
+//   uint8_t integ_len = SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session);
+//   uint8_t *integ_chksum = sk_genpayload_hdr + UIP_NTOHS(sk_genpayload_hdr->len) - integ_len;
+//   uint8_t out[integ_len];
+// 
+//   prf_data_t data = {
+//     .out = &out,
+//     .outlen = integ_len,
+//     .key = IKE_STATEM_GET_PEER_SK_A(payload_arg->session),
+//     .keylen = integ_len,
+//     .data = &udp_buf,
+//     .datalen = integ_chksum - udp_buf;
+//   };
+//   integ(payload_arg->session->sa.integ, &data);
+//     
+//   // Hash computed. Assert its correctness.
+//   if (memcmp(&out, integ_chksum, integ_len))
+//     return 1; // Cryptographic hash mismatch
+//   
+//   /**
+//     * Decrypt the IKE payloads
+//     */
+//   encr_data_t encr_data = {
+//     .encr = payload_arg->session.sa.encr,                                                   // This determines transform and block size among other things
+//     .start = sk_genpayload_hdr + sizeof(sk_genpayload_hdr),                                 // Address of IV. The actual data is expected to follow one block size after.
+//     .datalen = UIP_NTOHS(sk_genpayload_hdr->len) - integ_len - sizeof(sk_genpayload_hdr),   // Length of the IV and the data
+//     .key = IKE_STATEM_GET_PEER_SK_E(paylod_arg->session),                                   // Address of the key
+//     .keylen = payload_arg->session->sa.encr_keylen                                          // Length of the key _in bytes_
+//   }
+//   decr(&encr_data);
+// 
+//   // We have now verified the Integrity Checksum and decrypted the IKE payloads.
+//   // Adjust the length field of the SK payload so that it "points" to the following IKE payload.
+//   sk_genpayload_hdr->len = UIP_HTONS(sizeof(sk_genpayload_hdr) + encr_data->datalen);
+// }
 
 
 /**
@@ -450,7 +470,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 
   // Calculate the DH exponential: g^ir
   uint8_t gir[IKE_DH_GIR_LEN];
-  ecdh_get_shared_secret(&gir, peer_pub_key, session->ephemeral_info->my_prv_key);
+  ecdh_get_shared_secret(gir, ECDH_DESERIALIZE_TO_POINTT(peer_pub_key), ECDH_DESERIALIZE_TO_NN(session->ephemeral_info->my_prv_key));
   
   /**
     * The order of the strings will depend on who's the initiator. Prepare that.
@@ -466,19 +486,19 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   uint8_t *mynonce_start, *peernonce_start;
   uint8_t *ni_start, *nr_start, *spii_start, *spir_start;
   if (IKE_STATEM_IS_INITIATOR(session)) {
-    mynonce_start = &first_key;
+    mynonce_start = first_key;
     peernonce_start = mynonce_start + IKE_PAYLOAD_MYNONCE_LEN;
     
-    ni_start = &second_msg;
+    ni_start = second_msg;
     nr_start = ni_start + IKE_PAYLOAD_MYNONCE_LEN;
     spii_start = nr_start + session->ephemeral_info->peernonce_len;
     spir_start = spii_start + 8;
   }
   else {
-    peernonce_start = &first_key;
+    peernonce_start = first_key;
     mynonce_start = peernonce_start + session->ephemeral_info->peernonce_len;
     
-    nr_start = &second_msg;
+    nr_start = second_msg;
     ni_start = nr_start + session->ephemeral_info->peernonce_len;
     spir_start = ni_start + IKE_PAYLOAD_MYNONCE_LEN;
     spii_start = spir_start + 8;
@@ -491,16 +511,16 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     *
     */
   uint8_t skeyseed[prf_keylen];
-  random_ike(&mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);
+  random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);
   memcpy(peernonce_start, session->ephemeral_info->peer_nonce, session->ephemeral_info->peernonce_len);
 
   prf_data_t prf_data =
     {
-      .out = &skeyseed,
-      .outlen = 0,
+      .out = skeyseed,
+      //.outlen = 0,
       .key = &first_key,
       .keylen = first_keylen,
-      .data_ptr = &gir,
+      .data = &gir,
       .datalen = IKE_DH_GIR_LEN
     };
   prf(session->sa.prf, &data);
@@ -515,7 +535,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   /**
     * Compile the second message
     */
-  random_ike(ni_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info.my_nonce_seed);      
+  random_ike(ni_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);      
   memcpy(nr_start, session->epehemeral_info->peernonce, session->epehemeral_info->peernonce_len);
   *((uint32_t *) spii_start) = IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session);
   *(((uint32_t *) spii_start) + 1) = IKE_STATEM_MYSPI_GET_MYSPI_LOW(session);

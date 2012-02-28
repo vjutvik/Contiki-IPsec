@@ -1,3 +1,8 @@
+#include <string.h>
+#include "ipsec.h"
+
+#define IPSEC_IKE "IPsec IKEv2: "
+
 #define IKE_STATEM_ASSERT_COOKIE(payload_arg) do { \
     if (payload_arg->session->ephemeral_info->cookie_data != NULL) { \
       ike_payload_generic_hdr_t *genpayload_hdr = (ike_payload_generic_hdr_t *) payload_arg->start; \

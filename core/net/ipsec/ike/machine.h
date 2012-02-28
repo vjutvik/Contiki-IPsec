@@ -66,13 +66,13 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 // Used for calculating the AUTH hash
 #define IKE_STATEM_FIRSTMSG_MAXLEN 800
 
-#define IKE_STATEM_MYSPI_GET_MYSPI(session) session->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK
+#define IKE_STATEM_MYSPI_GET_MYSPI(session) (session->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
-#define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) UIP_HTONL(((uint32_t ) IKE_STATEM_MYSPI_GET_MYSPI(session)))
-#define IKE_STATEM_MYSPI_GET_I(var) var = var & IKE_STATEM_MYSPI_I_MASK
-#define IKE_STATEM_IS_INITIATOR(session) IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi)
-#define IKE_STATEM_MYSPI_SET_I(var) var = var | IKE_STATEM_MYSPI_I_MASK
-#define IKE_STATEM_MYSPI_CLEAR_I(var) var = var & ~IKE_STATEM_MYSPI_I_MASK
+#define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) (UIP_HTONL(((uint32_t ) IKE_STATEM_MYSPI_GET_MYSPI(session))))
+#define IKE_STATEM_MYSPI_GET_I(var) (var = var & IKE_STATEM_MYSPI_I_MASK)
+#define IKE_STATEM_IS_INITIATOR(session) (IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi))
+#define IKE_STATEM_MYSPI_SET_I(var) (var = var | IKE_STATEM_MYSPI_I_MASK)
+#define IKE_STATEM_MYSPI_CLEAR_I(var) (var = var & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_INCR(var_addr)         \
   do {                                          \
     if (next_my_spi > IKE_STATEM_MYSPI_MAX)     \
@@ -219,7 +219,7 @@ typedef struct {
   * Common argument for payload writing functions
   */
 typedef struct {
-  uint8_t *start;                                    // The address at which the paylaod should start
+  uint8_t *start;                                 // The address at which the paylaod should start
   ike_statem_session_t *session;                  // Session pointer
   ike_payload_type_t *prior_next_payload;         // Pointer that stores the address of the last "next payload" -field 
 } payload_arg_t;

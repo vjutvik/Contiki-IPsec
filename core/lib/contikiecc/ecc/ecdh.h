@@ -1,3 +1,6 @@
+#include "ecc.h"
+#include "nn.h"
+
 /**
   * \brief      Encodes my public key to the memory beginning at start. Returns a pointer to
   *             the first byte after the public key.
@@ -16,3 +19,8 @@ void ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey);
   * \parameter myPrvKey The private key (commonly ours). 24 bytes long.
   */
 void ecdh_get_shared_secret(uint8_t *shared_key, point_t *peerPubKey, NN_DIGIT *myPrvKey);
+
+
+// Deserialization. Takes an u8_t * as argument.
+#define ECDH_DESERIALIZE_TO_POINTT(ptr) ((point_t *) ptr)
+#define ECDH_DESERIALIZE_TO_NN(ptr) ((NN_DIGIT *) ptr)

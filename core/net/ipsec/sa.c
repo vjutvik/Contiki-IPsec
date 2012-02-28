@@ -63,10 +63,18 @@ const uint8_t sa_encr_ivlen[] =
 };
 
 
-// Authenticator lengths (output lengths) of the PRFs in bytes.
-// The input data must be of the same length or longer. When sourcing data for KEYMAT, the length must be equal.
-//
-// THe ouput length (authenticator length) is also the preferred input length.
+/**
+  * Authenticator lengths (output lengths) of the PRFs in bytes.
+  * 
+  * According to p.46, second paragraph:
+  *   "It is assumed that PRFs accept keys of any length, but have a preferred key size.
+  *    The preferred key size MUST be used as the length of SK_d, SK_pi, and SK_pr (see Section 2.14). 
+  *    For PRFs based on the HMAC construction, the preferred key size is equal to the length of the output
+  *    of the underlying hash function. Other types of PRFs MUST specify their preferred key size.""
+  *   
+  * The output length of each IKE PRF is defined in its standard document. 
+  *
+  */
 const uint8_t sa_prf_keymatlen[] = 
 {
   0,
