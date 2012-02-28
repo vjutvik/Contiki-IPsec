@@ -1,5 +1,4 @@
 #include "encr.h"
-#include "auth.h"
 #include "aes-moo.h"
 
 extern void aes_ctr(encr_data_t *encr_data);
