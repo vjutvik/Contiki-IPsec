@@ -2,7 +2,7 @@
 #define __AUTH_H__
 
 #include "sa.h"
-#include "hmac_sha1/hmac_sha1.h"
+#include "lib/hmac_sha1/hmac-sha1.h"
 
 /**
   * Datastructure that defines a PRF(K, S) operation. (where K is key and S is message) as
@@ -11,7 +11,7 @@
   * As of now, the only implemented PRF operation is SA_PRF_HMAC_SHA1 (RFC 5996),
   * but the data structer is built to accomodate any PRF.
   */
-typedef hmac_sha1_t prf_data_t;
+typedef hmac_data_t prf_data_t;
 
 /*
 FIX: Remove this I feel confident about the above typedef

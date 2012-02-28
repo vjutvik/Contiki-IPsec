@@ -14,7 +14,7 @@
 
 #include "common_ike.h"
 //#include "machine.h"
-#include "ike/auth.h"
+#include "ike/prf.h"
 #include "uip.h"
 #define IKE_MSG_ZERO 0U
 

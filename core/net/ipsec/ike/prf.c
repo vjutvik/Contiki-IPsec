@@ -77,7 +77,7 @@ void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
     case SA_PRF_HMAC_SHA1:         // MUST
 
     // FIX: This copy paste thing ain't beautiful. 
-    // Make prf and sha1_hmac use the same datastructures in the future.
+    // Make prf and hmac_sha1 use the same datastructures in the future.
     /*
     hmac_data_t hmac_data = {
       .out = prf_data->out,
@@ -119,7 +119,7 @@ void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
   * === snip ===
   *
   * \param prf_type The type of PRF. Commonly that negotiated for the SA.
-  * \param data The argument data structure, as defined in auth.h
+  * \param data The argument data structure, as defined in prf.h
   *
   * The sum of the lengths in chunks_len may NOT exceed 255 * 255
   
