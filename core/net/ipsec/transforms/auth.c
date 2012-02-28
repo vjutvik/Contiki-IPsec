@@ -1,4 +1,5 @@
 #include "contiki-conf.h"
+#include "hmac_sha1/hmac_sha1.c"
 #include <lib/random.h>
 
 static const uint8_t auth_sharedsecret[] = "aa280649dc17aa821ac305b5eb09d445";
@@ -19,6 +20,8 @@ void ike_auth_presharedkey_hash(ike_statem_session_t *session, uint8_t *in, uint
   switch(session->sa->prf) {
     //case SA_PRF_HMAC_MD5:          // MAY-
     case SA_PRF_HMAC_SHA1;         // MUST
+
+    // FIX: Use prf as defined below
 
     SHA1Context ctx;
     sha1_reset(&ctx);
@@ -66,11 +69,24 @@ void random_ike(uint8_t *out, uint16_t len, uint16_t *seed)
 /**
   * PRF as defined in the RFC
   */
-void prf(prf_data_t *data)
+void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
 {
-  switch (data->transform) {
+  switch (prf_type) {
     case SA_PRF_HMAC_SHA1:         // MUST
-    sha1(data);
+
+    // FIX: This copy paste thing ain't beautiful. 
+    // Make prf and sha1_hmac use the same datastructures in the future.
+    /*
+    hmac_data_t hmac_data = {
+      .out = prf_data->out,
+      .outlen = prf_data->outlen,
+      .key = prf_data->key,
+      .keylen = prf_data->keylen,
+      .data = prf_data->data,
+      .datalen = prf_data->datalen
+    };
+    */
+    hmac_sha1(&prf_data);
     break;
     
     case SA_PRF_AES128_CBC:      // SHOULD+
@@ -140,7 +156,6 @@ void prf_plus(prfplus_data_t *plus_data)
 
   // Loop over the chunks
   prf_data_t prf_data = {
-    .outlen = 0,  // No truncation
     .key = plus_data->key,
     .keylen = plus_data->keylen,
     .data = &msgbuf

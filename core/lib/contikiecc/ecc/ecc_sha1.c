@@ -385,8 +385,7 @@ SHA1ProcessMessageBlock(SHA1Context *context)
   * \param len Length of msg
   * \param hash Output address
   */
-/*
-void sha1(uint8_t *msg, uint16_t len, uint8_t *hash)
+void contikiecc_sha1(uint8_t *msg, uint16_t len, uint8_t *hash)
 {
   SHA1Context ctx;
   
@@ -394,4 +393,3 @@ void sha1(uint8_t *msg, uint16_t len, uint8_t *hash)
   sha1_update(&ctx, msg, len);
   sha1_digest(&ctx, hash);
 }
-*/

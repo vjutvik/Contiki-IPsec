@@ -2,16 +2,30 @@
 #define __AUTH_H__
 
 #include "sa.h"
+#include "hmac_sha1/hmac_sha1.h"
 
+/**
+  * Datastructure that defines a PRF(K, S) operation. (where K is key and S is message) as
+  * defined in RFC 5996 section 2.13.
+  *
+  * As of now, the only implemented PRF operation is SA_PRF_HMAC_SHA1 (RFC 5996),
+  * but the data structer is built to accomodate any PRF.
+  */
+typedef hmac_sha1_t prf_data_t;
+
+/*
+FIX: Remove this I feel confident about the above typedef
 typedef struct {
-  uint8_t transform;       // Transform type
+  uint8_t transform;    // Transform type (only SA_PRF_HMAC_SHA1 implemented as of now)
   uint8_t *out;         // Address to which the output will be written
-//  uint8_t outlen;       // Desired length of the output (in bytes) (individual restricitions applies to each transforms)
-//  uint8_t *keymat;      // Address of the key FIX: Why this field?
-//  uint8_t keymatlen;    // Length of the key FIX: Why this field?
-  uint8_t *data;       // Address of the data
+  uint8_t outlen;       // Desired length of the output (in bytes) (individual restricitions applies to each transforms)
+  uint8_t *keymat;      // Address of the key (K)
+  uint8_t keymatlen;    // Length of the key
+  uint8_t *data;        // Address of the data (S)
   uint16_t datalen;     // Length of the data
 } prf_data_t;
+*/
+
 
 typedef struct {
   sa_prf_transform_type_t prf;
