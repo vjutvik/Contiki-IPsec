@@ -1,6 +1,8 @@
-#include "contiki-conf.h"
-#include "hmac_sha1/hmac_sha1.c"
 #include <lib/random.h>
+
+#include "contiki-conf.h"
+#include "prf.h"
+#include "hmac_sha1/hmac_sha1.c"
 
 static const uint8_t auth_sharedsecret[] = "aa280649dc17aa821ac305b5eb09d445";
 static const uint8_t auth_keypad[] = "Key Pad for IKEv2";
