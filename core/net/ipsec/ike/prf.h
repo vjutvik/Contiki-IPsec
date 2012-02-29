@@ -2,7 +2,7 @@
 #define __AUTH_H__
 
 #include "sa.h"
-#include "lib/hmac_sha1/hmac-sha1.h"
+#include "hmac-sha1/hmac-sha1.h"
 
 /**
   * Datastructure that defines a PRF(K, S) operation. (where K is key and S is message) as
