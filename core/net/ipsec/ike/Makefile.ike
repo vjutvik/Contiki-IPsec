@@ -1,2 +1,2 @@
 CONTIKI_SOURCEFILES += common_ike.c \
-  ike.c .c initiator.c machine.c prf.c responder.c
+  ike.c initiator.c machine.c prf.c responder.c

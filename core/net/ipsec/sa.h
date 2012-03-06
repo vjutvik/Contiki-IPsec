@@ -41,8 +41,8 @@ typedef enum {
   * When the limitations in TinyECC are fixed the defines below should be replaced with a
   * complete table decribing the size requirements for each DH transform.
   */
-#define IKE_DH_PUBKEY_LEN 48  // (2 * 192 bits)
-#define IKE_DH_PRVKEY_LEN 24
+#define IKE_DH_PRVKEY_LEN 24                        // MUST be a multiple of sizeof(NN_DIGIT), which is usually the word size of the CPU.
+#define IKE_DH_PUBKEY_LEN (2 * IKE_DH_PUBKEY_LEN)   // (2 * 192 bits)
 #define IKE_DH_GIR_LEN IKE_DH_PRVKEY_LEN
 
 
@@ -73,7 +73,8 @@ typedef enum {                   // RFC4307      Status of this implementation
 
 extern const uint8_t sa_encr_ivlen[];
 extern const uint8_t sa_encr_keymat_extralen[];
-extern const uint8_t sa_prf_keymatlen[];
+extern const uint8_t sa_prf_preferred_keymatlen[];
+extern const uint8_t sa_prf_output_len[];
 #define SA_ENCR_CURRENT_IVLEN(session) sa_encr_ivlen[session->sa.encr]
 #define SA_ENCR_IVLEN_BY_TYPE(encr) sa_encr_ivlen[encr]
 #define SA_ENCR_CURRENT_KEYLEN(session) SA_ENCR_MAX_KEYMATLEN
@@ -93,8 +94,10 @@ typedef enum {                  // RFC4307      Status of this implementation
 } sa_prf_transform_type_t;
 
 
-#define SA_PRF_MAX_KEYMATLEN 20   // This value must be the maximum value of sa_prf_keymatlen
-#define SA_PRF_CURRENT_KEYMATLEN(session) sa_prf_keymatlen[session->sa.prf]
+#define SA_PRF_MAX_OUTPUT_LEN 20  // This value must be the maximum value of sa_prf_output_len[]
+#define SA_PRF_MAX_PREFERRED_KEYMATLEN 20   // This value must be the maximum value of sa_prf_preferred_keymatlen
+#define SA_PRF_PREFERRED_KEYMATLEN(session) sa_prf_preferred_keymatlen[session->sa.prf]
+#define SA_PRF_OUTPUT_LEN(session) sa_prf_output_len[session->sa.prf]
 
 
 /**
@@ -182,7 +185,7 @@ typedef struct {
      "The lengths of SK_d, SK_pi, and SK_pr MUST be the preferred key length of the PRF agreed upon."
      */
   // Used for derivation of further keying material for Child SAs. Length MUST equal the key size of the PRF.   
-  uint8_t sk_d[SA_PRF_MAX_KEYMATLEN];
+  uint8_t sk_d[SA_PRF_MAX_OUTPUT_LEN];
   
   /**
     * IKE SA authentication / integrity KEYMAT. (Often the K in PRF(K, M))

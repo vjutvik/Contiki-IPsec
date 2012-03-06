@@ -3,12 +3,12 @@
   */
 
 #include <lib/random.h>
-#include "machine.h"
+//#include "machine.h"
 #include "contikiecc/ecc/ecc.h"
 #include "contikiecc/ecc/ecdh.h"
 #include "transforms/integ.h"
 #include "transforms/encr.h"
-#include "payload.h"
+//#include "payload.h"
 #include "common_ike.h"
 
 /**
@@ -466,8 +466,6 @@ void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_h
   */
 void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 {
-  const uint8_t prf_keylen = SA_PRF_CURRENT_KEYMATLEN(session);
-
   // Calculate the DH exponential: g^ir
   uint8_t gir[IKE_DH_GIR_LEN];
   ecdh_get_shared_secret(gir, ECDH_DESERIALIZE_TO_POINTT(peer_pub_key), ECDH_DESERIALIZE_TO_NN(session->ephemeral_info->my_prv_key));
@@ -510,33 +508,33 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
       SKEYSEED = prf(Ni | Nr, g^ir)
     *
     */
-  uint8_t skeyseed[prf_keylen];
+  uint8_t skeyseed[SA_PRF_OUTPUT_LEN(session)];
   random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);
-  memcpy(peernonce_start, session->ephemeral_info->peer_nonce, session->ephemeral_info->peernonce_len);
+  memcpy(peernonce_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
 
   prf_data_t prf_data =
     {
       .out = skeyseed,
-      //.outlen = 0,
-      .key = &first_key,
+      .key = first_key,
       .keylen = first_keylen,
-      .data = &gir,
+      .data = gir,
       .datalen = IKE_DH_GIR_LEN
     };
-  prf(session->sa.prf, &data);
+  prf(session->sa.prf, &prf_data);
 
 
   /**
-    *
+    * Complete the next step:
+    * 
       {SK_d | SK_ai | SK_ar | SK_ei | SK_er | SK_pi | SK_pr }
                   = prf+ (SKEYSEED, Ni | Nr | SPIi | SPIr )
     */
 
   /**
-    * Compile the second message
+    * Compile the second message (Ni | Nr | SPIi | SPIr)
     */
   random_ike(ni_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);      
-  memcpy(nr_start, session->epehemeral_info->peernonce, session->epehemeral_info->peernonce_len);
+  memcpy(nr_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
   *((uint32_t *) spii_start) = IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session);
   *(((uint32_t *) spii_start) + 1) = IKE_STATEM_MYSPI_GET_MYSPI_LOW(session);
   *((uint32_t *) spir_start) = session->peer_spi_high;
@@ -549,21 +547,39 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   // Set up the arguments
   sa_ike_t *sa = &session->sa;
 
-  uint8_t sk_ptr[] = { sa.sk_d, sa.sk_ai, sa.sk_ar, sa.sk_ei, sa.sk_er, sa.sk_pi, sa.sk_pr };
-  uint8_t sk_len[] = { prf_keylen, SA_INTEG_CURRENT_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYLEN(session), SA_ENCR_CURRENT_KEYLEN(session), prf_keylen, prf_keylen};
+
+  /**
+    * Memory addresses and lengths of {SK_d | SK_ai | SK_ar | SK_ei | SK_er | SK_pi | SK_pr }
+    *
+    * The lengths of the fields are determined as follows:
+    *   SK_a* and SK_e* are the sources of keying material for the integrity and the encryption algorithm, respectively.
+    *   Therefore their lengths are determined by the choice of algorithm (made so during the first exchange, which has
+    *   been completed at when this function is called)
+    *
+    *   SK_d (source of keying material for child SAs) and SK_p* (used during authentication) length's are of the negotiated PRF's 
+    *   preferred key length. From p. 47, first paragraph:
+    *     "The lengths of SK_d, SK_pi and SK_pr MUST be the preferred key length of the PRF agreed upon."
+    *
+    */
+  uint8_t *sk_ptr[] = { sa->sk_d,                             sa->sk_ai,                        sa->sk_ar,                            sa->sk_ei,                      sa->sk_er,                        session->ephemeral_info->sk_pi,       session->ephemeral_info->sk_pr};
+  uint8_t sk_len[]  = { SA_PRF_PREFERRED_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYLEN(session), SA_ENCR_CURRENT_KEYLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session)};
   
   prfplus_data_t prfplus_data = {
-    .prf = sa.prf,
-    .key = &skeyseed,
+    .prf = sa->prf,
+    .key = skeyseed,
     .keylen = sizeof(skeyseed),
-    .no_chunks = sizeof(sk_ptr),
-    .data = &second_msg,
+    .no_chunks = 7,
+    .data = second_msg,
     .datalen = sizeof(second_msg),
-    .chunks = &sk_ptr,
-    .chunks_len = &sk_len
-  }
+    .chunks = sk_ptr,
+    .chunks_len = sk_len
+  };
 
-  // Run PRF+
+  /**
+    * Execute prf+ (SKEYSEED, Ni | Nr | SPIi | SPIr )
+    *
+    * This will populate the IKE SA (the SK_* fields)
+    */  
   prf_plus(&prfplus_data);
 }
 

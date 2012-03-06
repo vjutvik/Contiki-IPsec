@@ -1,0 +1,1 @@
+uint16_t rand16(void);

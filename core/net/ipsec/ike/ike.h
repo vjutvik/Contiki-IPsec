@@ -1,12 +1,20 @@
-#include "machine.h"
+#ifndef __IKE_H__
+#define __IKE_H__
 
+#include "contiki.h"
+#include "process.h"
+
+/**
+  * Send this event to the ike2_service in order to trigger negotiation. Please see
+  * process declaration for argument documentation.
+  */
 extern process_event_t ike_negotiate_event;
-
-void ike_init(void);
 
 PROCESS_NAME(ike2_service);
 
 /**
-  * Call this to setup a child SA with traffic selectors matching triggering_pkt_addr and commanding_entry.
+  * Call this to initiate the IKEv2 service
   */
-ike_statem_session_t *ike_setup_session(ipsec_addr_t * triggering_pkt_addr, spd_entry_t * commanding_entry);
+void ike_init(void);
+
+#endif

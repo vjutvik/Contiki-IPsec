@@ -12,8 +12,6 @@
   * -> Numbers must be expressed in network byte order (or the other peer won't understand you)
   */
 
-#include "common_ike.h"
-//#include "machine.h"
 #include "ike/prf.h"
 #include "uip.h"
 #define IKE_MSG_ZERO 0U
@@ -64,9 +62,9 @@ typedef enum {
 
                      Figure 4:  IKE Header Format
 */
-#define IKE_PAYLOADFIELD_IKEHDR_VERSION_STRING 0xblaha
-#define IKE_PAYLOADFIELD_IKEHDR_FLAGS_ISORIGALINITIATOR_BM IKE_MSG_GET_8BITMASK(4) // Syntax brokenness?
-#define IKE_PAYLOADFIELD_IKEHDR_FLAGS_ISARESPONSE_BM IKE_MSG_GET_8BITMASK(2) // Syntax brokenness?
+#define IKE_PAYLOADFIELD_IKEHDR_VERSION_STRING 0x20 // concat(MjVer, MnVer) (Major 2, Minor 0)
+#define IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR 0x8
+#define IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER 0x2
 
 typedef enum {
   IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_SA_INIT = 34,
@@ -79,28 +77,28 @@ typedef enum {
   * Macros for setting the IKE header. Endian conversions are not performed as they are
   * for all practical purposes unnecessary.
   */
-#define SET_IKE_HDR(payload_arg, exchtype, flags, msg_id) \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->version = IKE_PAYLOADFIELD_IKEHDR_VERSION_STRING; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->exchange_type = exchtype; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->flags = flags; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->message_id = msg_id; \
-  payload_arg->prior_next_payload = &((ike_payload_ike_hdr_t *) payload_arg->start)->next_payloyad; \
-  payload_arg->start += sizeof(ike_payload_ike_hdr_t)
+#define SET_IKE_HDR(payload_arg, exchtype, flags_arg, msg_id) \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->version = IKE_PAYLOADFIELD_IKEHDR_VERSION_STRING;   \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->exchange_type = exchtype;                           \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->flags = flags_arg;                                  \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->message_id = msg_id;                                \
+  (payload_arg)->prior_next_payload = &((ike_payload_ike_hdr_t *) (payload_arg)->start)->next_payload;  \
+  (payload_arg)->start += sizeof(ike_payload_ike_hdr_t)
 
 
-#define SET_IKE_HDR_AS_RESPONDER(ike_hdr, session, next_payload, exchtype) \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->initiator_spi_high = payload_arg->session->peer_spi_high; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->initiator_spi_low = payload_arg->session->peer_spi_low; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->responder_spi_high = IKE_MSG_ZERO; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->responder_spi_low = IKE_STATEM_MYSPI_GET_SPI(payload_arg->session->initiator_and_my_spi); \
-  SET_IKE_HDR(payload_arg, exchtype, IKE_PAYLOAD_FLAGS_RESPONDER, payload_arg->session->peer_msg_id)
+#define SET_IKE_HDR_AS_RESPONDER(payload_arg, exchtype) \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = (payload_arg)->session->peer_spi_high;  \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = (payload_arg)->session->peer_spi_low;    \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = IKE_MSG_ZERO;                           \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session->initiator_and_my_spi); \
+  SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOAD_FLAGS_RESPONDER, (payload_arg)->session->peer_msg_id)
 
 #define SET_IKE_HDR_AS_INITIATOR(payload_arg, exchtype) \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->responder_spi_high = payload_arg->session->peer_spi_high; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->responder_spi_low = payload_arg->session->peer_spi_low; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->initiator_spi_high = IKE_MSG_ZERO; \
-  ((ike_payload_ike_hdr_t *) payload_arg->start)->initiator_spi_low = IKE_STATEM_MYSPI_GET_SPI(payload_arg->session->initiator_and_my_spi); \
-  SET_IKE_HDR(payload_arg, exchtype, IKE_PAYLOAD_FLAGS_INITIATOR, payload_arg->session->my_msg_id)
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = (payload_arg)->session->peer_spi_high;  \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = (payload_arg)->session->peer_spi_low;    \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = IKE_MSG_ZERO;                           \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session); \
+  SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR, (payload_arg)->session->my_msg_id)
 
 
 typedef struct {
@@ -135,15 +133,15 @@ typedef struct {
   * payload_arg is of type *payload_arg_t
   * payload_id is of type ike_payload_type_t
   */
-#define SET_GENPAYLOADHDR(genpayloadhdr, payload_arg, payload_id) \
-                     genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start; \
-                     *payload_arg->prior_next_payload = payload_id; \
-                     payload_arg->prior_next_payload = &genpayloadhdr->next_payload; \
-                     genpayloadhdr->clear = IKE_MSG_ZERO; \
-                     payload_arg->start += sizeof(ike_payload_generic_hdr_t)
+#define SET_GENPAYLOADHDR(genpayloadhdr, payload_arg, payload_id)                       \
+                     genpayloadhdr = (ike_payload_generic_hdr_t *) (payload_arg)->start;  \
+                     *(payload_arg)->prior_next_payload = payload_id;                     \
+                     (payload_arg)->prior_next_payload = &genpayloadhdr->next_payload;    \
+                     genpayloadhdr->clear = IKE_MSG_ZERO;                               \
+                     (payload_arg)->start += sizeof(ike_payload_generic_hdr_t)
 
 #define SET_NO_NEXT_PAYLOAD(payload_arg) \
-                     *payload_arg->prior_next_payload = IKE_PAYLOAD_NO_NEXT
+                     *(payload_arg)->prior_next_payload = IKE_PAYLOAD_NO_NEXT
 typedef struct {
   ike_payload_type_t next_payload;
   uint8_t clear;

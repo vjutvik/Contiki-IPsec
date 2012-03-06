@@ -2,7 +2,7 @@
 
 #include "contiki-conf.h"
 #include "prf.h"
-#include "hmac_sha1/hmac_sha1.c"
+#include "hmac-sha1/hmac-sha1.h"
 
 static const uint8_t auth_sharedsecret[] = "aa280649dc17aa821ac305b5eb09d445";
 static const uint8_t auth_keypad[] = "Key Pad for IKEv2";
@@ -140,7 +140,7 @@ void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
 
 void prf_plus(prfplus_data_t *plus_data)
 {
-  const uint8_t prf_keylen = sa_prf_keymatlen[plus_data->prf];
+  const uint8_t prf_keylen = sa_prf_preferred_keymatlen[plus_data->prf];
   
   // Loop over chunks_len and find the longest chunk
   uint8_t chunk_maxlen = 0;

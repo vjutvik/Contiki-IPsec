@@ -1,12 +1,13 @@
 #include "machine.h"
 #include "ike.h"
+#include "common_ipsec.h"
+#include "common_ike.h"
+#include "spd.h"
 
 process_event_t ike_negotiate_event;
 
 void ike_init()
 {
-  ike_statem_init();
-  
   ike_negotiate_event = process_alloc_event();
   process_start(&ike2_service, NULL);
 }
@@ -27,23 +28,24 @@ static void ike_negotiate_sa(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *com
     *
     */
 
-  ike_statem_session_t session;
+  /*
+  ike_statem_session_t *session;
   if((session = ike_statem_get_session_by_addr(triggering_pkt_addr->addr)) != NULL) {
     // Command this session to create a new child SA
     if (IKE_STATEM_SESSION_ISREADY(session)) {
-      /**
+      PRINTF(IPSEC_IKE "Using existing IKE session for SA negotiation\n");
+//      **
         * Cause the already established session to negotiate a new set of SAs. Disabled as for now.
-        */
+//        *
       // Warn: Second negotiation attempt. Disabled
     }
-    else {
-      // Warning: Couldn't create Child SA in response to triggering packet since the session was busy.
-    }
+    else
+      PRINTF(IPSEC_IKE ": Warning: Couldn't create child SA in response to triggering packet since IKE session was busy\n");
   }
-  else {
+  else {*/
     // We don't have an IKE session with this host. Connect and setup.
     ike_statem_setup_session(triggering_pkt_addr, commanding_entry);
-  }
+  //}
 }
 
 
@@ -68,18 +70,19 @@ PROCESS_THREAD(ike2_service, ev, data)
 {
   PROCESS_BEGIN();
   
-  switch(ev) {
-    case ike_negotiate_event:
-    ike_negotiate_sa((triggering_pkt_addr)(trigger_pkt_addr *) data[0], (spd_entry_t *) data[1]);    
-    break;
-    
-    case tcpip_event:
-    ike_statem_incoming_data_handler();
-    break;
-    
-    default:
-    // Info: Unknown event
+  ike_statem_init();
+  
+  while(1) {
+    PROCESS_WAIT_EVENT();
+    if (ev == ike_negotiate_event)
+      ike_negotiate_sa((ipsec_addr_t *) ((u8_t **) data)[0], (spd_entry_t *) ((u8_t **) data)[1]);
+    else {
+      if (ev == tcpip_event)
+        ike_statem_incoming_data_handler();
+      else
+        PRINTF(IPSEC_IKE "ike2_service: Unknown event\n");
+    }
   }
+  
   PROCESS_END();
 }
-

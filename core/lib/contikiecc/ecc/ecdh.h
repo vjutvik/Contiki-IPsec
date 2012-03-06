@@ -7,7 +7,7 @@
   * \parameter  start Start of the public key. 48 bytes (2 * 192 bits) will be written.
   * \parameter  myPrvKey My private key of 24 bytes length (192 bits)
   */
-void ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey);
+uint8_t *ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey);
 
 
 /**

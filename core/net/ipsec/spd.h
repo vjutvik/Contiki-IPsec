@@ -26,7 +26,7 @@
 #include "net/uip.h"
 
 // The number of entries in spd_table. Adjust according to need.
-#define SPD_ENTRIES 2
+#define SPD_ENTRIES 3
 
 
 /**

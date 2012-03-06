@@ -13,6 +13,7 @@
 #include "sa.h"
 #include "spd.h"
 #include "uip.h"
+#include "spd_conf.h"
 
 //#define SPD_CONF_POLICY_ENTRIES_LEN 2
 
@@ -37,17 +38,13 @@
 
 //const spd_table_t spd_table[SPD_CONF_POLICY_ENTRIES_LEN];
 
-// Section "3.4.  Key Exchange Payload" specifies an interdependence between the IKE proposal's
-// MODP group and the KE payload. The following define states this common property.
-#define SA_IKE_MODP_GROUP SA_DH_192_RND_ECP_GROUP
-
 /**
   * IKEv2 proposals as described in RFC 5996 with the following exceptions:
   *
   * > Every proposal must offer integrity protection. This is provided through a combined mode
   *   transform _or_ via the integrity dito.
   */
-const spd_proposal_tuple_t spdconf_ike_proposal[] =
+const spd_proposal_tuple_t spdconf_ike_proposal[6] =
 {
   // IKE proposal
   { SA_CTRL_NEW_PROPOSAL, SA_PROTO_IKE }, 

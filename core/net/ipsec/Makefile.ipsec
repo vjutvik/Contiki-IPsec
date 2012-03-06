@@ -1,6 +1,6 @@
 CONTIKI_SOURCEFILES += common_ipsec.c \
   filter.c sa.c sad.c sad_conf.c spd.c \
-  spd_conf.c
+  spd_conf.c ipsec_random.c
 
 #CONTIKI_SOURCEFILES += ipsec.c
 #      \

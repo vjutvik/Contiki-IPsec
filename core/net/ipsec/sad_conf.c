@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "uip.h"
 #include "sad.h"
 #include "common_ipsec.h"

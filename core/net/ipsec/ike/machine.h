@@ -22,6 +22,12 @@
 #include "spd.h"
 #include "common_ipsec.h"
 #include "sa.h"
+#include "ecc/ecc.h"
+#include "ecc/nn.h"
+#include "ipsec_random.h"
+
+#define IKE_UDP_PORT 500
+
 
 /**
   * Protocol-related stuff
@@ -32,8 +38,8 @@
 /**
   * Global buffers used for communicating information with the state machine
   */
-uint32_t *udp_buf; // Pointing at the first word of the UDP datagram's data areas
-uip_ip6addr_t *uip_addr6_remote; // IPv6 address of remote peer
+extern uint8_t *msg_buf; // Pointing at the first word of the UDP datagram's data areas
+//extern uip_ip6addr_t *uip_addr6_remote; // IPv6 address of remote peer
 
 /**
   * Code for state related stuff
@@ -53,7 +59,8 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
   ike_statem_statefn_ret_t ike_statem_##name##_##type##(ike_statem_session_t *session)
 */
 
-#define IKE_STATEM_MYSPI_MAX 32767 // 2^15 - 1
+
+#define IKE_STATEM_MYSPI_MAX 32767 // 15 bits. First bit occupied by initiator / responder. 2^15 - 1
 
 // Macros for manipulating 'initiator_and_my_spi'
 #ifdef BIGENDIAN
@@ -66,12 +73,13 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 // Used for calculating the AUTH hash
 #define IKE_STATEM_FIRSTMSG_MAXLEN 800
 
-#define IKE_STATEM_MYSPI_GET_MYSPI(session) (session->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
+#define IKE_STATEM_MYSPI_GET_MYSPI(session) ((session)->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
 #define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) (UIP_HTONL(((uint32_t ) IKE_STATEM_MYSPI_GET_MYSPI(session))))
 #define IKE_STATEM_MYSPI_GET_I(var) (var = var & IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_IS_INITIATOR(session) (IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi))
 #define IKE_STATEM_MYSPI_SET_I(var) (var = var | IKE_STATEM_MYSPI_I_MASK)
+#define IKE_STATEM_MYSPI_SET_NEXT(var) (++(var))  // (Note: This will overflow into the Initiator bit after 2^15 - 1 calls)
 #define IKE_STATEM_MYSPI_CLEAR_I(var) (var = var & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_INCR(var_addr)         \
   do {                                          \
@@ -80,10 +88,11 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
     *var_addr = next_my_spi++;                  \
   } while (false)
 
+/*
 #define IKE_STATEM_GET_8BYTE_SPIi(session)
 #define IKE_STATEM_GET_8BYTE_SPIr(session)
-#define IKE_STATEM_SESSION_ISREADY(session) \
-    (ctimer_expired(&session->retrans_timer))
+*/
+#define IKE_STATEM_SESSION_ISREADY(session) (ctimer_expired(&session->retrans_timer))
 
 
 
@@ -98,8 +107,8 @@ typedef struct {
   uint32_t local_spi;
 
   // Used for generating the AUTH payload. Length MUST equal the key size of the negotiated PRF.
-  uint8_t sk_pi[SA_PRF_MAX_KEYMATLEN];   
-  uint8_t sk_pr[SA_PRF_MAX_KEYMATLEN];
+  uint8_t sk_pi[SA_PRF_MAX_PREFERRED_KEYMATLEN];   
+  uint8_t sk_pr[SA_PRF_MAX_PREFERRED_KEYMATLEN];
 
   /**
     * Seed for generating our Nonce. This will effectively cause our multibyte nonce to become a
@@ -112,13 +121,13 @@ typedef struct {
     * the OS etc.
     */
   uint16_t my_nonce_seed;
-  uint8_t peer_nonce[IKE_PAYLOAD_PEERNONCE_LEN];
+  uint8_t peernonce[IKE_PAYLOAD_PEERNONCE_LEN];
   uint8_t peernonce_len;
 
   uint8_t peer_first_msg[IKE_STATEM_FIRSTMSG_MAXLEN];
   uint16_t peer_first_msg_len;
 
-  uint8_t my_prv_key[IKE_DH_PRVKEY_LEN];
+  NN_DIGIT my_prv_key[IKE_DH_PRVKEY_LEN / sizeof(NN_DIGIT)];
 } ike_statem_ephemeral_info_t;
 
 
@@ -171,7 +180,7 @@ typedef struct ike_statem_session {
     */
   uint8_t my_msg_id, peer_msg_id;
 
-  // Message retransmission timer 
+  // Message retransmission timer
   struct ctimer retrans_timer;
 
   // IKE SA parameters
@@ -186,12 +195,12 @@ typedef struct ike_statem_session {
   /**
     * Address of COOKIE data. Used by ike_statem_trans_initreq(). The default value should be NULL.
     */
-  ike_payload_generic_hdr_t *cookie_data;
+  ike_payload_generic_hdr_t *cookie_payload;
 
-  // The edge to follow
-  void (*transition_fn)(struct ike_statem_session *);
+  // The edge (transition) to follow
+  uint16_t (*transition_fn)(struct ike_statem_session *);
   
-  // Set the (future) state
+  // The above transition will (if all goes well) take us to this state.
   void (*next_state_fn)(struct ike_statem_session *);
 
 } ike_statem_session_t;
@@ -224,9 +233,9 @@ typedef struct {
   ike_payload_type_t *prior_next_payload;         // Pointer that stores the address of the last "next payload" -field 
 } payload_arg_t;
 
-
-ike_statem_session_t *ike_statem_setup_session(ipsec_addr_t * triggering_pkt_addr, spd_entry_t * commanding_entry);
-void *ike_statem_remove_session(ike_statem_session_t *);
+ike_statem_session_t *ike_statem_get_session_by_addr(uip_ip6addr_t *addr);
+void ike_statem_setup_session(ipsec_addr_t * triggering_pkt_addr, spd_entry_t * commanding_entry);
+void ike_statem_remove_session(ike_statem_session_t *session);
 
 /**
   * Each edge in a mealy machine is associated with an output. Below we declare the data structure for the
@@ -252,6 +261,14 @@ typedef struct {
   ike_statem_edgefn_ret_t (*undo)(ike_statem_session_t *); // Undo side effects
 } ike_statem_transition_t;
 */
+
 void ike_statem_init();
+void ike_statem_incoming_data_handler();
+
+/**
+  * State machine entry points
+  */
+uint16_t ike_statem_trans_initreq(ike_statem_session_t *session);
+uint16_t ike_statem_state_respond_start(void);
 
 #endif
