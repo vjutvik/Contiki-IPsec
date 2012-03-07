@@ -79,7 +79,7 @@
 #define WITH_CONF_IPSEC_ESP             1
 
 /* The IKE subsystem is optional if the SAs are manually configured */
-#define WITH_CONF_IKE                   1
+#define WITH_CONF_IPSEC_IKE             1
 
 /* Configuring an AES implementation */
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes
