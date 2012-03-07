@@ -165,6 +165,8 @@ void ecc_win_mul_base(point_t * P0, NN_DIGIT * n);
   */
 void ecc_gen_private_key(NN_DIGIT * prvKey);
 
+void ecc_gen_public_key(point_t *PublicKey, NN_DIGIT *PrivateKey);
+
 /**
  * \brief             Get base point
  */

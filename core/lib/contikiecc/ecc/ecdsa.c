@@ -78,7 +78,7 @@ gen_random(NN_DIGIT *a, uint8_t length)
 */	
   int ri;
   for(ri=0; ri<length; ri++) { 
-    srand(100);
+    random_init(100);
     a[ri] = ((uint32_t)rand() << 16)^((uint32_t)rand());
   }
 

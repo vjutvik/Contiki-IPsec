@@ -1,3 +1,1 @@
-ECC_SOURCEFILES = ecc.c ecdsa.c ecc_sha1.c
-
-CONTIKI_ECC_SOURCEFILES += $(ECC_SOURCEFILES)
+CONTIKI_ECC_SOURCEFILES +=  ecc.c ecdsa.c ecdh.c ecc_sha1.c

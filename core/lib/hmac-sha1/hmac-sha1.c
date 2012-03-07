@@ -18,11 +18,10 @@
 //#define HMAC_SHA1_96_TEST
 
 #include "contiki.h"
-#include <stdio.h>
-#include "hmac-sha1-96.h"
+#include "hmac-sha1.h"
 
-#define MIRACL "miracl"
-#define CONTIKIECC "contikiecc"
+#define MIRACL 1
+#define CONTIKIECC 2
 
 #define SHA_LIB CONTIKIECC // or MIRACL
 
@@ -175,26 +174,6 @@ static void hash_sha1( uint8_t * out, uint8_t * in, uint16_t inlen)
 	#endif
 }
 
-
-/**
- * Takes the first n bytes in the in array and writes them to the out array.
- *
- * The length of the in array must be at least n bytes.
- *
- * @param out    The output array
- * @param in     The input array
- * @param n      The number of bytes to copy
- */
-static  void truncate( uint8_t * out, uint8_t * in, uint16_t n ){
-
-	uint16_t i;
-
-	for( i = 0; i < n; i++ ){
-		out[i] = in[i];
-	}
-
-}
-
 void PRINT_BUF(const char* name,unsigned char* buf, unsigned int size)
 {
   int i=0;
@@ -325,7 +304,7 @@ int main(){
 	uint16_t i;
 
 
-	hmac_sha1_96( test_output, test_key, KEY_LENGTH, test_data, DATA_LENGTH );
+	hmac_sha1( test_output, test_key, KEY_LENGTH, test_data, DATA_LENGTH );
 
 	dy_printf( "TEST PROGRAM FOR HMAC-SHA1-96\n" );
 

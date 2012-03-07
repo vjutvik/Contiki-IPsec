@@ -1,16 +1,25 @@
 /**
+  * DH interface for Contiki
+  * - Ville
+  */
+#include <string.h>
+#include "contiki.h"
+#include "nn.h"
+#include "ecc.h"
+
+/**
   * Encodes the public key beginning at start.
   */
 uint8_t *ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey)
 {
-  uint8_t *ptr = start;
+  uint8_t *ptr = (uint8_t *) start;
   uint16_t len = KEYDIGITS * NN_DIGIT_LEN;
   point_t pubKey;
 
   ecc_gen_public_key(&pubKey, myPrvKey);
-  nn_encode(ptr, len, pubKey.x, KEYDIGITS);
+  NN_Encode(ptr, len, pubKey.x, KEYDIGITS);
   ptr += len;
-  nn_encode(ptr, len, pubKey.y, KEYDIGITS);
+  NN_Encode(ptr, len, pubKey.y, KEYDIGITS);
   
   return ptr + len;
 }

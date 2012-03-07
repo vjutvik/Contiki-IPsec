@@ -78,7 +78,7 @@ random_data(void *ptr, uint16_t len)
   
   uint16_t i;
   for(i=0; i<len; i++) {
-    srand(100);
+    random_init(100);
     ((uint8_t *)(ptr))[i] = rand() % 100; 
   }
 }

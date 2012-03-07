@@ -87,7 +87,7 @@ void sad_conf()
   // Important: Keep in mind that the SAD stores the SPIs in network byte order
   my_incoming_entry->spi = UIP_HTONL(1);
   
-  
+  return;
   
   /**
     * Create an OUTGOING entry. time_of_creation is set to 0 in order to mark is as manual,

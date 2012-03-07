@@ -29,6 +29,6 @@ typedef struct {
   uint16_t datalen;
 } hmac_data_t;
 
-void hmac_sha1_96(hmac_data_t *hmac_data);
+void hmac_sha1(hmac_data_t *hmac_data);
 
 #endif /* HMACSHA196_H_ */

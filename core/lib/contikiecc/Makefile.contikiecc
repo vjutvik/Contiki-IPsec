@@ -44,9 +44,8 @@ target_cpu_makefile := $(wildcard $(CONTIKI_ECC_DIR)/cpu/$(CPU)/Makefile.$(CPU))
 
 ### Check if the target makefile exists
 ifeq ($(strip $(target_cpu_makefile)),)
-  ${error The cpu specific makefile does not exist.}
+  ${error ContikiECC: The cpu specific makefile does not exist.}
 else
-
   include $(CONTIKI_ECC_DIR)/cpu/$(CPU)/Makefile.$(CPU)
 endif
 

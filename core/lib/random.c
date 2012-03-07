@@ -41,7 +41,7 @@
 void
 random_init(unsigned short seed)
 {
-  srand(seed);
+  random_init(seed);
 }
 /*---------------------------------------------------------------------------*/
 unsigned short

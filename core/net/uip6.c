@@ -93,8 +93,8 @@
 /*---------------------------------------------------------------------------*/
 
 // IPsec stuff start
-#define IPSECDBG_PRINTF //printf
-#define MEMPRINT //memprint
+#define IPSECDBG_PRINTF(...) //printf(__VA_ARGS__)
+#define MEMPRINT(...) //memprint(__VA_ARGS__)
 
 // IPsec stuff ends
 

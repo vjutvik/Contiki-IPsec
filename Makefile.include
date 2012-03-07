@@ -80,6 +80,7 @@ ifdef UIP_CONF_IPV6
 
   include $(CONTIKI)/core/net/ipsec/Makefile.ipsec
   include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
+  include $(CONTIKI)/core/net/ipsec/transforms/Makefile.transforms
   include $(CONTIKI_ECC_DIR)/Makefile.contikiecc
   include $(CONTIKI)/core/lib/hmac-sha1/Makefile.hmac-sha1
   # end IPsec
@@ -104,7 +105,7 @@ endif
 CONTIKI_SOURCEFILES += $(CONTIKIFILES)
 
 CONTIKIDIRS += ${addprefix $(CONTIKI)/core/,dev lib net net/mac net/rime \
-                 net/rpl net/ipsec net/ipsec/ike net/ipsec/transforms sys cfs ctk lib/ctk loader . }
+                 net/rpl net/ipsec net/ipsec/ike net/ipsec/transforms lib/hmac-sha1 sys cfs ctk lib/ctk loader . }
 
 oname = ${patsubst %.c,%.o,${patsubst %.S,%.o,$(1)}}
 
