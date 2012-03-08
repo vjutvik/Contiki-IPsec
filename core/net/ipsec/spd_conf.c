@@ -106,8 +106,8 @@ static const spd_proposal_tuple_t my_ah_esp_poposal[] =
 
 
 #define set_dest_port(port)                         \
-  .dest_port_from = uip_htons(port),                \
-  .dest_port_to = uip_htons(port)
+  .dest_port_from = UIP_HTONS(port),                \
+  .dest_port_to = UIP_HTONS(port)
 
 
 #define set_any_dest_port()                         \
@@ -135,33 +135,29 @@ const spd_entry_t spd_table[SPD_ENTRIES] =
     {
       .selector =
       {
-        .direction = SPD_INCOMING_TRAFFIC,   // This concerns incoming traffic...
+        .direction = SPD_ANY_TRAFFIC,       // This concerns incoming and outgoing traffic...
         set_any_ip6addr(),                  // ...from any host...
-        //.nextlayer_type = UIP_PROTO_UDP,    // ...using UDP...
-        .nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
-        //set_dest_port(500)                  // ...on port 500.
-        set_any_dest_port()
+        .nextlayer_type = UIP_PROTO_UDP,    // ...using UDP...
+        set_dest_port(500)                  // ...to destination port 500.
       },
       .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
       .offer = NULL                         // N/A
     },
     
-    /*
-    // PROTECT outgoing UDP traffic on UDP port 1234 (for ipsec-example.sky)
+    // PROTECT incoming UDP traffic on UDP port 1234 (for ipsec-example.sky)
     {
       .selector =
       {
-        .direction = SPD_OUTGOING_TRAFFIC,
-        set_any_ip6addr(),        
+        .direction = SPD_ANY_TRAFFIC,
+        set_any_ip6addr(),
         .nextlayer_type = UIP_PROTO_UDP,
         //.nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
-        set_src_port(1234),
         set_any_dest_port()
       },
-      .proc_action = SPD_ACTION_PROTECT,     // No protection necessary
-      .offer = NULL                         // N/A
+      .proc_action = SPD_ACTION_PROTECT,      // No protection necessary
+      .offer = NULL                           // N/A
     },
-    */
+    
 
     // BYPASS outgoing ICMP6 traffic
     {
@@ -198,8 +194,6 @@ const spd_entry_t spd_table[SPD_ENTRIES] =
   * \param localhost_ip6addr A pointer to the memory location of the local host's current IPv6 address. A copy of that memory area will be made.
   */
 void spd_conf_init() {
-  PRINTF("SPD_TABLE at %x\n", spd_table);
   uip_ip6addr_set_val16(spd_conf_ip6addr_min, 0x0);
   uip_ip6addr_set_val16(spd_conf_ip6addr_max, 0xffff);
-  PRINTF("SPD_TABLE at %x\n", spd_table);
 }

@@ -29,4 +29,4 @@ endif
 include $(CONTIKI)/Makefile.include
 
 connect-router:	$(CONTIKI_PROJECT).native
-	sudo ./$(CONTIKI_PROJECT).native -s /dev/null aaaa::1/64
+	sudo gdb --args ./$(CONTIKI_PROJECT).native -s /dev/null aaaa::1/64
