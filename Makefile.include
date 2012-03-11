@@ -82,6 +82,7 @@ ifdef UIP_CONF_IPV6
   include $(CONTIKI)/core/net/ipsec/ike/Makefile.ike
   include $(CONTIKI)/core/net/ipsec/transforms/Makefile.transforms
   include $(CONTIKI_ECC_DIR)/Makefile.contikiecc
+  include $(CONTIKI_ECC_DIR)/curve-params/Makefile.curve_params
   include $(CONTIKI)/core/lib/hmac-sha1/Makefile.hmac-sha1
   # end IPsec
 else # UIP_CONF_IPV6

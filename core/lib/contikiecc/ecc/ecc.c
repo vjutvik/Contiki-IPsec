@@ -220,6 +220,9 @@ c_add_mix(point_t * P0, NN_DIGIT *Z0, point_t * P1, NN_DIGIT * Z1, point_t * P2)
 void 
 ecc_init()
 {
+  // int i = KEY_BIT_LEN;
+  // int j = NN_DIGIT_BITS;
+  // printf("ECC INITIALIZED: key bit len: %u NN_DIGIT_BITS: %u\n", i, j);
  /* get parameters */
  get_curve_param(&param);    
 
@@ -684,6 +687,7 @@ ecc_get_base_p()
 void 
 ecc_gen_private_key(NN_DIGIT *PrivateKey)
 {
+  printf("Generating private ECC key\n");
   NN_UINT order_digit_len, order_bit_len;
   bool done = FALSE;
   uint8_t ri;
@@ -691,6 +695,10 @@ ecc_gen_private_key(NN_DIGIT *PrivateKey)
   
   order_bit_len = NN_Bits(param.r, NUMWORDS);
   order_digit_len = NN_Digits(param.r, NUMWORDS);
+    
+  printf("param.r: %24s\n", &param.r);
+  printf("order_bit_len: %u\n", order_bit_len);
+  printf("order_digit_len: %u\n", order_digit_len);
   
   while(!done) {
     for (ri = 0; ri < order_digit_len; ri++) {
@@ -698,6 +706,8 @@ ecc_gen_private_key(NN_DIGIT *PrivateKey)
       PrivateKey[ri] = rand32();
 #else
       PrivateKey[ri] = rand16();
+      printf("rand16\n");
+
 #endif
     }
 

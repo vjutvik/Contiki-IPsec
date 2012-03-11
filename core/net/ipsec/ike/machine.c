@@ -52,22 +52,25 @@ void ike_statem_timeout_handler(void *session);
   * Can either be called from a state or from ike_statem_timeout_handler()
   */
 #define IKE_STATEM_TRANSITION(session) \
-  do {                                                    \
-    msg_buf = (uint8_t *) udp_buf;                        \
-    uint16_t len = (*(session)->transition_fn)((session));  \
-    /* send udp pkt here (len = start_ptr - udp_buf) */   \
-    ike_statem_send((session), len);                      \
-    SET_RETRANSTIMER((session));                          \
-  } while(0);                                             \
+  do {                                                                \
+    PRINTF(IPSEC_IKE "Entering transition fn %x\n", (session)->transition_fn);  \
+    msg_buf = (uint8_t *) udp_buf;                                    \
+    uint16_t len = (*(session)->transition_fn)((session));            \
+    /* send udp pkt here (len = start_ptr - udp_buf) */               \
+    PRINTF(IPSEC_IKE "Sending UDP packet of length %u\n", len);       \
+    ike_statem_send((session), len);                                  \
+    SET_RETRANSTIMER((session));                                      \
+  } while(0);                                                         \
   return
 
 /**
   * To be called in order to enter a _state_ (not execute a transition!)
   */
 #define IKE_STATEM_ENTERSTATE(session)  \
-  /* Stop retransmission timer (if any has been set) */ \
-  STOP_RETRANSTIMER((session));         \
-  (*(session)->next_state_fn)(session); \
+  /* Stop retransmission timer (if any has been set) */             \
+  PRINTF(IPSEC_IKE "Entering state %x\n", (session)->next_state_fn);  \
+  STOP_RETRANSTIMER((session));                                     \
+  (*(session)->next_state_fn)(session);                             \
   return
 
 #define IKE_STATEM_INCRMYMSGID(session) ++session->my_msg_id;
@@ -107,11 +110,12 @@ void ike_statem_init()
   */
 void ike_statem_setup_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *commanding_entry)
 {
-  ike_statem_session_t *session = malloc(sizeof(session));
+  PRINTF("Setting up session\n");
+  ike_statem_session_t *session = malloc(sizeof(ike_statem_session_t));
   list_push(sessions, session);
   
   // Populate the session entry
-  memcpy(&session->peer, triggering_pkt_addr->addr, sizeof(*triggering_pkt_addr->addr));
+  memcpy(&session->peer, triggering_pkt_addr->addr, sizeof(uip_ip6addr_t));
   
   // Set the SPIs. We're the initiator.
   session->peer_spi_high = IKE_MSG_ZERO;

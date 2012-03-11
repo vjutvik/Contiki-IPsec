@@ -26,7 +26,8 @@
     PRINT6ADDR((addr)->addr);                             \
     PRINTDIR((addr)->direction);                          \
     PRINTF("nl: %u\n", (addr)->nextlayer_type);           \
-    PRINTF("dest_port: %u\n", uip_ntohs((addr)->dest_port));         \
+    PRINTF("src_port: %u\n", uip_ntohs((addr)->src_port));          \
+    PRINTF("dest_port: %u\n", uip_ntohs((addr)->dest_port));        \
   } while(0)
 
 // Prints the contents of an ipsec_addr_set_t located at the given address
@@ -36,6 +37,7 @@
     PRINT6ADDR((addr_set)->addr_to);                              \
     PRINTDIR((addr_set)->direction);                              \
     PRINTF("nl: %u\n", (addr_set)->nextlayer_type);             \
+    PRINTF("Source ports: %u - %u\n", uip_ntohs((addr_set)->src_port_from), uip_ntohs((addr_set)->src_port_to)); \
     PRINTF("Dest ports: %u - %u\n", uip_ntohs((addr_set)->dest_port_from), uip_ntohs((addr_set)->dest_port_to)); \
   } while(0)
 
@@ -96,6 +98,7 @@ typedef struct {
   
   direction_t direction;
 
+  uint16_t src_port_from, src_port_to; // Next layer destination port range
   uint16_t dest_port_from, dest_port_to; // Next layer destination port range
   // uint16_t nextlayer_dst_port_range_from, nextlayer_dst_port_range_to; 
 } ipsec_addr_set_t;
@@ -115,6 +118,7 @@ typedef struct {
   uip_ip6addr_t *addr;
   direction_t direction;
   uint8_t nextlayer_type;
+  uint16_t src_port;
   uint16_t dest_port;
 } ipsec_addr_t;
 

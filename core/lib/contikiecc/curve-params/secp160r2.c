@@ -158,7 +158,7 @@ get_curve_param(curve_params_t *para)
     para->r[0] = 0x6B;
      
     /* EIGHT_BIT_PROCESSOR */
-#elifdef SIXTEEN_BIT_PROCESSOR
+DOMAIN_PARAM SIXTEEN_BIT_PROCESSOR
 
     //init parameters
     //prime
@@ -241,7 +241,7 @@ get_curve_param(curve_params_t *para)
     para->r[0] = 0xA16B;
           
    /* SIXTEEN_BIT_PROCESSOR */
-#elifdef THIRTYTWO_BIT_PROCESSOR
+DOMAIN_PARAM THIRTYTWO_BIT_PROCESSOR
 
     //init parameters
     //prime
@@ -468,7 +468,7 @@ omega_mul(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *omega, NN_UINT digits)
     
 #endif
     /* EIGHT_BIT_PROCESSOR */  
-#elifdef SIXTEEN_BIT_PROCESSOR
+DOMAIN_PARAM SIXTEEN_BIT_PROCESSOR
 
     //memset(a, 0, digits*NN_DIGIT_LEN);
     a[digits] += NN_AddDigitMult(a, a, omega[0], b, digits);
@@ -476,7 +476,7 @@ omega_mul(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *omega, NN_UINT digits)
     return (digits+3);
 
     /* SIXTEEN_BIT_PROCESSOR */  
-#elifdef THIRTYTWO_BIT_PROCESSOR
+DOMAIN_PARAM THIRTYTWO_BIT_PROCESSOR
 
     a[digits] += NN_AddDigitMult(a, a, omega[0], b, digits);
     NN_Add(&a[1], &a[1], b, digits+1);

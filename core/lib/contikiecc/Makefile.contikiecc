@@ -21,7 +21,9 @@ ifeq ($(TARGET),native)
   CPU = x86
 endif
 
-DOMIAN_PARAMS = SECP160R1
+# This sets the eleptic curve
+# WARNING! Only 160 and 192 R-curves works as a result of the #elifdef -preprocessor error 
+DOMAIN_PARAMS = SECP192R1
 
 ifeq ($(CPU_ARCH),)
   ${error The cpu architecture is not defined.}
@@ -37,7 +39,8 @@ include $(CONTIKI_ECC_DIR)/ecc/Makefile.ecc
 include $(CONTIKI_ECC_DIR)/curve-params/Makefile.curve_params
 
 ### Set preprocessor directives
-DEFINES += $(CPU_ARCH) $(DOMIAN_PARAMS) ${addprefix CPU_, ${shell echo $(CPU) | tr a-z A-Z}}
+DEFINES += $(CPU_ARCH) $(DOMAIN_PARAMS) ${addprefix CPU_, ${shell echo $(CPU) | tr a-z A-Z}}
+#CFLAGS += ${addprefix -D, $(DEFINES)}
 
 ### Include target cpu architecture makefile
 target_cpu_makefile := $(wildcard $(CONTIKI_ECC_DIR)/cpu/$(CPU)/Makefile.$(CPU))

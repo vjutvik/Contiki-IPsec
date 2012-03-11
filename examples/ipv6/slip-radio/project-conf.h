@@ -73,16 +73,4 @@
 #undef UART1_CONF_RX_WITH_DMA
 #define UART1_CONF_RX_WITH_DMA           0
 
-/* IPsec configuration */
-/* AH and ESP can be enabled/disabled independently */
-#define WITH_CONF_IPSEC_AH              0
-#define WITH_CONF_IPSEC_ESP             1
-
-/* The IKE subsystem is optional if the SAs are manually configured */
-#define WITH_CONF_IPSEC_IKE             1
-
-/* Configuring an AES implementation */
-#define CRYPTO_CONF_AES miracl_aes //cc2420_aes
-
-
 #endif /* __PROJECT_CONF_H__ */

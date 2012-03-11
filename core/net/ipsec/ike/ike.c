@@ -8,6 +8,8 @@ process_event_t ike_negotiate_event;
 
 void ike_init()
 {
+  ecc_init();
+  
   ike_negotiate_event = process_alloc_event();
   process_start(&ike2_service, NULL);
 }

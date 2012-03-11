@@ -179,7 +179,8 @@ get_curve_param(curve_params_t *para)
     para->r[0] = 0x31;	
      
     /* EIGHT_BIT_PROCESSOR */
-#elifdef SIXTEEN_BIT_PROCESSOR
+#else
+  #ifdef SIXTEEN_BIT_PROCESSOR
 
     //init parameters
     //prime
@@ -277,9 +278,10 @@ get_curve_param(curve_params_t *para)
     para->r[2] = 0xC9B1;
     para->r[1] = 0xB4D2;
     para->r[0] = 0x2831;	
-          
+  
    /* SIXTEEN_BIT_PROCESSOR */
-#elifdef THIRTYTWO_BIT_PROCESSOR
+   #else
+    #ifdef THIRTYTWO_BIT_PROCESSOR
 
     //init parameters
     //prime (Group Prime/Irreducible Polynomial)
@@ -341,10 +343,12 @@ get_curve_param(curve_params_t *para)
     para->r[2] = 0x99DEF836;
     para->r[1] = 0x146BC9B1;
     para->r[0] = 0xB4D22831;
-
+    #else
+      #error "secp192r1.c: Word size not defined"
+    #endif
+  #endif
 #endif /* THIRTYTWO_BIT_PROCESSOR */
-
-  }
+}
   
 NN_UINT 
 omega_mul(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *omega, NN_UINT digits)
@@ -356,19 +360,22 @@ omega_mul(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *omega, NN_UINT digits)
     NN_Add(a+8, a+8, b, digits+1);
     return (digits+9);
     /* EIGHT_BIT_PROCESSOR */  
-#elifdef SIXTEEN_BIT_PROCESSOR
+#else
+  #ifdef SIXTEEN_BIT_PROCESSOR
 
     NN_Assign(a, b, digits);
     NN_Add(a+4, a+4, b, digits+1);
     return (digits+5);
 
     /* SIXTEEN_BIT_PROCESSOR */  
-#elifdef THIRTYTWO_BIT_PROCESSOR
+  #else
+    #ifdef THIRTYTWO_BIT_PROCESSOR
 
     NN_Assign(a, b, digits);
     NN_Add(&a[2], &a[2], b, digits+1);
     return (digits+3);
-  
+   #endif
+ #endif
 #endif /* THIRTYTWO_BIT_PROCESSOR */
   
 }

@@ -178,7 +178,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
 
       /**
         * Before writing the new proposal we'll set the length of the last
-        */      
+        */
       if (proposal != NULL) {
         proposal->proposal_len = UIP_HTONS(ptr - (uint8_t *) proposal);
         proposal->numtransforms = numtransforms;
@@ -240,16 +240,16 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       transform->clear1 = transform->clear2 = IKE_MSG_ZERO;
       transform->id = UIP_HTONS(offer->value);
       ptr += sizeof(transform);
-      
+
       // Loop over any attributes associated with this transform
       // Value type: Key length of encryption algorithm
-      while (++offer->type == SA_CTRL_ATTRIBUTE_KEY_LEN) {
+      while ((++offer)->type == SA_CTRL_ATTRIBUTE_KEY_LEN) {
         // The only attribute defined in RFC 5996 is Key Length (p. 84)
         ike_payload_attribute_t *attrib = (ike_payload_attribute_t *) ptr;
         attrib->af_attribute_type = IKE_PAYLOADFIELD_ATTRIB_VAL;
         attrib->attribute_value = UIP_HTONS(offer->value << 3); // Multiply offer->value by 8 to make it into bits
   
-        ptr += sizeof(attrib);
+        ptr += sizeof(ike_payload_attribute_t);
       }
       transform->len = UIP_HTONS(ptr - (uint8_t *) transform);
       ++numtransforms;
@@ -258,7 +258,11 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       default:
       PRINTF(IPSEC_IKE ": ike_statem_write_sa_payload: Error: Unexpected SA_CTRL_TRANSFORM_TYPE\n");
     } // End switch (offer)
+    PRINTF(IPSEC_IKE "Offer at %x\n", offer);
+    memprint(sa_genpayloadhdr, 60);
   } while((offer++)->type != SA_CTRL_END_OF_OFFER); // End while (offer)
+  
+  PRINTF(IPSEC_IKE " Printed offer\n");
   
   // Set the length of the offer in the generic payload header and
   // mark the last proposal as the last.

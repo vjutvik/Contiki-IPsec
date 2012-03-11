@@ -62,6 +62,8 @@ void sad_conf()
   my_incoming_entry->traffic_desc.direction = SPD_INCOMING_TRAFFIC;
   // No HTONS needed here as the maximum and miniumum unsigned ints are represented the same way
   // in network as well as host byte order.
+  my_incoming_entry->traffic_desc.src_port_from = UIP_HTONS(0);
+  my_incoming_entry->traffic_desc.src_port_to = UIP_HTONS(PORT_MAX);
   my_incoming_entry->traffic_desc.dest_port_from = UIP_HTONS(0);
   my_incoming_entry->traffic_desc.dest_port_to = UIP_HTONS(PORT_MAX);
    
@@ -87,7 +89,7 @@ void sad_conf()
   // Important: Keep in mind that the SAD stores the SPIs in network byte order
   my_incoming_entry->spi = UIP_HTONL(1);
   
-  return;
+  return; // Selectors below ARE BROKEN!!
   
   /**
     * Create an OUTGOING entry. time_of_creation is set to 0 in order to mark is as manual,

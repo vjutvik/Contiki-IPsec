@@ -132,7 +132,7 @@ get_curve_param(curve_params_t *para)
 
      
     /* EIGHT_BIT_PROCESSOR */
-#elifdef SIXTEEN_BIT_PROCESSOR
+DOMAIN_PARAM SIXTEEN_BIT_PROCESSOR
 
      //init parameters
     //prime
@@ -208,7 +208,7 @@ get_curve_param(curve_params_t *para)
     para->r[0] = 0xA115;
           
    /* SIXTEEN_BIT_PROCESSOR */
-#elifdef THIRTYTWO_BIT_PROCESSOR
+DOMAIN_PARAM THIRTYTWO_BIT_PROCESSOR
 
    //init parameters
     //prime
@@ -258,6 +258,8 @@ get_curve_param(curve_params_t *para)
     para->r[2] = 0x00000000;
     para->r[1] = 0x75A30D1B;
     para->r[0] = 0x9038A115;
+    
+    printf("32 bit initialized\n");
 #endif /* THIRTYTWO_BIT_PROCESSOR */
 
   }
@@ -271,14 +273,14 @@ omega_mul(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *omega, NN_UINT digits)
     a[digits+12] += NN_AddDigitMult(&a[12], &a[12], omega[12], b, digits);
     return (digits+13);
   /* EIGHT_BIT_PROCESSOR */  
-#elifdef SIXTEEN_BIT_PROCESSOR
+DOMAIN_PARAM SIXTEEN_BIT_PROCESSOR
     //memset(a, 0, digits*NN_DIGIT_LEN);
     NN_Assign(a, b, digits);
     a[digits+6] += NN_AddDigitMult(&a[6], &a[6], omega[6], b, digits);
     return (digits+7);
 
     /* SIXTEEN_BIT_PROCESSOR */  
-#elifdef THIRTYTWO_BIT_PROCESSOR
+DOMAIN_PARAM THIRTYTWO_BIT_PROCESSOR
 
   NN_Assign(a, b, digits);
   a[digits+3] += NN_AddDigitMult(&a[3], &a[3], omega[3], b, digits);

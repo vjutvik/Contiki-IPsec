@@ -24,7 +24,7 @@ ifeq ($(TARGET),sky)
   CPU = msp430
 endif
 
-DOMIAN_PARAMS = SECP160R1
+DOMAIN_PARAMS = SECP160R1
 
 PROJECT_SOURCEFILES += messages.c
 include $(CONTIKI_ECC_DIR)/Makefile.contikiecc

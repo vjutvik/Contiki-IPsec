@@ -78,6 +78,7 @@ uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b)
 {
   return  (a->direction == b->direction || b->direction == SPD_ANY_TRAFFIC) &&
       uip6_addr_a_is_in_closed_interval_bc(a->addr, b->addr_from, b->addr_to) && 
+      a_is_in_closed_interval_bc(uip_ntohs(a->src_port), uip_ntohs(b->src_port_from), uip_ntohs(b->src_port_to)) && 
       a_is_in_closed_interval_bc(uip_ntohs(a->dest_port), uip_ntohs(b->dest_port_from), uip_ntohs(b->dest_port_to)) && 
       (b->nextlayer_type == SPD_SELECTOR_NL_ANY_PROTOCOL || a->nextlayer_type == b->nextlayer_type);
 }
@@ -112,7 +113,7 @@ uint8_t ipsec_ts_is_subset_of_addr_set(ike_ts_t *ts_dst, ike_ts_t *ts_src, ipsec
   *
   * \return  1 if \b a is a \b subset (sic! not a strict subset) of \b b, 0 otherwise.
   */
-uint8_t ipsec_a_is_subset_of_b(ipsec_addr_set_t *a, ipsec_addr_set_t *b)
-{
-  return 0;//ip6addr_src_range_from
-}
+// uint8_t ipsec_a_is_subset_of_b(ipsec_addr_set_t *a, ipsec_addr_set_t *b)
+// {
+//   return 0;//ip6addr_src_range_from
+// }

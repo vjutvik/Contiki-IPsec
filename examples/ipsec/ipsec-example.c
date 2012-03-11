@@ -49,6 +49,7 @@
 
 #include "border-router.h"
 #include "net/uip-ds6.h"
+#include "net/uip.h"
 
 PROCESS(ipsec_example_process, "IPsec Example");
 //AUTOSTART_PROCESSES(&ipsec_example_process);
@@ -67,7 +68,7 @@ AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
 
 // test end
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -95,8 +96,14 @@ tcpip_handler(void)
 
     uip_len = 0;
 
+    // PRINTF("IPSEC-EXAMPLE before: %u", UIP_HTONS(server_conn->rport));
+
     uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);
+    udp_bind(server_conn, UIP_HTONS(MOTE_PORT));
     server_conn->rport = UIP_UDP_BUF->srcport;
+
+    // PRINTF("IPSEC-EXAMPLE after: %u", UIP_HTONS(server_conn->rport));
+
 
     for(i=0; i<datalen; i++) {
       data[i]++;

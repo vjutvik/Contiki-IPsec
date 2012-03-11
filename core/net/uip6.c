@@ -429,11 +429,11 @@ uip_init(void)
    
   uip_ds6_init();
 
-  #ifdef WITH_IPSEC
+  #if WITH_IPSEC
   spd_conf_init();
   sad_init();
   PRINTF(IPSEC "SAD and SPD initialized\n");
-#ifdef WITH_IPSEC_IKE
+#if WITH_IPSEC_IKE
   ike_init();
   PRINTF(IPSEC "IKEv2 service initialized\n");
 #endif
@@ -1238,7 +1238,7 @@ uip_process(uint8_t flag)
   uip_ext_bitmap = 0;
 #endif /* UIP_CONF_ROUTER */
 
-#ifdef WITH_IPSEC
+#if WITH_IPSEC
   /**
     * IPsec: Processing of incoming packets
     *
@@ -1263,7 +1263,7 @@ uip_process(uint8_t flag)
      
       PRINTF("Proc hdr %hu\n", *uip_next_hdr);
      
-#ifdef WITH_IPSEC_ESP
+#if WITH_IPSEC_ESP
       case UIP_PROTO_ESP:
         /**
           * ESP parsing. From RFC 4303 (IP Encapsulating Security Payload (ESP)):
@@ -1428,8 +1428,9 @@ uip_process(uint8_t flag)
       case UIP_PROTO_TCP:
         /* TCP, for both IPv4 and IPv6 */
         
-  #ifdef WITH_IPSEC
+  #if WITH_IPSEC
         packet_desc.nextlayer_type = *uip_next_hdr;
+        packet_desc.src_port = UIP_TCP_BUF->srcport;
         packet_desc.dest_port = UIP_TCP_BUF->destport;
         if (ipsec_filter(sad_entry, &packet_desc))
           goto drop;
@@ -1441,9 +1442,10 @@ uip_process(uint8_t flag)
       case UIP_PROTO_UDP:
         /* UDP, for both IPv4 and IPv6 */
         
-  #ifdef WITH_IPSEC
+  #if WITH_IPSEC
         /* See comment in UIP_PROTO_TCP for clarification */
         packet_desc.nextlayer_type = *uip_next_hdr;
+        packet_desc.src_port = UIP_UDP_BUF->srcport;
         packet_desc.dest_port = UIP_UDP_BUF->destport;
         /*
         printf("src + dst:\n");
@@ -1460,7 +1462,7 @@ uip_process(uint8_t flag)
       case UIP_PROTO_ICMP6:
         /* ICMPv6 */
          /* See comment in UIP_PROTO_TCP for clarification */
- #ifdef WITH_IPSEC
+ #if WITH_IPSEC
        packet_desc.nextlayer_type = *uip_next_hdr;
      
        if (ipsec_filter(sad_entry, &packet_desc))
@@ -1785,6 +1787,7 @@ uip_process(uint8_t flag)
 #endif /* UIP_UDP_CHECKSUMS */
 
 #if WITH_IPSEC
+  packet_tag.src_port = UIP_UDP_BUF->srcport;
   packet_tag.dest_port = UIP_UDP_BUF->destport;
 #endif
 
@@ -2496,6 +2499,7 @@ uip_process(uint8_t flag)
   UIP_STAT(++uip_stat.tcp.sent);
   
 #if WITH_IPSEC
+  packet_tag.src_port = UIP_TCP_BUF->srcport;
   packet_tag.dest_port = UIP_TCP_BUF->destport;
 #endif
 
@@ -2508,7 +2512,7 @@ uip_process(uint8_t flag)
   UIP_IP_BUF->flow = 0x00;
  send:
  
-#ifdef WITH_IPSEC
+#if WITH_IPSEC
   // Protect packets that are sourced from us, not ones routed on the behalf of others
   if(! uip_ds6_is_my_addr(&UIP_IP_BUF->srcipaddr)) {
     PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
@@ -2537,7 +2541,6 @@ uip_process(uint8_t flag)
       PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
         " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
       
-      spd_entry = spd_get_entry_by_addr(&packet_tag);
       void *argv[2] = { &packet_tag, spd_entry };
       process_post_synch(&ike2_service, ike_negotiate_event, &argv);      
       //#else
@@ -2569,7 +2572,7 @@ uip_process(uint8_t flag)
   // We will now proceed to protect this packet with the SA in sad_entry
 #endif
 
-#ifdef WITH_IPSEC_ESP
+#if WITH_IPSEC_ESP
   uint16_t blah = UIP_IPUDPH_LEN;
   IPSECDBG_PRINTF("uip_slen: %u, uip_len: %u UIP_IPUDPH_LEN: %u\n", uip_slen, uip_len, blah);
 
@@ -2663,6 +2666,7 @@ uip_process(uint8_t flag)
   return;
 
  drop:
+ PRINTF("Dropping\n");
   uip_len = 0;
   uip_ext_len = 0;
   uip_ext_bitmap = 0;
