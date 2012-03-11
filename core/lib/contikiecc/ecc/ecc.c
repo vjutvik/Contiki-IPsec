@@ -220,9 +220,9 @@ c_add_mix(point_t * P0, NN_DIGIT *Z0, point_t * P1, NN_DIGIT * Z1, point_t * P2)
 void 
 ecc_init()
 {
-  // int i = KEY_BIT_LEN;
-  // int j = NN_DIGIT_BITS;
-  // printf("ECC INITIALIZED: key bit len: %u NN_DIGIT_BITS: %u\n", i, j);
+  int i = KEY_BIT_LEN;
+  int j = NN_DIGIT_BITS;
+  printf("ECC INITIALIZED: key bit len: %u NN_DIGIT_BITS: %u\n", i, j);
  /* get parameters */
  get_curve_param(&param);    
 
