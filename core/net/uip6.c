@@ -2541,8 +2541,11 @@ uip_process(uint8_t flag)
       PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
         " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
       
-      void *argv[2] = { &packet_tag, spd_entry };
-      process_post_synch(&ike2_service, ike_negotiate_event, &argv);      
+      ike_arg_packet_tag = packet_tag;
+      //void *argv[2] = { &packet_tag, spd_entry };
+      // This asynchronous call will be processed after uip_process() has finished
+      process_post(&ike2_service, ike_negotiate_event, spd_entry);
+      
       //#else
       // FIX: Broken #if parsing
       // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet." \

@@ -11,6 +11,12 @@
 
 #ifdef DEBUG
 
+#define MEMPRINTF(str, ptr, len) \
+  do {                    \
+    printf(str  "\n");          \
+    memprint(ptr, len);   \
+  } while(0);
+
 // Only used in this file's scope
 #define PRINTDIR(dir)                                   \
   uint8_t str[3][9] = {                                    \
@@ -43,8 +49,9 @@
 
 #else
 
-#define PRINTADDR
-#define PRINTADDRSET
+#define MEMPRINTF(...)
+#define PRINTADDR(...)
+#define PRINTADDRSET(...)
 
 #endif
 

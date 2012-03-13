@@ -258,8 +258,8 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       default:
       PRINTF(IPSEC_IKE ": ike_statem_write_sa_payload: Error: Unexpected SA_CTRL_TRANSFORM_TYPE\n");
     } // End switch (offer)
-    PRINTF(IPSEC_IKE "Offer at %x\n", offer);
-    memprint(sa_genpayloadhdr, 60);
+    //PRINTF(IPSEC_IKE "Offer at %x\n", offer);
+    //memprint(sa_genpayloadhdr, 60);
   } while((offer++)->type != SA_CTRL_END_OF_OFFER); // End while (offer)
   
   PRINTF(IPSEC_IKE " Printed offer\n");

@@ -88,7 +88,7 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   // Wrap up the IKE header and exit state
   ike_hdr->len = UIP_HTONL(payload_arg.start - msg_buf);
   SET_NO_NEXT_PAYLOAD(&payload_arg);
-  
+
   return payload_arg.start - msg_buf;
 }
 

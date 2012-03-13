@@ -4,6 +4,7 @@
 #include "common_ike.h"
 #include "spd.h"
 
+ipsec_addr_t ike_arg_packet_tag;
 process_event_t ike_negotiate_event;
 
 void ike_init()
@@ -57,9 +58,8 @@ static void ike_negotiate_sa(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *com
   EVENTS
   
     TYPE: ike_negotiate_event
-    DESCRIPTION: Initiates an IKEv2 negotiation with the destination host. Data points to a pointer array starting
-                with a pointer to the triggering packet's address structure (type ipsec_addr_t *), followed by a pointer
-                to the commanding SPD entry (spd_entry_t *).
+    DESCRIPTION: Initiates an IKEv2 negotiation with the destination host. Data points to SPD entry that required the
+                packet to be protected. The address of the triggering packet must be stored in ike_arg_packet_tag
   
     TYPE: tcpip_event
     DESCRIPTION: Dispatched by the uIP stack upon reception of new data. Data is undefined.
@@ -76,8 +76,13 @@ PROCESS_THREAD(ike2_service, ev, data)
   
   while(1) {
     PROCESS_WAIT_EVENT();
-    if (ev == ike_negotiate_event)
-      ike_negotiate_sa((ipsec_addr_t *) ((u8_t **) data)[0], (spd_entry_t *) ((u8_t **) data)[1]);
+    if (ev == ike_negotiate_event) {
+      PRINTF(IPSEC_IKE "Negotiating child SAs in response to SPD entry %p for triggering packet\n", data);
+      // PRINTADDR(&ike_arg_packet_tag);
+      ike_negotiate_sa(&ike_arg_packet_tag, (spd_entry_t *) data);
+
+      //ike_negotiate_sa((ipsec_addr_t *) ((u8_t **) data)[0], (spd_entry_t *) ((u8_t **) data)[1]);
+    }
     else {
       if (ev == tcpip_event)
         ike_statem_incoming_data_handler();

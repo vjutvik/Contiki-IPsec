@@ -10,6 +10,11 @@
   */
 extern process_event_t ike_negotiate_event;
 
+/**
+  * Argument containing the address of the triggering packet
+  */
+extern ipsec_addr_t ike_arg_packet_tag;
+
 PROCESS_NAME(ike2_service);
 
 /**

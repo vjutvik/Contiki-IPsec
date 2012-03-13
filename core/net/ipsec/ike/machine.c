@@ -53,11 +53,12 @@ void ike_statem_timeout_handler(void *session);
   */
 #define IKE_STATEM_TRANSITION(session) \
   do {                                                                \
-    PRINTF(IPSEC_IKE "Entering transition fn %x\n", (session)->transition_fn);  \
+    PRINTF(IPSEC_IKE "Entering transition fn %p of session %p\n", (session)->transition_fn, session);  \
     msg_buf = (uint8_t *) udp_buf;                                    \
     uint16_t len = (*(session)->transition_fn)((session));            \
     /* send udp pkt here (len = start_ptr - udp_buf) */               \
     PRINTF(IPSEC_IKE "Sending UDP packet of length %u\n", len);       \
+    MEMPRINTF("SENDING", msg_buf, len);                               \
     ike_statem_send((session), len);                                  \
     SET_RETRANSTIMER((session));                                      \
   } while(0);                                                         \
@@ -160,6 +161,7 @@ void ike_statem_remove_session(ike_statem_session_t *session)
   */
 void ike_statem_timeout_handler(void *session)  // Void argument since we're called by ctimer
 {
+  PRINTF(IPSEC_IKE "Timeout for session %p. Reissuing last transition.\n", session);
   IKE_STATEM_TRANSITION((ike_statem_session_t *) session);
 }
 
@@ -288,6 +290,7 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len)
 {
   uip_ipaddr_copy(&my_conn->ripaddr, &session->peer);
   my_conn->rport = UIP_HTONS(IKE_UDP_PORT);
+  udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
   
   /**
     * By not using uip_udp_packet_send() and reimplementing the send code ourselves
