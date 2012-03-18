@@ -81,7 +81,7 @@ typedef enum {
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->version = IKE_PAYLOADFIELD_IKEHDR_VERSION_STRING;   \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->exchange_type = exchtype;                           \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->flags = flags_arg;                                  \
-  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->message_id = msg_id;                                \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->message_id = uip_htonl((uint32_t) msg_id);           \
   (payload_arg)->prior_next_payload = &((ike_payload_ike_hdr_t *) (payload_arg)->start)->next_payload;  \
   (payload_arg)->start += sizeof(ike_payload_ike_hdr_t)
 
@@ -90,14 +90,14 @@ typedef enum {
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = (payload_arg)->session->peer_spi_high;  \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = (payload_arg)->session->peer_spi_low;    \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = IKE_MSG_ZERO;                           \
-  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session->initiator_and_my_spi); \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = uip_htonl((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session)); \
   SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOAD_FLAGS_RESPONDER, (payload_arg)->session->peer_msg_id)
 
 #define SET_IKE_HDR_AS_INITIATOR(payload_arg, exchtype) \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = (payload_arg)->session->peer_spi_high;  \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = (payload_arg)->session->peer_spi_low;    \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = IKE_MSG_ZERO;                           \
-  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session); \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = uip_htonl((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session)); \
   SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR, (payload_arg)->session->my_msg_id)
 
 
@@ -108,9 +108,9 @@ typedef struct {
   uint32_t sa_responder_spi_high;
   uint32_t sa_responder_spi_low;
   
-  ike_payload_type_t next_payload;
+  uint8_t next_payload;  /* ike_payload_type_t */
   uint8_t version;
-  ike_payloadfield_ikehdr_exchtype_t exchange_type;
+  uint8_t exchange_type; /* ike_payloadfield_ikehdr_exchtype_t */
   uint8_t flags;
   
   uint32_t message_id;
@@ -143,7 +143,7 @@ typedef struct {
 #define SET_NO_NEXT_PAYLOAD(payload_arg) \
                      *(payload_arg)->prior_next_payload = IKE_PAYLOAD_NO_NEXT
 typedef struct {
-  ike_payload_type_t next_payload;
+  uint8_t next_payload;  /* ike_payload_type_t */
   uint8_t clear;
   uint16_t len; // Length of payload header + payload
 } ike_payload_generic_hdr_t;
@@ -175,7 +175,7 @@ typedef struct {
   uint16_t proposal_len;
   
   uint8_t proposal_number;
-  sa_ipsec_proto_type_t proto_id;
+  uint8_t proto_id;         /* sa_ipsec_proto_type_t */
   uint8_t spi_size;
   uint8_t numtransforms;
   
@@ -231,7 +231,7 @@ typedef struct {
 
                   Figure 9:  Data Attributes
   */
-#define IKE_PAYLOADFIELD_ATTRIB_VAL (((uint16_t) 1) << 15) | UIP_HTONS((uint16_t) SA_ATTRIBUTE_KEYLEN_ID)
+#define IKE_PAYLOADFIELD_ATTRIB_VAL (UIP_HTONS((uint16_t) 0x8000) | UIP_HTONS((uint16_t) SA_ATTRIBUTE_KEYLEN_ID))
 typedef struct {
   uint16_t af_attribute_type; // The first bit should always be set
   uint16_t attribute_value;
@@ -281,7 +281,7 @@ typedef struct {
   */
 //#define SET_AUTHPAYLOAD(authpayload, auth_method) *((uint8_t *) authpayload = (uint32_t) auth_method << 24
 typedef struct {
-  ike_auth_type_t auth_type;
+  uint8_t auth_type;  /* ike_auth_type_t */
   uint8_t clear1;
   uint16_t clear2;
 } ike_payload_auth_t;
@@ -330,9 +330,9 @@ typedef struct {
   *
   */
 typedef struct {
-  sa_ipsec_proto_type_t proto_id;
+  uint8_t proto_id;   /* sa_ipsec_proto_type_t */
   uint8_t spi_size;
-  uint16_t notify_msg_type;
+  uint16_t notify_msg_type; /* notify_msg_type_t */
 } ike_payload_notify_t;
 
 typedef enum {
@@ -441,7 +441,7 @@ typedef enum {
   payload_arg->start += sizeof(ike_id_payload_t)
 
 typedef struct {
-  id_type_t id_type;
+  uint8_t id_type;  /* id_type_t */
   uint8_t clear1;
   uint16_t clear2;
 } ike_id_payload_t;

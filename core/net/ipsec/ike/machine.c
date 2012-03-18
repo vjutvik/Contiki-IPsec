@@ -1,3 +1,6 @@
+#include <string.h>
+#include <stdlib.h>
+
 #include "common_ike.h"
 #include "machine.h"
 #include "payload.h"
@@ -46,25 +49,6 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len);
 void ike_statem_timeout_handler(void *session);
 
 /**
-  * Call this macro when you want to execute a state transition 
-  * (i.e. send a request / response).
-  *
-  * Can either be called from a state or from ike_statem_timeout_handler()
-  */
-#define IKE_STATEM_TRANSITION(session) \
-  do {                                                                \
-    PRINTF(IPSEC_IKE "Entering transition fn %p of session %p\n", (session)->transition_fn, session);  \
-    msg_buf = (uint8_t *) udp_buf;                                    \
-    uint16_t len = (*(session)->transition_fn)((session));            \
-    /* send udp pkt here (len = start_ptr - udp_buf) */               \
-    PRINTF(IPSEC_IKE "Sending UDP packet of length %u\n", len);       \
-    MEMPRINTF("SENDING", msg_buf, len);                               \
-    ike_statem_send((session), len);                                  \
-    SET_RETRANSTIMER((session));                                      \
-  } while(0);                                                         \
-  return
-
-/**
   * To be called in order to enter a _state_ (not execute a transition!)
   */
 #define IKE_STATEM_ENTERSTATE(session)  \
@@ -74,13 +58,29 @@ void ike_statem_timeout_handler(void *session);
   (*(session)->next_state_fn)(session);                             \
   return
 
-#define IKE_STATEM_INCRMYMSGID(session) ++session->my_msg_id;
-
 #define SET_RETRANSTIMER(session) \
   ctimer_set(&session->retrans_timer, IKE_STATEM_TIMEOUT, &ike_statem_timeout_handler, (void *) session);
 #define STOP_RETRANSTIMER(session) ctimer_stop(&(session)->retrans_timer)
 
 #define SA_INDEX(arg) arg - 1
+
+/**
+  * Executes a state transition, moving from one state to another and sends a
+  * an IKE message in the process
+  */
+void ike_statem_transition(ike_statem_session_t *session)
+{
+  PRINTF(IPSEC_IKE "Entering transition fn %p of session %p\n", (session)->transition_fn, session);  \
+  msg_buf = (uint8_t *) udp_buf;                                   
+  uint16_t len = (*(session)->transition_fn)((session));           
+  /* send udp pkt here (len = start_ptr - udp_buf) */              
+  PRINTF(IPSEC_IKE "Sending UDP packet of length %u\n", len);      
+  /* MEMPRINTF("SENDING", msg_buf, len); */                        
+  ike_statem_send((session), len);                                 
+  SET_RETRANSTIMER((session));                                     
+  return;
+}
+
 
 
 /**
@@ -95,9 +95,11 @@ void ike_statem_init()
   next_my_spi = 1;
   
   // Set up the UDP port for incoming traffic
-  my_conn = udp_new(NULL, UIP_HTONS(IKE_UDP_PORT), NULL);
+  printf("ike_statem_init: calling udp_new\n");
+  my_conn = udp_new(NULL, UIP_HTONS(0), NULL);
   udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
-    
+  PRINTF(IPSEC_IKE "State machine initialized. Listening on UDP port %d.\n", uip_ntohs(my_conn->lport));
+
   /*
   // Set up the UDP port for outgoing traffic
   tmit_conn = udp_new(remote, UIP_HTONS(IKE_UDP_PORT), NULL);
@@ -276,7 +278,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     PRINTF(IPSEC "Error: We didn't find the session.\n");
     /**
       * Don't send any notification.
-      * We're not sending any Notification regarind this dropped message. 
+      * We're not sending any Notification regarding this dropped message. 
       * See section 1.5 "Informational Messages outside of an IKE SA" for more information.
       */
   }
@@ -290,7 +292,7 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len)
 {
   uip_ipaddr_copy(&my_conn->ripaddr, &session->peer);
   my_conn->rport = UIP_HTONS(IKE_UDP_PORT);
-  udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
+  //udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
   
   /**
     * By not using uip_udp_packet_send() and reimplementing the send code ourselves
@@ -305,6 +307,7 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len)
   // Reset everything so that we can listen to new packets
   uip_slen = 0;
   my_conn->rport = 0;
+  //udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT));
   uip_create_unspecified(&my_conn->ripaddr);
 }
 

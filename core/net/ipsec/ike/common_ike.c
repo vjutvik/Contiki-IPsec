@@ -65,7 +65,7 @@ void ike_statem_write_notification(payload_arg_t *payload_arg,
     payload_arg->start += notify_payload_len;
   }
   
-  notify_genpayloadhdr->len = UIP_HTONS(payload_arg->start - beginning);
+  notify_genpayloadhdr->len = uip_htons(payload_arg->start - beginning);
 }
 
 /**
@@ -92,7 +92,7 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   ike_payload_generic_hdr_t *tsi_genpayloadhdr;
   uint16_t tsir_size = sizeof(tsi_genpayloadhdr) + 2 * sizeof(ike_ts_t);
   SET_GENPAYLOADHDR(tsi_genpayloadhdr, payload_arg, IKE_PAYLOAD_TSi);
-  tsi_genpayloadhdr->len = UIP_HTONS(tsir_size);
+  tsi_genpayloadhdr->len = uip_htons(tsir_size);
   ike_ts_payload_t *tsi_payload = (ike_ts_payload_t *) payload_arg->start;
   SET_TSPAYLOAD(tsi_payload, 2);
   ptr += sizeof(tsi_payload);
@@ -103,8 +103,8 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   SET_TSSELECTOR_INIT(tsi1);
   SET_TSSAMEADDR(tsi1, trigger_addr->srcaddr);
   tsi1->proto = trigger_addr->nextlayer_type;
-  tsi1->start_port = UIP_HTONS(addr->srcport);
-  tsi1->end_port = UIP_HTONS(addr->srcport);
+  tsi1->start_port = uip_htons(addr->srcport);
+  tsi1->end_port = uip_htons(addr->srcport);
   
   // Initiator's second traffic selector (instanciation of the matching SPD entry)
   ike_ts_t *tsi2 = (ike_ts_t *) ptr;
@@ -112,8 +112,8 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   SET_TSSELECTOR_INIT(tsi2);
   SET_TSSAMEADDR(tsi2, trigger_addr->srcaddr); // PFP (triggering pkt)
   tsi2->proto = spd_selector->nextlayer_type; // Not PFP (SPD entry)
-  tsi2->start_port = UIP_HTONS(spd_selector->nextlayer_src_port_range_from); // Not PFP (SPD entry)
-  tsi2->end_port = UIP_HTONS(spd_selector->nextlayer_src_port_range_to); // Not PFP (SPD entry)
+  tsi2->start_port = uip_htons(spd_selector->nextlayer_src_port_range_from); // Not PFP (SPD entry)
+  tsi2->end_port = uip_htons(spd_selector->nextlayer_src_port_range_to); // Not PFP (SPD entry)
 
 
   // TSr payload
@@ -141,8 +141,8 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   SET_TSSELECTOR_INIT(tsr2);
   SET_TSSAMEADDR(tsr2, trigger_addr->dstaddr); // PFP (triggering pkt)
   tsr2->proto = spd_selector->nextlayer_type; // Not PFP (SPD entry)
-  tsr2->start_port = UIP_HTONS(spd_selector->nextlayer_dst_port_range_from); // Not PFP (SPD entry)
-  tsr2->end_port = UIP_HTONS(spd_selector->nextlayer_dst_port_range_to); // Not PFP (SPD entry)
+  tsr2->start_port = uip_htons(spd_selector->nextlayer_dst_port_range_from); // Not PFP (SPD entry)
+  tsr2->end_port = uip_htons(spd_selector->nextlayer_dst_port_range_to); // Not PFP (SPD entry)
   
   payload_arg->start = ptr;
 }
@@ -169,9 +169,10 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   
   ike_payload_transform_t *transform = NULL;
   ike_payload_proposal_t *proposal = NULL;
+  u8_t n = 0;
   uint8_t proposal_number = 1;
   do {  // Loop over the offer's tuples
-    switch(offer->type) {
+    switch(offer[n].type) {
         
       case SA_CTRL_NEW_PROPOSAL:
       case SA_CTRL_END_OF_OFFER:
@@ -180,7 +181,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
         * Before writing the new proposal we'll set the length of the last
         */
       if (proposal != NULL) {
-        proposal->proposal_len = UIP_HTONS(ptr - (uint8_t *) proposal);
+        proposal->proposal_len = uip_htons(ptr - (uint8_t *) proposal);
         proposal->numtransforms = numtransforms;
         
         // There's an invariant in spd.h stating that a proposal must contain at least one transforms.
@@ -188,12 +189,15 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
         transform->last_more = IKE_PAYLOADFIELD_TRANSFORM_LAST;
       }
       
+      if (offer[n].type == SA_CTRL_END_OF_OFFER)
+        break;
+      
       proposal = (ike_payload_proposal_t *) ptr;
       proposal->last_more = IKE_PAYLOADFIELD_PROPOSAL_MORE;
       proposal->clear = IKE_MSG_ZERO;
 
       proposal->proposal_number = proposal_number;
-      proposal->proto_id = offer->value;
+      proposal->proto_id = offer[n].value;
 
       numtransforms = 0;
 
@@ -224,8 +228,8 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
         transform->last_more = IKE_PAYLOADFIELD_TRANSFORM_MORE;
         transform->type = SA_CTRL_TRANSFORM_TYPE_ESN;
         transform->clear1 = transform->clear2 = IKE_MSG_ZERO;
-        transform->len = UIP_HTONS(sizeof(ike_payload_transform_t));
-        transform->id = UIP_HTONS(SA_ESN_NO);
+        transform->len = uip_htons(sizeof(ike_payload_transform_t));
+        transform->id = uip_htons(SA_ESN_NO);
         ptr += sizeof(ike_payload_transform_t);
       }
       break;
@@ -236,34 +240,34 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       case SA_CTRL_TRANSFORM_TYPE_DH:     // Diffie-Hellman group (IKE, AH (optional), ESP (optional))
       transform = (ike_payload_transform_t *) ptr;
       transform->last_more = IKE_PAYLOADFIELD_TRANSFORM_MORE;
-      transform->type = offer->type;
+      transform->type = offer[n].type;
       transform->clear1 = transform->clear2 = IKE_MSG_ZERO;
-      transform->id = UIP_HTONS(offer->value);
-      ptr += sizeof(transform);
+      transform->id = uip_htons(offer[n].value);
+      ptr += sizeof(ike_payload_transform_t);
 
       // Loop over any attributes associated with this transform
       // Value type: Key length of encryption algorithm
-      while ((++offer)->type == SA_CTRL_ATTRIBUTE_KEY_LEN) {
+      u8_t j = n + 1;
+      while (offer[j].type == SA_CTRL_ATTRIBUTE_KEY_LEN) {
         // The only attribute defined in RFC 5996 is Key Length (p. 84)
         ike_payload_attribute_t *attrib = (ike_payload_attribute_t *) ptr;
         attrib->af_attribute_type = IKE_PAYLOADFIELD_ATTRIB_VAL;
-        attrib->attribute_value = UIP_HTONS(offer->value << 3); // Multiply offer->value by 8 to make it into bits
+        attrib->attribute_value = uip_htons(offer[j].value << 3); // Multiply offer->value by 8 to make it into bits
   
         ptr += sizeof(ike_payload_attribute_t);
+        j++;
+        n++;
       }
-      transform->len = UIP_HTONS(ptr - (uint8_t *) transform);
+      
+      transform->len = uip_htons(ptr - (uint8_t *) transform);
       ++numtransforms;
       break;
       
       default:
-      PRINTF(IPSEC_IKE ": ike_statem_write_sa_payload: Error: Unexpected SA_CTRL_TRANSFORM_TYPE\n");
+      PRINTF(IPSEC_IKE ": ike_statem_write_sa_payload: Error: Unexpected SA_CTRL\n");
     } // End switch (offer)
-    //PRINTF(IPSEC_IKE "Offer at %x\n", offer);
-    //memprint(sa_genpayloadhdr, 60);
-  } while((offer++)->type != SA_CTRL_END_OF_OFFER); // End while (offer)
-  
-  PRINTF(IPSEC_IKE " Printed offer\n");
-  
+  } while(offer[n++].type != SA_CTRL_END_OF_OFFER); // End while (offer)
+    
   // Set the length of the offer in the generic payload header and
   // mark the last proposal as the last.
   proposal->last_more = IKE_PAYLOADFIELD_PROPOSAL_LAST;
@@ -298,7 +302,7 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   for (n = 0; n < SA_ENCR_CURRENT_IVLEN(payload_arg->session); n += 2)
     payload_arg->start[n] = random_rand();
 
-  sk_genpayloadhdr->len = UIP_HTONS(payload_arg->start - (uint8_t *) sk_genpayloadhdr);
+  sk_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) sk_genpayloadhdr);
 }
 
 
@@ -452,7 +456,7 @@ void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_h
 // 
 //   // We have now verified the Integrity Checksum and decrypted the IKE payloads.
 //   // Adjust the length field of the SK payload so that it "points" to the following IKE payload.
-//   sk_genpayload_hdr->len = UIP_HTONS(sizeof(sk_genpayload_hdr) + encr_data->datalen);
+//   sk_genpayload_hdr->len = uip_htons(sizeof(sk_genpayload_hdr) + encr_data->datalen);
 // }
 
 

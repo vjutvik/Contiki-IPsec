@@ -16,6 +16,7 @@ extern void ike_statem_write_notification(payload_arg_t *payload_arg,
 extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 extern void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
+extern void ike_statem_transition(ike_statem_session_t *session);
 
 #define IPSEC_IKE "IPsec IKEv2: "
 
@@ -40,17 +41,20 @@ extern void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_p
 /**
   * Copies a complete IKE message to the session_ptr's ephemeral_info. Used for authentication.
   */
-  /*
-#define COPY_FIRST_MSG(session_ptr_ptr, ike_hdr_ptr_ptr)                                  \
-  session_ptr->ephemeral_info->peer_first_msg_len = UIP_NTOHS(ike_hdr_ptr->len);          \
-  if (session_ptr->ephemeral_info->peer_first_msg_len > IKE_STATEM_FIRSTMSG_MAXLEN) {     \
-    // Error: Responder's first message is too big                                        \
-    ike_statem_remove_session_ptr(session_ptr);                                           \
-    return;                                                                               \
-  }                                                                                       \
-  else                                                                                    \
-    memcpy(&session_ptr->ephemeral_info->peer_first_msg, ike_hdr_ptr, session_ptr->ephemeral_info->peer_first_msg_len)
-
-*/
-
+#define COPY_FIRST_MSG(session_ptr, ike_hdr_ptr)                                            \
+  do {                                                                                      \
+    uint32_t len = uip_ntohl(ike_hdr_ptr->len);                                             \
+    if (len > IKE_STATEM_FIRSTMSG_MAXLEN) {                                                 \
+      /* Error: Responder's first message is too big  */                                    \
+      PRINTF(IPSEC_IKE " Reponder's first message is too big\n");                           \
+      ike_statem_remove_session(session_ptr);                                               \
+      return;                                                                               \
+    }                                                                                       \
+    else {                                                                                  \
+      session_ptr->ephemeral_info->peer_first_msg_len = (uint16_t) len;                     \
+      memcpy(&session_ptr->ephemeral_info->peer_first_msg, ike_hdr_ptr, len);               \
+    }                                                                                       \
+  }                                                                                         \
+  while (0)
+  
 #endif

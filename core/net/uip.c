@@ -501,7 +501,7 @@ uip_udp_new(const uip_ipaddr_t *ripaddr, uint16_t rport)
     uip_ipaddr_copy(&conn->ripaddr, ripaddr);
   }
   conn->ttl = UIP_TTL;
-  
+
   return conn;
 }
 #endif /* UIP_UDP */

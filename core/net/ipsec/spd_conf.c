@@ -44,11 +44,12 @@
   * > Every proposal must offer integrity protection. This is provided through a combined mode
   *   transform _or_ via the integrity dito.
   */
-const spd_proposal_tuple_t spdconf_ike_proposal[6] =
+const spd_proposal_tuple_t spdconf_ike_proposal[7] =
 {
   // IKE proposal
   { SA_CTRL_NEW_PROPOSAL, SA_PROTO_IKE }, 
   { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_AES_CTR },
+  { SA_CTRL_ATTRIBUTE_KEY_LEN,  16 },  /* Key len in _bytes_ (128 bits) */
   { SA_CTRL_TRANSFORM_TYPE_INTEG, SA_INTEG_AES_XCBC_MAC_96 },
   { SA_CTRL_TRANSFORM_TYPE_DH, SA_IKE_MODP_GROUP },
   { SA_CTRL_TRANSFORM_TYPE_PRF, SA_PRF_HMAC_SHA1},
@@ -61,7 +62,9 @@ static const spd_proposal_tuple_t my_ah_esp_proposal[] =
   // ESP proposal
   { SA_CTRL_NEW_PROPOSAL, SA_PROTO_ESP }, 
   { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_AES_CBC },
+  { SA_CTRL_ATTRIBUTE_KEY_LEN,  16 },  /* Key len in _bytes_ (128 bits) */
   { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_AES_CTR },
+  { SA_CTRL_ATTRIBUTE_KEY_LEN,  16 },  /* Key len in _bytes_ (128 bits) */
   { SA_CTRL_TRANSFORM_TYPE_INTEG, SA_INTEG_AES_XCBC_MAC_96 },
 
   // AH proposal
@@ -178,7 +181,7 @@ const spd_entry_t spd_table[SPD_ENTRIES] =
         set_any_src_port(),
         set_dest_port(1234)
       },
-      .proc_action = SPD_ACTION_PROTECT,      // No protection necessary
+      .proc_action = SPD_ACTION_BYPASS,      // No protection necessary
       .offer = NULL                           // N/A
     },
 

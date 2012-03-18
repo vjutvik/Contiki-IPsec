@@ -259,7 +259,7 @@ struct uip_udp_conn *udp_broadcast_new(uint16_t port, void *appstate);
  * \param port The port number in network byte order to which to bind
  * the connection.
  */
-#define udp_bind(conn, port) uip_udp_bind(conn, port)
+#define udp_bind(conn, port) uip_udp_bind(conn, port); printf("Setting %p to lport %u\n", conn, uip_ntohs(port))
 
 /**
  * Cause a specified UDP connection to be polled.

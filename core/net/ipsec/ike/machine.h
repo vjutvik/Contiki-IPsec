@@ -92,8 +92,19 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_STATEM_GET_8BYTE_SPIi(session)
 #define IKE_STATEM_GET_8BYTE_SPIr(session)
 */
+
+#define IKE_STATEM_INCRMYMSGID(session) ++session->my_msg_id;
 #define IKE_STATEM_SESSION_ISREADY(session) (ctimer_expired(&session->retrans_timer))
 
+/**
+  * Call this macro when you want to execute a state transition 
+  * (i.e. send a request / response).
+  *
+  * Can either be called from a state or from ike_statem_timeout_handler()
+  */
+#define IKE_STATEM_TRANSITION(session)  \
+  ike_statem_transition(session);       \
+  return
 
 
 /**
@@ -230,7 +241,7 @@ typedef struct {
 typedef struct {
   uint8_t *start;                                 // The address at which the paylaod should start
   ike_statem_session_t *session;                  // Session pointer
-  ike_payload_type_t *prior_next_payload;         // Pointer that stores the address of the last "next payload" -field 
+  uint8_t *prior_next_payload;                    // Pointer that stores the address of the last "next payload" -field, of type ike_payload_type_t
 } payload_arg_t;
 
 ike_statem_session_t *ike_statem_get_session_by_addr(uip_ip6addr_t *addr);

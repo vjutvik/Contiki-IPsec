@@ -116,6 +116,20 @@ tcpip_handler(void)
     server_conn->rport = 0;
   }
 }
+#include "payload.h"
+void ipsec_ex_transmit(void *data) {
+  udp_bind(server_conn, UIP_HTONS(1234));
+  uip_ip6addr(&server_conn->ripaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 1);
+  server_conn->rport = UIP_HTONS(500);
+  uip_udp_packet_send(server_conn, "hej", 3);  
+  printf("IPsec example transmitted\n");
+  printf("sizeof ike_payload_ike_hdr_t %d\n", sizeof(ike_payload_ike_hdr_t));
+  printf("ike_payloadfield_ikehdr_exchtype_t %d\n", sizeof(ike_payloadfield_ikehdr_exchtype_t));
+  printf("ike_payload_type_t %d\n", sizeof(ike_payload_type_t));
+}
+
+struct ctimer retrans_timer;
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(ipsec_example_process, ev, data)
 {
@@ -124,8 +138,18 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
   border_router_set_mac((uint8_t *) &uip_lladdr.addr);
 
   /* new connection with remote host */
+  printf("ipsec-example: calling udp_new\n");
   server_conn = udp_new(NULL, UIP_HTONS(0), NULL);
   udp_bind(server_conn, UIP_HTONS(MOTE_PORT));
+
+  /* IKEv2 immediate transmit */
+  //ctimer_set(&retrans_timer, 3 * CLOCK_SECOND, &ipsec_ex_transmit, NULL);
+  /*
+  uip_ip6addr(&server_conn->ripaddr, aaaa, 0, 0, 0, 0, 0, 0, 1);
+  server_conn->rport = UIP_HTONS(500);
+  uip_udp_packet_send(server_conn, "hej", 3);
+  */
+  
 
   /* wait for incoming data */
   while(1) {
@@ -134,7 +158,6 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
       tcpip_handler();
     }
   }
-
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/

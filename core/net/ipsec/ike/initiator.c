@@ -3,6 +3,9 @@
 #include "ecc/ecc.h"
 #include "ecc/ecdh.h"
 
+uint16_t ike_statem_trans_authreq(ike_statem_session_t *session);
+void ike_statem_state_authrespwait(ike_statem_session_t *session);
+
 // INITIATE_START --- (INITREQ) ---> INITRESPWAIT
 /*
 void ike_statem_state_initiate_start(ipsec_addr_t *trigger_pkt, spd_entry_t *commanding_entry) // Argh! Set stuff up! host, triggering
@@ -67,13 +70,13 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   SET_GENPAYLOADHDR(ke_genpayloadhdr, &payload_arg, IKE_PAYLOAD_KE);
   
   ike_payload_ke_t *ke = (ike_payload_ke_t *) payload_arg.start;
-  ke->dh_group_num = UIP_HTONS(SA_IKE_MODP_GROUP);
+  ke->dh_group_num = uip_htons(SA_IKE_MODP_GROUP);
   ke->clear = IKE_MSG_ZERO;
 
   // Write key exchange data (varlen)
   // (Note: We cast the first arg of ecdh_enc...() in the firm belief that payload_arg.start begins at a 4 byte offset)
   payload_arg.start = ecdh_encode_public_key((uint32_t *) (payload_arg.start + sizeof(ike_payload_ke_t)), session->ephemeral_info->my_prv_key);
-  ke_genpayloadhdr->len = UIP_HTONS(payload_arg.start - (uint8_t *) ke_genpayloadhdr);
+  ke_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) ke_genpayloadhdr);
   // End KE payload
   
   // Start nonce payload
@@ -82,11 +85,12 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
 
   // Write nonce
   random_ike(payload_arg.start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);
-  ninr_genpayloadhdr->len = UIP_HTONS(payload_arg.start - (uint8_t *) ninr_genpayloadhdr);
+  payload_arg.start += IKE_PAYLOAD_MYNONCE_LEN;
+  ninr_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) ninr_genpayloadhdr);
   // End nonce payload
     
   // Wrap up the IKE header and exit state
-  ike_hdr->len = UIP_HTONL(payload_arg.start - msg_buf);
+  ike_hdr->len = uip_htonl(payload_arg.start - msg_buf);
   SET_NO_NEXT_PAYLOAD(&payload_arg);
 
   return payload_arg.start - msg_buf;
@@ -98,7 +102,6 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   * INITRESPWAIT --- (AUTHREQ) ---> AUTHRESPWAIT
   *              --- (INITREQ) ---> AUTHRESPWAIT
   */
-  /*
 void ike_statem_state_initrespwait(ike_statem_session_t *session)
 {
   // If everything went well, we should see something like
@@ -109,7 +112,7 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
   
   session->cookie_payload = NULL; // Reset the cookie data (if it has been used)
   
-  ike_payload_ike_hdr_t *ike_hdr = msg_buf;
+  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
   
   // Store a copy of this first message from the peer for later use
   // in the autentication calculations.
@@ -117,31 +120,36 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
   
   // We process the payloads one by one
   uint8_t *peer_pub_key;
-  uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA
-  ptr += msg_buf + sizeof(ike_payload_ike_hdr_t);
+  uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA's IKE registry
+  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
   ike_payload_type_t payload_type = ike_hdr->next_payload;
-  while (ptr - msg_buf < msg_buf_len) { // Payload loop
-    const ike_payload_generic_hdr_t *genpayloadhdr = ptr;
-    const uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-    const uint8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
+  while (ptr - msg_buf < uip_datalen()) { // Payload loop
+    const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
+    const uint8_t *payload_start = (uint8_t *) genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
+    const uint8_t *payload_end = (uint8_t *) genpayloadhdr + uip_ntohs(genpayloadhdr->len);
+    spd_proposal_tuple_t *proposal_tuple;
+    ike_payload_ke_t *ke_payload;
     
     switch (payload_type) {
+      /*
+      FIX: Cookies disabled as for now
       case IKE_PAYLOAD_N:
-      ike_payload_notify_t *n_payload = payload_start;
+      ike_payload_notify_t *n_payload = (ike_payload_notify_t *) payload_start;
       // Now what starts with the letter C?
       if (n_payload->notify_msg_type == IKE_PAYLOAD_NOTIFY_COOKIE) {
         // C is for cookie, that's good enough for me
-*/
+      */
         /**
           * Although the RFC doesn't explicitly state that the COOKIE -notification
           * is a solitary payload, I believe the discussion at p. 31 implies this.
           *
           * Re-transmit the IKE_SA_INIT message with the COOKIE notification as the first payload.
           */
-/*
+      /*
         session->cookie_payload_ptr = genpayloadhdr; // genpayloadhdr points to the cookie data
         IKE_STATEM_TRANSITION(session);
       }
+      */
       break;
       
       case IKE_PAYLOAD_SA:
@@ -150,12 +158,12 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
       // Loop over the responder's offer and that of ours in order to verify that the former
       // is indeed a subset of ours.
       //ike_statem_session_init_triggerdata_t *triggerdata = session->transition_arg;
-      spd_proposal_tuple_t *proposal_tuple = session->ephemeral_info->triggering_pkt->spd_entry->offer;
+      proposal_tuple = session->ephemeral_info->spd_entry->offer;
       while (ptr < payload_end) { // Start proposals
-        ike_payload_proposal_t *thisproposal = ptr;
-        uint8_t *thisproposal_end = ptr + UIP_NTOHS(thisproposal->proposal_len);
-*/
-/*        
+        ike_payload_proposal_t *thisproposal = (ike_payload_proposal_t *) ptr;
+        uint8_t *thisproposal_end = ptr + uip_ntohs(thisproposal->proposal_len);
+
+/*
         typedef struct {
           uint8_t last_more;
           uint8_t clear;
@@ -166,12 +174,12 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
           uint8_t spi_size;
           uint8_t numtransforms;
 */
-/*  
+
         // Assert properties
         if (thisproposal->proto_id != SA_PROTO_IKE || thisproposal->spi_size != 0) {
-          IKEPRINTF("This doesn't look like a proposal for an IKE SA.\n");
+          PRINTF(IPSEC_IKE "This doesn't look like a proposal for an IKE SA.\n");
         }
-*/
+
         /*
         typedef struct {
           uint8_t last_more;
@@ -183,20 +191,20 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
           uint16_t id;
         } ike_payload_transform_t;
         */
-/*        
+
         // Loop over the transforms
-        bool esn_required = true;
+        u8_t esn_required = 1;
         uint8_t accepted_transforms = 0;
         SA_UNASSIGN_SA(&session->sa); // Prepare the responder's SA entry for this proposal
 
         while (ptr < thisproposal_end) {  // Transform loop
-          ike_payload_transform_t *thistransform = ptr;
-          uint8_t *thistranform_end = ptr + UIP_NTOHS(thistransform->len);
+          ike_payload_transform_t *thistransform = (ike_payload_transform_t *) ptr;
+          uint8_t *thistransform_end = ptr + uip_ntohs(thistransform->len);
           ptr += sizeof(ike_payload_transform_t); // ptr should now be at the beginning of whatever comes after this transform
           
           // Edge case: The KE payload _might_ have been processed, and in that case we've already
           // accepted that payload's DH group.
-          if (ke_dh_group && thistransform->type == SA_CTRL_TRANSFORM_TYPE_DH && UIP_NTOHS(thistransform->id) != ke_dh_group) {
+          if (ke_dh_group && thistransform->type == SA_CTRL_TRANSFORM_TYPE_DH && uip_ntohs(thistransform->id) != ke_dh_group) {
             // This means the the responder has already specified the DH group by
             // using the dh num field in the KE payload. Ignore all other DH groups in the SA payload.
             continue;
@@ -204,18 +212,18 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
           
           
           // We only accept sequence numbers of four bytes
-          if (thistransform->type == SA_CTRL_TRANSFORM_TYPE_ESN && UIP_NTOHS(thistransform->id) == SA_ESN_NO)
-            esn_required = false;
+          if (thistransform->type == SA_CTRL_TRANSFORM_TYPE_ESN && uip_ntohs(thistransform->id) == SA_ESN_NO)
+            esn_required = 0;
           
           // Any key length attribute (the only attribute defined in the RFC)?
           if (ptr < thistransform_end) {
-            ike_payload_attribute_t *attrib = ptr;
+            ike_payload_attribute_t *attrib = (ike_payload_attribute_t *) ptr;
             
             // Assert a few values
             if (attrib->af_attribute_type != IKE_PAYLOADFIELD_ATTRIB_VAL)
               PRINTF(IKE "Error: Unrecognized attribute type\n");
 
-            session->sa.encr_keylen = UIP_NTOHS(attrib->af_attribute_value) >> 3; // Divide by 8 to turn bits into bytes
+            session->sa.encr_keylen = uip_ntohs(attrib->attribute_value) >> 3; // Divide by 8 to turn bits into bytes
             
             ptr += sizeof(ike_payload_attribute_t);
             if (ptr < thistransform_end) {
@@ -230,11 +238,11 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
             if (proposal_tuple->type == thistransform->type) {
               
               // ( Couldn't we figure out a way to mash these two comparisons into one? )
-              if (proposal_tuple->value != UIP_NTOHS(thistransform->id)) {
+              if (proposal_tuple->value != uip_ntohs(thistransform->id)) {
                 // This is a member of our offer. Set the SA for this transform type, if not already set.
                 
                 if (SA_GET_PARAM_BY_INDEX(&session->sa, thistransform->type) == SA_UNASSIGNED_TYPE) {
-                  SA_GET_PARAM_BY_INDEX(&session->sa, thistransform->type) = UIP_NTOHS(thistransform->id);
+                  SA_GET_PARAM_BY_INDEX(&session->sa, thistransform->type) = uip_ntohs(thistransform->id);
                   ++accepted_transforms;
                 }
               }
@@ -259,14 +267,14 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
       
       case IKE_PAYLOAD_NiNr:
       // This is the responder's nonce
-      session->ephemeral_info->noncelen = payload_end - payload_start;
-      memcpy(&session->ephemeral_info->peernonce, payload_start, session->ephemeral_info->noncelen);
+      session->ephemeral_info->peernonce_len = payload_end - payload_start;
+      memcpy(&session->ephemeral_info->peernonce, payload_start, session->ephemeral_info->peernonce_len);
       break;
       
       case IKE_PAYLOAD_KE:
       // This is the responder's public key
-      ike_payload_ke_t *ke_payload = payload_start;
-*/
+      ke_payload = (ike_payload_ke_t *) payload_start;
+
       /**
         * Our approach to selecting the DH group in the SA proposal is a bit sketchy: We grab the first one that
         * fits with our offer. This will probably work in most cases, but not all:
@@ -292,17 +300,17 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
            payloads in any other order."
           
           )
-          
-         */
-/*
+        *
+        */
+
       if (session->sa.dh == SA_UNASSIGNED_TYPE) {
         // DH group not assigned because we've not yet processed the SA payload
         // Store a not of this for later SA processing.
-        ke_dh_group = UIP_NTOHS(ke_payload->dh_group_num);      
+        ke_dh_group = uip_ntohs(ke_payload->dh_group_num);      
       }
       else {
         // DH group has been assigned since we've already processed the SA
-        if (session->sa.dh != UIP_NTOHS(ke_payload->dh_group_num)) {
+        if (session->sa.dh != uip_ntohs(ke_payload->dh_group_num)) {
           ike_statem_remove_session(session);
           return;
           PRINTF(IKE "Error: DH group of the accepted proposal doesn't match that of the KE's. Kill the session.\n");
@@ -322,7 +330,6 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
 
       // 
       default:
-      */
       /**
         * Unknown / unexpected payload. Is the critical flag set?
         *
@@ -334,7 +341,7 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
         * include a Notify payload UNSUPPORTED_CRITICAL_PAYLOAD, indicating an
         * unsupported critical payload was included.""
         */
-/*
+
       if (genpayloadhdr->clear > 0) {
         PRINTF(IKE "Error: Encountered an unknown critical payload\n");
         ike_statem_remove_session(session); // Kill the session
@@ -344,24 +351,25 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
 
     } // End payload switch
 
-    ptr = payload_end;
+    ptr = (uint8_t *) payload_end;
     payload_type = genpayloadhdr->next_payload;
   } // End payload loop
   PRINTF(IKE "Error: Unexpected end of data. Send a new request.\n");
 
   done: // Done parsing
-  */
+
   /**
     * Generate keying material for the IKE SA.
     * See section 2.14 "Generating Keying Material for the IKE SA"
     */
-    /*
+
   ike_statem_get_keymat(session, peer_pub_key);
 
   // Jump
   // Transition to state autrespwait
-  session->next_state_fn = &ike_statem_state_authrespwait;
   session->transition_fn = &ike_statem_trans_authreq;
+  session->next_state_fn = &ike_statem_state_authrespwait;
+
   //session->transition_arg = &session_trigger;
 
   IKE_STATEM_INCRMYMSGID(session);
@@ -375,13 +383,16 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
 // Transmit the IKE_AUTH message:
 //    HDR, SK {IDi, [CERT,] [CERTREQ,]
 //      [IDr,] AUTH, SAi2, TSi, TSr}
-
 uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
+  PRINTF("%s:%d trans_authreq STUB!\n", __FILE__, __LINE__);
+  return 0;
+}
+  /*
+
   payload_arg_t payload_arg = {
     .start = msg_buf,
     .session = session
   };
-  
   // Write the IKE header
   SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH);
 
@@ -497,10 +508,14 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
 /**
   * AUTH response wait state
   */
-// void ike_statem_state_authrespwait(ike_statem_session_t *session)
-// {
-//   // If everything went well, we should see something like
-//   // <--  HDR, SK {IDr, [CERT,] AUTH, SAr2, TSi, TSr}
+void ike_statem_state_authrespwait(ike_statem_session_t *session)
+{
+  // If everything went well, we should see something like
+  // <--  HDR, SK {IDr, [CERT,] AUTH, SAr2, TSi, TSr}
+  PRINTF("state_authrespwait stub!\n");
+  return;
+}
+
 //   ike_payload_ike_hdr_t *ike_hdr = msg_buf;
 //   
 //   ike_ts_payload_t *tsi, *tsr;
@@ -509,7 +524,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
 //   while (ptr - msg_buf < msg_buf_len) { // Payload loop
 //     ike_payload_generic_hdr_t *genpayloadhdr = ptr;
 //     uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-//     uint8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
+//     uint8_t *payload_end = genpayloadhdr + uip_ntohs(genpayloadhdr->len);
 //     
 //     switch (payload_type) {
 //       case IKE_PAYLOAD_SK:
@@ -580,7 +595,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   while (ptr - msg_buf < msg_buf_len) { // Payload loop
     ike_payload_generic_hdr_t *genpayloadhdr = ptr;
     uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-    uint8_t *payload_end = genpayloadhdr + UIP_NTOHS(genpayloadhdr->len);
+    uint8_t *payload_end = genpayloadhdr + uip_ntohs(genpayloadhdr->len);
     
     switch (genpayloadhdr->next_type) {
 

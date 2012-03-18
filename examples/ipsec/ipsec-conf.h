@@ -3,6 +3,10 @@
 
 #include "project-conf.h"
 
+/* Extra uIP logging */
+#undef UIP_CONF_LOGGING
+#define UIP_CONF_LOGGING 1
+  
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
 #define WITH_CONF_IPSEC_AH              0

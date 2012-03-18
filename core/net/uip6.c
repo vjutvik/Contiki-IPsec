@@ -574,9 +574,10 @@ uip_udp_new(const uip_ipaddr_t *ripaddr, uint16_t rport)
       goto again;
     }
   }
-
+  printf("UIP_UDP_CONNS: %d\n", UIP_UDP_CONNS);
   conn = 0;
   for(c = 0; c < UIP_UDP_CONNS; ++c) {
+    printf("UDP conn: %u, lport: %u\n", c, uip_ntohs(uip_udp_conns[c].lport));
     if(uip_udp_conns[c].lport == 0) {
       conn = &uip_udp_conns[c];
       break;
@@ -595,6 +596,8 @@ uip_udp_new(const uip_ipaddr_t *ripaddr, uint16_t rport)
     uip_ipaddr_copy(&conn->ripaddr, ripaddr);
   }
   conn->ttl = uip_ds6_if.cur_hop_limit;
+  
+  printf("returning %p, lport %u\n", conn, uip_ntohs(conn->lport));
   
   return conn;
 }
@@ -958,6 +961,7 @@ uip_process(uint8_t flag)
       goto tcp_send_syn;
 #endif /* UIP_ACTIVE_OPEN */
     }
+    PRINTF("Dropping line 961\n");
     goto drop;
 #endif /* UIP_TCP */
     /* Check if we were invoked because of the perodic timer fireing. */
@@ -1070,6 +1074,7 @@ uip_process(uint8_t flag)
         goto appsend;
       }
     }
+    PRINTF("Dropping line 1073\n");
     goto drop;
 #endif /* UIP_TCP */
   }
@@ -1083,6 +1088,7 @@ uip_process(uint8_t flag)
       UIP_UDP_APPCALL();
       goto udp_send;
     } else {
+      PRINTF("Dropping line 1088\n");
       goto drop;
     }
   }
@@ -1109,7 +1115,11 @@ uip_process(uint8_t flag)
    * the packet has been padded and we set uip_len to the correct
    * value..
    */
-   
+  
+  // FIX: uip_len HACK!
+  // uip_len = (UIP_IP_BUF->len[0] << 8) + UIP_IP_BUF->len[1] + UIP_IPH_LEN;
+  // END HACK
+  
   if((UIP_IP_BUF->len[0] << 8) + UIP_IP_BUF->len[1] <= uip_len) {
     uip_len = (UIP_IP_BUF->len[0] << 8) + UIP_IP_BUF->len[1] + UIP_IPH_LEN;
     /*
@@ -1125,6 +1135,7 @@ uip_process(uint8_t flag)
      */
   } else {
     UIP_LOG("ip: packet shorter than reported in IP header.");
+    PRINTF("UIP_IP_BUF->len[0] << 8) + UIP_IP_BUF->len[1]: %d uip_len: %d\n", (UIP_IP_BUF->len[0] << 8) + UIP_IP_BUF->len[1], uip_len);
     goto drop;
   }
   
@@ -1161,6 +1172,8 @@ uip_process(uint8_t flag)
         break;
       case 1:
         /*silently discard*/
+      PRINTF("Dropping line 1168\n");
+
         goto drop;
       case 2:
         /* send icmp error message (created in ext_hdr_options_process)
@@ -1488,6 +1501,8 @@ uip_process(uint8_t flag)
             break;
           case 1:
             /*silently discard*/
+          PRINTF("Dropping line 1497\n");
+
             goto drop;
           case 2:
             /* send icmp error message (created in ext_hdr_options_process)
@@ -1517,6 +1532,7 @@ uip_process(uint8_t flag)
             break;
           case 1:
             /*silently discard*/
+          PRINTF("Dropping line 1528\n");
             goto drop;
           case 2:
             /* send icmp error message (created in ext_hdr_options_process)
@@ -1557,6 +1573,7 @@ uip_process(uint8_t flag)
         PRINTF("Processing frag header\n");
         uip_len = uip_reass();
         if(uip_len == 0) {
+          PRINTF("Dropping line 1569\n");
           goto drop;
         }
         if(uip_reassflags & UIP_REASS_FLAG_ERROR_MSG){
@@ -1722,6 +1739,9 @@ uip_process(uint8_t flag)
        connection is bound to a remote port. Finally, if the
        connection is bound to a remote IP address, the source IP
        address of the packet is checked. */
+
+    PRINTF("uip_udp_conn->lport %u, uip_udp_conn->rport %u\n", uip_ntohs(uip_udp_conn->lport), uip_ntohs(uip_udp_conn->rport));
+
     if(uip_udp_conn->lport != 0 &&
        UIP_UDP_BUF->destport == uip_udp_conn->lport &&
        (uip_udp_conn->rport == 0 ||
@@ -1738,6 +1758,7 @@ uip_process(uint8_t flag)
   UIP_STAT(++uip_stat.ip.drop);
   goto send;
 #else
+  PRINTF("Dropping line 1751\n");
   goto drop;
 #endif
 
