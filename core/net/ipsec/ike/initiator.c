@@ -4,7 +4,7 @@
 #include "ecc/ecdh.h"
 
 uint16_t ike_statem_trans_authreq(ike_statem_session_t *session);
-void ike_statem_state_authrespwait(ike_statem_session_t *session);
+int8_t ike_statem_state_authrespwait(ike_statem_session_t *session);
 
 // INITIATE_START --- (INITREQ) ---> INITRESPWAIT
 /*
@@ -102,7 +102,7 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   * INITRESPWAIT --- (AUTHREQ) ---> AUTHRESPWAIT
   *              --- (INITREQ) ---> AUTHRESPWAIT
   */
-void ike_statem_state_initrespwait(ike_statem_session_t *session)
+int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 {
   // If everything went well, we should see something like
   // <--  HDR, SAr1, KEr, Nr, [CERTREQ]
@@ -129,6 +129,7 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
     const uint8_t *payload_end = (uint8_t *) genpayloadhdr + uip_ntohs(genpayloadhdr->len);
     spd_proposal_tuple_t *proposal_tuple;
     ike_payload_ke_t *ke_payload;
+    ike_payload_notify_t *n_payload;
     
     switch (payload_type) {
       /*
@@ -227,9 +228,8 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
             
             ptr += sizeof(ike_payload_attribute_t);
             if (ptr < thistransform_end) {
-              PRINTF(IKE "Error: This transform seems to contain more than one attribute. Kill the session.\n");
-              ike_statem_remove_session(session);
-              return;
+              PRINTF(IKE "Error: This transform seems to contain more than one attribute.\n");
+              return 0;
             }
           }
 
@@ -311,14 +311,21 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
       else {
         // DH group has been assigned since we've already processed the SA
         if (session->sa.dh != uip_ntohs(ke_payload->dh_group_num)) {
-          ike_statem_remove_session(session);
-          return;
-          PRINTF(IKE "Error: DH group of the accepted proposal doesn't match that of the KE's. Kill the session.\n");
+          PRINTF(IPSEC_IKE "Error: DH group of the accepted proposal doesn't match that of the KE's.\n");
+          return 0;
         }
       }
       
       // Store the address to the beginning of the peer's public key
       peer_pub_key = ((uint8_t *) ke_payload) + sizeof(ke_payload);
+      break;
+      
+      case IKE_PAYLOAD_N:
+      n_payload = (ike_payload_notify_t *) payload_start;
+      if (n_payload->notify_msg_type == IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN) {
+        PRINTF(IPSEC_IKE "Peer did not accept proposal.\n");
+        return 0;
+      }
       break;
       
       case IKE_PAYLOAD_CERTREQ:
@@ -343,9 +350,8 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
         */
 
       if (genpayloadhdr->clear > 0) {
-        PRINTF(IKE "Error: Encountered an unknown critical payload\n");
-        ike_statem_remove_session(session); // Kill the session
-        return;
+        PRINTF(IPSEC_IKE "Error: Encountered an unknown critical payload\n");
+        return 0;
       }
       // Info: Ignored unknown payload
 
@@ -354,7 +360,7 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
     ptr = (uint8_t *) payload_end;
     payload_type = genpayloadhdr->next_payload;
   } // End payload loop
-  PRINTF(IKE "Error: Unexpected end of data. Send a new request.\n");
+  PRINTF(IPSEC_IKE "Error: Unexpected end of data. Send a new request.\n");
 
   done: // Done parsing
 
@@ -375,6 +381,8 @@ void ike_statem_state_initrespwait(ike_statem_session_t *session)
   IKE_STATEM_INCRMYMSGID(session);
   IKE_STATEM_TRANSITION(session);
   
+  return 1;
+
   // This ends the INIT exchange. Borth parties has now negotiated the IKE SA's parameters and created a common DH secret.
   // We will now proceed with the AUTH exchange.
 }
@@ -508,12 +516,12 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
 /**
   * AUTH response wait state
   */
-void ike_statem_state_authrespwait(ike_statem_session_t *session)
+int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
 {
   // If everything went well, we should see something like
   // <--  HDR, SK {IDr, [CERT,] AUTH, SAr2, TSi, TSr}
   PRINTF("state_authrespwait stub!\n");
-  return;
+  return 1;
 }
 
 //   ike_payload_ike_hdr_t *ike_hdr = msg_buf;

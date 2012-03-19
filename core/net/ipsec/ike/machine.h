@@ -102,9 +102,7 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
   *
   * Can either be called from a state or from ike_statem_timeout_handler()
   */
-#define IKE_STATEM_TRANSITION(session)  \
-  ike_statem_transition(session);       \
-  return
+#define IKE_STATEM_TRANSITION(session) ike_statem_transition(session)
 
 
 /**
@@ -212,7 +210,7 @@ typedef struct ike_statem_session {
   uint16_t (*transition_fn)(struct ike_statem_session *);
   
   // The above transition will (if all goes well) take us to this state.
-  void (*next_state_fn)(struct ike_statem_session *);
+  int8_t (*next_state_fn)(struct ike_statem_session *);
 
 } ike_statem_session_t;
 
@@ -281,5 +279,6 @@ void ike_statem_incoming_data_handler();
   */
 uint16_t ike_statem_trans_initreq(ike_statem_session_t *session);
 uint16_t ike_statem_state_respond_start(void);
+int8_t ike_statem_state_initrespwait(ike_statem_session_t *session);
 
 #endif

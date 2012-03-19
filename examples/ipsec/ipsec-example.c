@@ -143,21 +143,21 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
   udp_bind(server_conn, UIP_HTONS(MOTE_PORT));
 
   /* IKEv2 immediate transmit */
-  //ctimer_set(&retrans_timer, 3 * CLOCK_SECOND, &ipsec_ex_transmit, NULL);
+  ctimer_set(&retrans_timer, 10 * CLOCK_SECOND, &ipsec_ex_transmit, NULL);
   /*
-  uip_ip6addr(&server_conn->ripaddr, aaaa, 0, 0, 0, 0, 0, 0, 1);
+  uip_ip6addr(&server_conn->ripaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 1);
   server_conn->rport = UIP_HTONS(500);
   uip_udp_packet_send(server_conn, "hej", 3);
   */
-  
-
   /* wait for incoming data */
+  /*
   while(1) {
     PROCESS_YIELD();
     if(ev == tcpip_event) {
       tcpip_handler();
     }
   }
+  */
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/

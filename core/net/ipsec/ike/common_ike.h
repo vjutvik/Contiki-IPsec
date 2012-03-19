@@ -47,8 +47,7 @@ extern void ike_statem_transition(ike_statem_session_t *session);
     if (len > IKE_STATEM_FIRSTMSG_MAXLEN) {                                                 \
       /* Error: Responder's first message is too big  */                                    \
       PRINTF(IPSEC_IKE " Reponder's first message is too big\n");                           \
-      ike_statem_remove_session(session_ptr);                                               \
-      return;                                                                               \
+      return 0;                                                                               \
     }                                                                                       \
     else {                                                                                  \
       session_ptr->ephemeral_info->peer_first_msg_len = (uint16_t) len;                     \

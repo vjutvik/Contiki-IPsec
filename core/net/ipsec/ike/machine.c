@@ -51,11 +51,14 @@ void ike_statem_timeout_handler(void *session);
 /**
   * To be called in order to enter a _state_ (not execute a transition!)
   */
-#define IKE_STATEM_ENTERSTATE(session)  \
-  /* Stop retransmission timer (if any has been set) */             \
-  PRINTF(IPSEC_IKE "Entering state %x\n", (session)->next_state_fn);  \
-  STOP_RETRANSTIMER((session));                                     \
-  (*(session)->next_state_fn)(session);                             \
+#define IKE_STATEM_ENTERSTATE(session)                                \
+  /* Stop retransmission timer (if any has been set) */               \
+  PRINTF(IPSEC_IKE "Entering state %p\n", (session)->next_state_fn);  \
+  STOP_RETRANSTIMER((session));                                       \
+  if (!(*(session)->next_state_fn)(session)) {                        \
+    PRINTF(IPSEC_IKE "Removing session %p\n", session);               \
+    ike_statem_remove_session(session);                               \
+  }                                                                   \
   return
 
 #define SET_RETRANSTIMER(session) \
@@ -130,7 +133,7 @@ void ike_statem_setup_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *co
   
   // Transition to state initrespwait
   session->transition_fn = &ike_statem_trans_initreq;
-  //session->next_state_fn = &ike_statem_state_initrespwait; // FIX: disabled
+  session->next_state_fn = &ike_statem_state_initrespwait;
   
   // Populate the ephemeral information with connection setup information
   
@@ -230,6 +233,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     // Don't write this code right now
     PRINTF(IPSEC_IKE "Handling incoming request for a new IKE session\n");
     ike_statem_state_respond_start();
+    return;
   }
   
   // So, the request is concerns an existing session. Find the session struct by matching the SPIs.
@@ -243,7 +247,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     my_spi = &ike_hdr->sa_initiator_spi_low;    
   }
 
-  PRINTF(IPSEC_IKE "Handling incoming request concerning local IKE SPI %lu\n", my_spi);
+  PRINTF(IPSEC_IKE "Handling incoming request concerning local IKE SPI %lu\n", *my_spi);
 
   ike_statem_session_t *session;
   for (session = list_head(sessions); 
@@ -264,8 +268,8 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     }
     else {  
       // It's a request
-      if (ike_hdr->message_id != session->peer_msg_id + 1) {
-        PRINTF(IPSEC "Error: Dropping message\n");
+      if (ike_hdr->message_id != session->peer_msg_id) {
+        PRINTF(IPSEC "Error: Dropping message because message ID is out of order\n");
         return;
       }
       

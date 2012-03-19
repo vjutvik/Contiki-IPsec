@@ -224,11 +224,10 @@ ecc_init()
   int j = NN_DIGIT_BITS;
   printf("ECC INITIALIZED: key bit len: %u NN_DIGIT_BITS: %u\n", i, j);
  /* get parameters */
- get_curve_param(&param);    
+ get_curve_param(&param);
 
  /* precompute array for base point */
  ecc_win_precompute(&(param.G), pBaseArray);
-
 }
 /*---------------------------------------------------------------------------*/
 void 
