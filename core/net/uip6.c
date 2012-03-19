@@ -433,10 +433,6 @@ uip_init(void)
   spd_conf_init();
   sad_init();
   PRINTF(IPSEC "SAD and SPD initialized\n");
-#if WITH_IPSEC_IKE
-  ike_init();
-  PRINTF(IPSEC "IKEv2 service initialized\n");
-#endif
   #endif
 
 #if UIP_TCP
@@ -457,6 +453,16 @@ uip_init(void)
     uip_udp_conns[c].lport = 0;
   }
 #endif /* UIP_UDP */
+
+  /**
+    * We can now initializse the IKEv2 service as the uIP stack
+    * has been initialized. (The service is dependent upon
+    * UDP sockets among other things.)
+    */
+  #if WITH_IPSEC_IKE
+  ike_init();
+  PRINTF(IPSEC "IKEv2 service initialized\n");
+  #endif
 }
 /*---------------------------------------------------------------------------*/
 #if UIP_TCP && UIP_ACTIVE_OPEN
