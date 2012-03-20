@@ -131,6 +131,7 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
     ike_payload_ke_t *ke_payload;
     ike_payload_notify_t *n_payload;
     
+    PRINTF("Next payload is %d\n", payload_type);
     switch (payload_type) {
       /*
       FIX: Cookies disabled as for now
@@ -322,10 +323,12 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       
       case IKE_PAYLOAD_N:
       n_payload = (ike_payload_notify_t *) payload_start;
-      if (n_payload->notify_msg_type == IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN) {
+      if (uip_ntohs(n_payload->notify_msg_type) == IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN) {
         PRINTF(IPSEC_IKE "Peer did not accept proposal.\n");
         return 0;
       }
+      else
+        PRINTF(IPSEC_IKE "Ignoring unknown Notify payload of type %u\n", uip_ntohs(n_payload->notify_msg_type));
       break;
       
       case IKE_PAYLOAD_CERTREQ:

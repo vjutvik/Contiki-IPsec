@@ -158,6 +158,8 @@ char **contiki_argv;
 int
 main(int argc, char **argv)
 {
+  printf("PID is %u\n", getpid());
+  
 #if UIP_CONF_IPV6
 #if UIP_CONF_IPV6_RPL
   printf(CONTIKI_VERSION_STRING " started with IPV6, RPL\n");

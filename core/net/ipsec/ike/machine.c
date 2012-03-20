@@ -237,21 +237,21 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
   }
   
   // So, the request is concerns an existing session. Find the session struct by matching the SPIs.
-  uint32_t *my_spi;
+  uint32_t my_spi;
   if (IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR & ike_hdr->flags) {
     // The other party is the original initiator
-    my_spi = &ike_hdr->sa_responder_spi_low;
+    my_spi = uip_ntohl(ike_hdr->sa_responder_spi_low);
   }
   else {
     // The other party is the responder
-    my_spi = &ike_hdr->sa_initiator_spi_low;    
+    my_spi = uip_ntohl(ike_hdr->sa_initiator_spi_low);
   }
 
-  PRINTF(IPSEC_IKE "Handling incoming request concerning local IKE SPI %lu\n", *my_spi);
+  PRINTF(IPSEC_IKE "Handling incoming request concerning local IKE SPI %u\n", my_spi);
 
   ike_statem_session_t *session;
   for (session = list_head(sessions); 
-        session != NULL && !IKE_STATEM_MYSPI_GET_MYSPI(session) == *my_spi; 
+        session != NULL && !IKE_STATEM_MYSPI_GET_MYSPI(session) == my_spi; 
         session = list_item_next(session))
     ;
 
@@ -261,15 +261,15 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     // Assert that the message ID is correct
     if (IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER & ike_hdr->flags) {
       // It's response to something we sent. Does it have the right message ID?
-      if (ike_hdr->message_id != session->my_msg_id) {
-        PRINTF(IPSEC "Error: Dropping message\n");
+      if (uip_ntohl(ike_hdr->message_id) != session->my_msg_id) {
+        PRINTF(IPSEC "Error: Message ID is out of order. Dropping it.\n");
         return;
       }
     }
     else {  
       // It's a request
-      if (ike_hdr->message_id != session->peer_msg_id) {
-        PRINTF(IPSEC "Error: Dropping message because message ID is out of order\n");
+      if (uip_ntohl(ike_hdr->message_id) != session->peer_msg_id) {
+        PRINTF(IPSEC "Error: Message ID is out of order. Dropping it.\n");
         return;
       }
       
