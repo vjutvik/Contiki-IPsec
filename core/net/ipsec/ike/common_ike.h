@@ -17,6 +17,12 @@ extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 extern void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
 extern void ike_statem_transition(ike_statem_session_t *session);
+extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
+                                ike_payload_generic_hdr_t *sa_payload_hdr, 
+                                uint8_t ke_dh_group,
+                                sa_ike_t *ike_sa,
+                                sa_child_t *child_sa,
+                                spd_proposal_tuple_t *accepted_transform_subset);
 
 #define IPSEC_IKE "IPsec IKEv2: "
 

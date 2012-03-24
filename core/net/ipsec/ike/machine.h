@@ -198,7 +198,9 @@ typedef struct ike_statem_session {
   // common denominator)  
   sa_ike_t sa;
 
-  // Temporary scratchpad for use during connection setup
+  spd_proposal_tuple_t *proposal_reply;
+
+  // Temporary scratchpad for use during setup of the IKE SA
   ike_statem_ephemeral_info_t *ephemeral_info;
 
   /**

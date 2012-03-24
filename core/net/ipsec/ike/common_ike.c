@@ -279,6 +279,190 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
 
 
 /**
+  * Två fall:
+  * peer			          me
+  * responder SA(1) -> initiator offer (n): set transforms in SA, return subset
+  * initiator SA(n) -> responder offer (n): set transforms in SA, return subset
+  */
+  
+int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
+                                ike_payload_generic_hdr_t *sa_payload_hdr, 
+                                uint8_t ke_dh_group,
+                                sa_ike_t *ike_sa,
+                                sa_child_t *child_sa,
+                                spd_proposal_tuple_t *accepted_transform_subset)
+{
+  
+  uint8_t ike = (ike_sa != NULL);
+  uint8_t required_transforms;
+  if (ike)
+    required_transforms = 4; // Integ, encr, dh, prf
+  else
+    required_transforms = 2; // Integ, encr
+  
+  // Structure for storing candidate SA settings
+  uint8_t candidates[10];       // 10 is arbitrary, but enough
+  uint8_t candidate_keylen = 0;
+  uint8_t acc_proposal_ctr;
+  ike_payload_proposal_t *peerproposal = (ike_payload_proposal_t *) (((uint8_t *) sa_payload_hdr) + sizeof(ike_payload_generic_hdr_t));
+  PRINTF("sa_payload_hdr: %p, peerproposal: %p\n", sa_payload_hdr, peerproposal);
+  
+  // (#1) Loop over the proposals in the peer's offer
+  while((uint8_t *) peerproposal < ((uint8_t *) sa_payload_hdr) + uip_ntohs(sa_payload_hdr->len)) {
+    PRINTF(IPSEC_IKE "#1 Looking at peerproposal %p\n", peerproposal);
+
+    // Assert proposal properties
+    if (ike && (peerproposal->proto_id != SA_PROTO_IKE || peerproposal->spi_size != 0)) {
+      PRINTF(IPSEC_IKE "#1 Rejecting non-IKE proposal\n");
+      goto next_peerproposal;
+    }
+    if (!ike && (peerproposal->proto_id != SA_PROTO_ESP || peerproposal->spi_size != 4)) {
+      PRINTF(IPSEC_IKE "#1 Rejecting non-ESP proposal\n");
+      goto next_peerproposal;
+    }
+    
+    spd_proposal_tuple_t *mytuple = my_offer;
+    accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
+    if (ike)
+      accepted_transform_subset[0].value = SA_PROTO_IKE;
+    else
+      accepted_transform_subset[0].value = SA_PROTO_ESP;
+    
+    // (#2) Loop over my proposals and see if any of them is a superset of this peer's current proposal
+    while (mytuple->type != SA_CTRL_END_OF_OFFER) {
+      // We're now at the beginning of one of our offers.
+      PRINTF("#2 At the beginning of one our offers\n");
+            
+      ++mytuple; // Jump the SA_CTRL_NEW_PROPOSAL
+      memset(candidates, 0, sizeof(candidates));
+      uint8_t accepted_transforms = 0;  // Number of accepted transforms
+      
+      // (#3) Loop over this proposal in my offer
+      while (mytuple->type != SA_CTRL_END_OF_OFFER && mytuple->type != SA_CTRL_NEW_PROPOSAL) {        
+        // Does this transform have an attribute?
+
+        PRINTF(IPSEC_IKE "\n#3 Looking at mytuple->type %u mytuple->value %u\n", mytuple->type, mytuple->value);
+        u8_t my_keylen = 0;
+        acc_proposal_ctr = 1;
+        if ((mytuple + 1)->type == SA_CTRL_ATTRIBUTE_KEY_LEN)
+          my_keylen = (mytuple + 1)->type;
+        
+        ike_payload_transform_t *peertransform = (ike_payload_transform_t *) ((uint8_t *) peerproposal + sizeof(ike_payload_proposal_t) + peerproposal->spi_size);
+        
+        // (#4) Loop over the peer's proposal and see if this transform of mine can be found
+        while((uint8_t *) peertransform < (uint8_t *) peerproposal + uip_ntohs(peerproposal->proposal_len)) {
+//          PRINTF(IPSEC_IKE "#4 peertransform->type %u. mytuple->type (%u), peertransform->id: %u. mytuple->value: %u \n", peertransform->type, mytuple->type, uip_ntohs(peertransform->id), mytuple->type);
+          PRINTF(IPSEC_IKE "#4 peertransform->type %u, peertransform->id: %u\n", peertransform->type, uip_ntohs(peertransform->id));
+
+          // Is this is DH group transform; if so, is acceptable with our requirements?
+          if (ke_dh_group && 
+              peertransform->type == SA_CTRL_TRANSFORM_TYPE_DH &&
+              uip_ntohs(peertransform->id) != ke_dh_group) {
+            PRINTF(IPSEC_IKE "#4 Peer proposal with DH group that differs from that of the KE payload. Rejecting.\n");
+            goto next_peertransform;      
+          }
+          
+          // Check for extended sequence number
+          if (peertransform->type == SA_CTRL_TRANSFORM_TYPE_ESN && uip_ntohs(peertransform->id) != SA_ESN_NO) {
+            PRINTF(IPSEC_IKE "#4 Peer proposal using extended sequence number found. Rejecting.\n");
+            goto next_peertransform;
+          }
+
+          if (!candidates[peertransform->type] &&                 // (that we haven't accepted a transform of this type!)
+              peertransform->type == mytuple->type &&
+              uip_ntohs(peertransform->id) == mytuple->value) {
+          
+            // Peer and I have the same type and value
+            if (my_keylen) {
+              // I have a keylen requirement. Does it fit that of the peer?
+              if (uip_ntohs(peertransform->len) != sizeof(ike_payload_transform_t)) {
+                // The peer have included an attribtue as well
+                ike_payload_attribute_t *peer_attrib = (ike_payload_attribute_t *) ((uint8_t *) peertransform + sizeof(ike_payload_transform_t));
+                
+                if (uip_ntohs(peer_attrib->af_attribute_type) != UIP_HTONS(IKE_PAYLOADFIELD_ATTRIB_VAL)) {
+                  PRINTF(IPSEC_IKE "#4 Error: Unrecognized attribute type: %x (UIP_HTONS(IKE_PAYLOADFIELD_ATTRIB_VAL): %x)\n", uip_ntohs(peer_attrib->af_attribute_type), UIP_HTONS(IKE_PAYLOADFIELD_ATTRIB_VAL));
+                  goto next_peertransform;
+                }
+                else {
+                  // This is a keylen attribute
+                  if (uip_ntohs(peer_attrib->attribute_value) < my_keylen) {
+                    // The peer requested a shorter key length. We cannot accept this transform!
+                    goto next_peertransform;
+                  }
+                  
+                  // Accept the candidate keylen (which might be longer than the one in our proposal)
+                  candidate_keylen = uip_ntohs(peer_attrib->attribute_value);
+                }
+              }
+              else
+                goto next_peertransform;                
+            }
+            // We end up here if we've accepted the transform
+            PRINTF(IPSEC_IKE "#4 Is candidate\n");              
+            
+            // Add the transform to the resulting output offer
+            ++acc_proposal_ctr;
+            memcpy(&accepted_transform_subset[++acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
+            if (candidate_keylen) {
+              accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
+              accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
+            }
+            PRINTF(IPSEC_IKE "#4 acc_proposal_ctr (output offer pointer) increased: %u\n", acc_proposal_ctr);
+            
+            // Set the SA
+            candidates[mytuple->type] = mytuple->value;
+            ++accepted_transforms;
+            PRINTF(IPSEC_IKE "#4 Accepted transforms is now %u\n", accepted_transforms);
+            if (accepted_transforms == required_transforms)
+              goto found_acceptable_proposal;
+          }
+          
+          // Forward to the next transform (jumping any attributes)
+          next_peertransform:
+          peertransform = (ike_payload_transform_t *) (((uint8_t *) peertransform) + uip_ntohs(peertransform->len));
+        } // End #4
+        
+        if (my_keylen)
+          mytuple += 2;
+        else
+          ++mytuple;
+      } // End #3
+    }
+    
+    /**
+      * If we end here we did so because this proposal from the peer didn't match any of ours
+      * Go to the next proposal
+      */
+    next_peerproposal:
+    peerproposal = (ike_payload_proposal_t *) (((uint8_t *) peerproposal) + uip_ntohs(peerproposal->proposal_len));
+  }
+  // We didn't find an acceptable proposal. Leave.
+  
+  return 1; // Fail
+  
+  /**
+    * We've found an acceptable proposal.
+    */
+  found_acceptable_proposal:
+  accepted_transform_subset[acc_proposal_ctr + 1].type = SA_CTRL_END_OF_OFFER;
+
+  // Set the SA
+  if (ike) {
+    ike_sa->encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
+    ike_sa->integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
+    ike_sa->prf = candidates[SA_CTRL_TRANSFORM_TYPE_PRF];
+    ike_sa->dh = candidates[SA_CTRL_TRANSFORM_TYPE_DH];
+  }
+  else {
+    child_sa->encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
+    child_sa->integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
+  }
+  
+  return 0; // Success
+}
+
+
+/**
   * Writes a "skeleton" of the SK payload. You can continue building your message right after the
   * resulting SK payload and then finish the encryption by calling \c ike_statem_finalize_sk()
   *
@@ -475,9 +659,10 @@ void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_h
 void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 {
   // Calculate the DH exponential: g^ir
+  PRINTF(IPSEC_IKE "Calculating shared secret\n");
   uint8_t gir[IKE_DH_GIR_LEN];
   ecdh_get_shared_secret(gir, ECDH_DESERIALIZE_TO_POINTT(peer_pub_key), ECDH_DESERIALIZE_TO_NN(session->ephemeral_info->my_prv_key));
-  
+  PRINTF("done\n");
   /**
     * The order of the strings will depend on who's the initiator. Prepare that.
     */

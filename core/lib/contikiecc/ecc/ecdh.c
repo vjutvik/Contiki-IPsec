@@ -51,6 +51,6 @@ void ecdh_get_shared_secret(uint8_t *shared_key, point_t *peerPubKey, NN_DIGIT *
   #endif  //SLIDING_WIN
   
   // Copy the shared key
-  memcpy(shared_key, &tempP.x, 24);
+  memcpy(shared_key, &tempP.x, 24); // FIX: Constant!!
 }
 
