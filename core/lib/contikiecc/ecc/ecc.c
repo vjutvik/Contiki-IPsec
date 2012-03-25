@@ -510,9 +510,8 @@ ecc_mul(point_t * P0, point_t * P1, NN_DIGIT * n)
 
   for(i = tmp-1; i >= 0; i--) {
     ecc_dbl_proj(P0, Z0, P0, Z0);
-
     if(b_testbit(n, i)) {
-        	
+      
 #ifdef ADD_MIX
       c_add_mix(P0, Z0, P0, Z0, P1);
 #else
@@ -705,8 +704,6 @@ ecc_gen_private_key(NN_DIGIT *PrivateKey)
       PrivateKey[ri] = rand32();
 #else
       PrivateKey[ri] = rand16();
-      printf("rand16\n");
-
 #endif
     }
 
