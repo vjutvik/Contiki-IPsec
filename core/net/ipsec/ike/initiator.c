@@ -1,5 +1,7 @@
 #include <stdlib.h>
+#include "sad.h"
 #include "common_ike.h"
+#include "auth.h"
 #include "spd_conf.h"
 #include "ecc/ecc.h"
 #include "ecc/ecdh.h"
@@ -417,11 +419,6 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 //    HDR, SK {IDi, [CERT,] [CERTREQ,]
 //      [IDr,] AUTH, SAi2, TSi, TSr}
 uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
-  PRINTF("%s:%d trans_authreq STUB!\n", __FILE__, __LINE__);
-  return 0;
-}
-  /*
-
   payload_arg_t payload_arg = {
     .start = msg_buf,
     .session = session
@@ -430,112 +427,63 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH);
 
   // Write a template of the SK payload for later encryption
-  ike_payload_generic_hdr_t *sk_genpayloadhdr = payload_arg.start;
+  ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
   ike_statem_prepare_sk(&payload_arg);
 
-  // ID payload
+  // ID payload. We use the e-mail address type of ID
   ike_payload_generic_hdr_t *id_genpayloadhdr;
-  SET_GENPAYLOADHDR(id_genpayloadhdr, &payload_arg, IKE_PAYLOAD_ID);
+  SET_GENPAYLOADHDR(id_genpayloadhdr, &payload_arg, IKE_PAYLOAD_IDi);
 
   ike_id_payload_t *id_payload;
-  SET_IDPAYLOAD(id_payload, &payload_arg, some_suitable_id_type);   // FIX
+  SET_IDPAYLOAD(id_payload, payload_arg, IKE_ID_RFC822_ADDR, ike_id, sizeof(ike_id));
+  id_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) id_genpayloadhdr);
   
-  // FIX: Write the ID payload data  
-  uint8_t id_payload_len = sizeof(id_payload) + bogus_idpayload_data_len; // FIX: This len must be the size of the ID payload + its data
-
-  // Set the size
-  id_genpayloadhdr->len = UIP_HTONS(id_payload_len);
-  */
   /**
     * Write the AUTH payload (section 2.15)
     *
-    * The AUTH payload is hash of some sort of the string
-    * InitiatorSignedOctets = RealMessage1 | NonceRData | prf(SK_pi, RestOfInitIDPayload)
-    * result = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
-    *
     * Details depends on the type of AUTH Method specified.
     */
- /*
+  ike_payload_generic_hdr_t *auth_genpayloadhdr;
   SET_GENPAYLOADHDR(auth_genpayloadhdr, &payload_arg, IKE_PAYLOAD_AUTH);
-  ike_payload_auth_t *auth_payload = payload_arg.start;
-  auth_payload.auth_method = IKE_AUTH_SHARED_KEY_MIC;
-  payload_arg.start += sizeof(auth_payload);
-  
-  // Assemble the data string that is to be hashed using the UDP buffer as the temporary storage
-  uint8_t *assembly_start = payload_arg.start + 40; // Offset must be at a sufficient margin for the rest of the AUTH payload  
-  uint8_t *assembly_ptr = assembly_start;
+  ike_payload_auth_t *auth_payload = (ike_payload_auth_t *) payload_arg.start;
+  auth_payload->auth_type = IKE_AUTH_SHARED_KEY_MIC;
+  payload_arg.start += sizeof(ike_payload_auth_t);
 
-  // RealMessage1
-  // (We assume that RealMessage1 is our very first message to the peer (and not any subsequent message including a cookie))
-  uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
-  msg_buf = assembly_start;
-  ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start
-  assembly_ptr += ((ike_hdr_t *) assembly_start)->len;
-  msg_buf = msg_buf_save;
+  uint8_t *data_to_sign = payload_arg.start + SA_PRF_MAX_OUTPUT_LEN;
+  uint16_t data_to_sign_len = ike_statem_get_authdata(session, 1, data_to_sign, id_payload, uip_ntohs(id_genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t));
   
-  // NonceRData
-  memcpy(assembly_ptr, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
-  assembly_ptr += session->ephemeral_info->peernonce_len;
-  
-  // MACedIDForI ( prf(SK_pi, IDType | RESERVED | InitIDData) = prf(SK_pi, RestOfInitIDPayload) )
-  prf_data_t prf_data =
-    {
-      .out = assembly_ptr,
-      .outlen = 0,
-      .key = session->ephemeral_info->sk_pi,
-      .keylen = SA_PRF_PREFERRED_KEYMATLEN(session), // sk_pi is always of the PRF's key length
-      .data = id_payload,
-      .datalen = id_payload_len
-    };
-  prf(session->sa.prf, &prf_data);
-  assembly_ptr += SA_PRF_PREFERRED_KEYMATLEN(session);
+  // Calculate the PSK hash
+  prf_data_t data = {
+    .out = payload_arg.start,
+    .key = (uint8_t *) ike_auth_sharedsecret,
+    .keylen = sizeof(ike_auth_sharedsecret),
+    .data = data_to_sign,
+    .datalen = data_to_sign_len
+  };
+  prf_psk(session->sa.prf, &data);
+  payload_arg.start += SA_PRF_OUTPUT_LEN(session);
+  auth_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) auth_genpayloadhdr); // Length of the AUTH payload
 
-  // prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
-  prf_data =
-    {
-      .out = assembly_ptr,
-      .key = &auth_sharedsecret,
-      .keylen = sizeof(auth_sharedsecret),
-      .data_ptr = &auth_keypad,
-      .datalen = sizeof(auth_keypad)
-    };
-  prf(session->sa.prf, &prf_data);
-
-  prf_data =
-    {
-      .out = payload_arg.start,  // This will write the AUTH data to the AUTH payload
-      .key = assembly_ptr,
-      .keylen = SA_PRF_PREFERRED_KEYMATLEN(session),
-      .data_ptr = assembly_start,
-      .datalen = assembly_ptr - assembly_start
-    };
-  prf(session->sa.prf, &prf_data);
-  payload_arg.start += SA_PRF_PREFERRED_KEYMATLEN(session); // start is now at the end of the AUTH payload
-  auth_genpayloadhdr->len = UIP_HTONS(payload_arg.start - auth_genpayloadhdr); // Length of the AUTH payload
-*/
   /**
     * Write SAi2 (offer for the child SA)
     */
-  /*
   session->ephemeral_info->local_spi = SAD_GET_NEXT_SAD_LOCAL_SPI;
-  ike_statem_write_sa_payload(&payload_arg, ((ike_statem_session_t *) session->transition_arg)->spd_entry->offer, session->ephemeral_info->local_spi);
-  */
+  ike_statem_write_sa_payload(&payload_arg, session->ephemeral_info->spd_entry->offer, session->ephemeral_info->local_spi);
+
   /**
     * The TS payload is decided by the triggering packet's header and the policy that applies to it
     *
     * Read more at "2.9.  Traffic Selector Negotiation" p. 40
     */
-    /*
-  ike_statem_write_tsitsr(&payload_arg);
+  //ike_statem_write_tsitsr(&payload_arg);
 
   // All payloads have been written. Finish up.
 
   // Protect the SK payload. Write trailing fields.
-  ike_statem_finalize_sk(payload_arg.session, sk_genpayloadhdr, payload_arg.start - id_genpayloadhdr);
+  ike_statem_finalize_sk(payload_arg.session, sk_genpayloadhdr, payload_arg.start - (uint8_t *) id_genpayloadhdr);
 
   return payload_arg.start - msg_buf;  // Return written length
 }
-*/
 
 
 /**

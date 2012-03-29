@@ -435,16 +435,22 @@ typedef enum {
       */
 } id_type_t;
 
-#define SET_IDPAYLOAD(id_payload, payload_arg, id) (uint32_t *) \
-  id_payload = payload_arg->start; \
-  *((uint8_t *) id_payload) = id; \
-  payload_arg->start += sizeof(ike_id_payload_t)
 
 typedef struct {
   uint8_t id_type;  /* id_type_t */
   uint8_t clear1;
   uint16_t clear2;
 } ike_id_payload_t;
+
+
+#define SET_IDPAYLOAD(id_payload, payload_arg, id, payload, payload_len)  \
+  id_payload = (ike_id_payload_t *) (payload_arg).start;        \
+   /* Clear the RESERVED area */                                \
+  *((uint32_t *) id_payload) = 0;                               \
+  *((uint8_t *) id_payload) = id;                               \
+  payload_arg.start += sizeof(ike_id_payload_t);                \
+  memcpy(payload_arg.start, (uint8_t *) payload, payload_len);  \
+  payload_arg.start += payload_len
 
 
 /**

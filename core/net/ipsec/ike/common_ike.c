@@ -10,6 +10,7 @@
 #include "transforms/encr.h"
 //#include "payload.h"
 #include "common_ike.h"
+#include "auth.h"
 
 /**
   * State machine for servicing an established session
@@ -461,6 +462,90 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
   return 0; // Success
 }
 
+/**
+  * Get InitiatorSignedOctets or ResponderSignedOctets (depending on session) as described on p. 48.
+  *
+  * \param session      Current session
+  * \param myauth       Generate my *SignedOctet (use my own RealMessage) if set to one, generate the peer's *SignedOctets (use the peer's stored RealMessage) if set to zero.
+  * \param out          Address where AUTH will be written. Free space should amount to ~1 kB (depending on msg sizes etc).
+  * \param id_payload   The address of the ID payload
+  * \param id_len       The length of the ID payload, excluding its generic payload header
+  *
+  * \return length of *SignedOctets, 0 if an error occurred
+  */
+uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, uint8_t *out, ike_id_payload_t *id_payload, uint16_t id_payload_len)
+{
+  uint8_t *ptr = out;
+
+  /**
+    * There are four types of SignedOctets -strings that can be created:
+    *   0. We are the initiator, and we recreate the peer's ResponderSignedOctets
+    *   1. We are the initiator, and we create our InitiatorSignedOctets
+    *   2. We are the responder, and we recreate the peer's InitiatorSignedOctets
+    *   3. We are the responder, and we create our ResponderSignedOctets
+    *
+    */
+  uint8_t type = 2 * IKE_STATEM_IS_INITIATOR(session) + myauth;
+
+  // Pack RealMessage*
+  PRINTF("RealMessage1: ");
+  switch (type) {
+    case 0:
+    PRINTF("Using peer_first_msg\n");
+    memcpy(ptr, session->ephemeral_info->peer_first_msg, session->ephemeral_info->peer_first_msg_len);
+    break;
+    
+    case 1:
+    PRINTF("Re-running our first message's transition\n");
+    {     
+      uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
+      msg_buf = ptr;
+      ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start
+      ptr += uip_ntohl(((ike_payload_ike_hdr_t *) ptr)->len);
+      msg_buf = msg_buf_save;
+    }
+    break;
+    
+    case 2:
+    PRINTF("Using peer_first_msg\n");    
+    memcpy(ptr, session->ephemeral_info->peer_first_msg, session->ephemeral_info->peer_first_msg_len);
+    break;
+    
+    case 3:
+    // FIX RESPONSE: trans_initreq is probably the wrong method!
+    PRINTF("Re-running our first message's transition\n");
+    {   
+      uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
+      msg_buf = ptr;
+      ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start
+      ptr += uip_ntohl(((ike_payload_ike_hdr_t *) ptr)->len);
+      msg_buf = msg_buf_save;
+    } 
+  }
+  
+  // Nonce(I/R)Data
+  memcpy(ptr, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
+  ptr += session->ephemeral_info->peernonce_len;
+
+  // MACedIDForI ( prf(SK_pi, IDType | RESERVED | InitIDData) = prf(SK_pi, RestOfInitIDPayload) )
+  prf_data_t prf_data =
+  {
+    .out = ptr,
+    .keylen = SA_PRF_PREFERRED_KEYMATLEN(session), // sk_pi is always of the PRF's preferred keymat length
+    .data = (uint8_t *) id_payload,
+    .datalen = id_payload_len
+  };
+  if (type % 3)
+    prf_data.key = session->ephemeral_info->sk_pr;
+  else
+    prf_data.key = session->ephemeral_info->sk_pi;
+
+  prf(session->sa.prf, &prf_data);
+  ptr += SA_PRF_PREFERRED_KEYMATLEN(session);
+  
+  return ptr - out;
+}
+
 
 /**
   * Writes a "skeleton" of the SK payload. You can continue building your message right after the
@@ -525,40 +610,49 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   *
   * \parameter session The session, used for fetching the encryption keys
   * \parameter sk_genpayloadhdr The generic payload header of the SK payload, as created by \c ike_statem_prepare_sk()
-  * \parameter len The length of the payloads to be encrypted
+  * \parameter len The length of the IV + the data to be encrypted
   */
-/*
-void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t len)
+void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t data_len)
 {
-  // Encrypt
-  encr_data_t encr_data = {
-    .type = session->sa.encr,                              // This determines transform and block size among other things
-    .encr_data = (uint8_t *) sk_genpayloadhdr + sizeof(sk_genpayloadhdr),   // Address of IV. The actual data is expected to follow one block size after.
-    .encr_datalen = len,                                         // Length of the data (not including the IV)
-    .keymat = 
-    .keylen = session->sa.encr_keylen                      // Length of the key _in bytes_
+  // Confidentiality / Combined mode
+  encr_data_t encr_data =  {    
+    .type = session->sa.encr,
+    .keylen = session->sa.encr_keylen,
+    .integ_data = msg_buf,                    // Beginning of the ESP header (ESP) or the IKEv2 header (SK)
+    .encr_data = (uint8_t *) sk_genpayloadhdr + sizeof(ike_payload_generic_hdr_t),
+    .encr_datalen = data_len,                 // From the beginning of the IV to the IP next header field (ESP) or the padding field (SK).
+    .ip_next_hdr = NULL
   };
-  IKE_STATEM_IS_INITIATOR(session) ? 
-          encr_data.keymat = session->sa.sk_ei :
-          encr_data.keymat = session->sa.sk_er;                // Address of the keying material
 
-  uint8_t *integ_chksum = encr(&encr_data);                      // This will write Encrypted Payloads, padding and pad length
+  if(IKE_STATEM_IS_INITIATOR(session))
+    encr_data.keymat = session->sa.sk_ei;
+  else
+    encr_data.keymat = session->sa.sk_er;                // Address of the keying material
   
-  // Write Integrity Checksum Data
-  uint8_t integ_len = SA_INTEG_CURRENT_KEYMATLEN(session);
-  prf_data_t prf_data = {
-    .out = &integ_chksum,
-    .outlen = integ_len,
-    .key = (IKE_STATEM_IS_INITIATOR(session) ? 
-              &session->sa.sk_ai :
-              &session->sa.sk_ar ),
-    .keylen = integ_len,
-    .data = &udp_buf,
-    .datalen = integ_chksum - udp_buf;
-  };
-  integ(payload_arg->session->sa.integ, &data);
+  espsk_pack(&encr_data); // Encrypt / combined mode
+
+  
+  // Integrity
+  if (session->sa.integ) {
+    // Length of data to be integrity protected:
+    // IKE header + (anything in between) + SK header + IV + data + padding + padding length field
+    uint8_t integ_datalen = ((uint8_t *) sk_genpayloadhdr - msg_buf) + sizeof(ike_payload_generic_hdr_t) + data_len + encr_data.padlen + 1;
+
+    integ_data_t integ_data = {
+      .type = session->sa.integ,
+      .data = msg_buf,                  // The start of the data
+      .datalen = integ_datalen,         // Data to be integrity protected
+      .out = msg_buf + integ_datalen    // Where the output will be written. IPSEC_ICVLEN bytes will be written.
+    };
+    
+    if(IKE_STATEM_IS_INITIATOR(session))
+      integ_data.keymat = session->sa.sk_ai;
+    else
+      integ_data.keymat = session->sa.sk_ar;                // Address of the keying material
+
+    integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
+  }
 }
-*/
 
 
 /**

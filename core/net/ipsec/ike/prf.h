@@ -78,5 +78,6 @@ typedef enum {
 void prf(sa_prf_transform_type_t prf_type, prf_data_t *data);
 void prf_plus(prfplus_data_t *data);
 void random_ike(uint8_t *out, uint16_t len, uint16_t *seed);
+void prf_psk(uint8_t transform, prf_data_t *data);
 
 #endif

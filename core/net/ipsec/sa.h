@@ -98,6 +98,7 @@ typedef enum {                  // RFC4307      Status of this implementation
 #define SA_PRF_MAX_PREFERRED_KEYMATLEN 20   // This value must be the maximum value of sa_prf_preferred_keymatlen
 #define SA_PRF_PREFERRED_KEYMATLEN(session) sa_prf_preferred_keymatlen[session->sa.prf]
 #define SA_PRF_OUTPUT_LEN(session) sa_prf_output_len[session->sa.prf]
+#define SA_PRF_OUTPUT_LEN_BY_ID(prf) sa_prf_output_len[prf]
 
 
 /**

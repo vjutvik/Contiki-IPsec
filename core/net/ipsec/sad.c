@@ -21,7 +21,7 @@ LIST(sad_outgoing);
   * which we don't). This is possible since we're the one assigning this value in the SAi2 payload of
   * the IKE exchange. next_sad_initiator_spi keeps track of the highest value we've assigned so far.
   */
-static uint32_t next_sad_local_spi;
+uint32_t next_sad_local_spi;
 
 
 void sad_init()

@@ -23,7 +23,7 @@
  */
 typedef struct {
   uint8_t *out; 
-  uint8_t *key; 
+  const uint8_t *key; 
   uint8_t keylen;
   uint8_t *data; 
   uint16_t datalen;

@@ -1379,7 +1379,7 @@ uip_process(uint8_t flag)
           integ_data.data = (uint8_t *) esp_header;
           integ_data.datalen = auth_data_len;
           integ_data.keymat = &sad_entry->sa.sk_a;
-          integ_data.keylen = SA_INTEG_KEYMATLEN_BY_TYPE(sad_entry->sa.integ);
+          //integ_data.keylen = SA_INTEG_KEYMATLEN_BY_TYPE(sad_entry->sa.integ);
           integ_data.out = (uint8_t *) &encr_data.icv;          
           integ(&integ_data);
         }

@@ -5,6 +5,8 @@
 #include "ipsec.h"
 #include "common_ipsec.h"
 
+extern uint32_t next_sad_local_spi;
+
 /**
   * Debug stuff
   */

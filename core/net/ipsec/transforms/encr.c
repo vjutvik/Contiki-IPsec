@@ -87,7 +87,6 @@ static void espsk_unpad(encr_data_t *data)
 void espsk_pack(encr_data_t *data)
 {  
   switch(data->type) {
-    /*
     case SA_ENCR_AES_CBC:
     // Confidentiality only
 
@@ -110,7 +109,6 @@ void espsk_pack(encr_data_t *data)
     uint16_t n;
     for (n = 1; n < blocks; ++n)
       CRYPTO_AES.encrypt(data->encr_data[n << 4]);
-      */
       
     /*
     // AES encryption using MIRACLE start

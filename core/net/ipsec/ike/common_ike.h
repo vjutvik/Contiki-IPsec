@@ -23,6 +23,14 @@ extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
                                 sa_ike_t *ike_sa,
                                 sa_child_t *child_sa,
                                 spd_proposal_tuple_t *accepted_transform_subset);
+extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
+                                        uint8_t myauth, 
+                                        uint8_t *out, 
+                                        ike_id_payload_t *id_payload, 
+                                        uint16_t id_payload_len);
+extern void ike_statem_finalize_sk(ike_statem_session_t *session, 
+                                        ike_payload_generic_hdr_t *sk_genpayloadhdr, 
+                                        uint16_t data_len);
 
 #define IPSEC_IKE "IPsec IKEv2: "
 
