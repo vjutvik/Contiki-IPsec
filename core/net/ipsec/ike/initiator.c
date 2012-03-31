@@ -63,8 +63,8 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   //    "SPI Size (1 octet) - For an initial IKE SA negotiation, this field MUST be zero; 
   //    the SPI is obtained from the outer header."
   //
-  // (Note: We're casting to spd_proposal_tuple * in order to get rid of the const type qualifier of spdconf_ike_proposal)
-  ike_statem_write_sa_payload(&payload_arg, (spd_proposal_tuple_t *) spdconf_ike_proposal, 0); 
+  // (Note: We're casting to spd_proposal_tuple * in order to get rid of the const type qualifier of CURRENT_IKE_PROPOSAL)
+  ike_statem_write_sa_payload(&payload_arg, (spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL, 0); 
   
   // Start KE payload
   ike_payload_generic_hdr_t *ke_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
@@ -164,7 +164,7 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       // Loop over the responder's offer and that of ours in order to verify that the former
       // is indeed a subset of ours.
       session->proposal_reply = malloc(10 * sizeof(spd_proposal_tuple_t));  // 10 entries should be enough
-      if (ike_statem_parse_sa_payload(spdconf_ike_proposal, 
+      if (ike_statem_parse_sa_payload(CURRENT_IKE_PROPOSAL, 
                                       genpayloadhdr, 
                                       ke_dh_group,
                                       &session->sa,

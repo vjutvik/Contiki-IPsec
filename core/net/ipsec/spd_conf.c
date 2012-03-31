@@ -57,6 +57,19 @@ const spd_proposal_tuple_t spdconf_ike_proposal[7] =
   { SA_CTRL_END_OF_OFFER, 0}
 };
 
+const spd_proposal_tuple_t spdconf_ike_open_proposal[6] =
+{
+  // IKE proposal
+  { SA_CTRL_NEW_PROPOSAL, SA_PROTO_IKE },
+  { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_NULL },
+  { SA_CTRL_TRANSFORM_TYPE_INTEG, SA_INTEG_AES_XCBC_MAC_96 },
+  { SA_CTRL_TRANSFORM_TYPE_DH, SA_IKE_MODP_GROUP },
+  { SA_CTRL_TRANSFORM_TYPE_PRF, SA_PRF_HMAC_SHA1},
+  // Terminate the offer
+  { SA_CTRL_END_OF_OFFER, 0}
+};
+
+
 static const spd_proposal_tuple_t my_ah_esp_proposal[] = 
 { 
   // ESP proposal
