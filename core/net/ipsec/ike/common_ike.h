@@ -13,6 +13,7 @@ extern void ike_statem_write_notification(payload_arg_t *payload_arg,
                                 notify_msg_type_t type, 
                                 uint8_t *notify_payload, 
                                 uint8_t notify_payload_len);
+extern void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t payload_type);
 extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 extern void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
@@ -28,7 +29,7 @@ extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
                                         uint8_t *out, 
                                         ike_id_payload_t *id_payload, 
                                         uint16_t id_payload_len);
-extern void ike_statem_finalize_sk(ike_statem_session_t *session, 
+extern void ike_statem_finalize_sk(payload_arg_t *payload_arg, 
                                         ike_payload_generic_hdr_t *sk_genpayloadhdr, 
                                         uint16_t data_len);
 

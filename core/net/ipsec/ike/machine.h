@@ -75,8 +75,8 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 
 #define IKE_STATEM_MYSPI_GET_MYSPI(session) ((session)->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
-#define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) (UIP_HTONL(((uint32_t ) IKE_STATEM_MYSPI_GET_MYSPI(session))))
-#define IKE_STATEM_MYSPI_GET_I(var) (var = var & IKE_STATEM_MYSPI_I_MASK)
+#define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) (uip_htonl(((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI(session))))
+#define IKE_STATEM_MYSPI_GET_I(var) (var & IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_IS_INITIATOR(session) (IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi))
 #define IKE_STATEM_MYSPI_SET_I(var) (var = var | IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_SET_NEXT(var) (++(var))  // (Note: This will overflow into the Initiator bit after 2^15 - 1 calls)

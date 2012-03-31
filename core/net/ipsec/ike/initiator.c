@@ -49,8 +49,6 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
     .session = session
   };
   
-  // Write the IKE header
-  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) payload_arg.start;
   
   SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_SA_INIT);
   
@@ -91,9 +89,9 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   payload_arg.start += IKE_PAYLOAD_MYNONCE_LEN;
   ninr_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) ninr_genpayloadhdr);
   // End nonce payload
-    
+  
   // Wrap up the IKE header and exit state
-  ike_hdr->len = uip_htonl(payload_arg.start - msg_buf);
+  ((ike_payload_ike_hdr_t *) msg_buf)->len = uip_htonl(payload_arg.start - msg_buf);
   SET_NO_NEXT_PAYLOAD(&payload_arg);
 
   return payload_arg.start - msg_buf;
@@ -111,11 +109,14 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
   // <--  HDR, SAr1, KEr, Nr, [CERTREQ]
 
   // Otherwise we expect a reply like 
-  // COOKIE or INVALID_KE_PAYLOAD
-  
+  // COOKIE or INVALID_KE_PAYLOAD  
   session->cookie_payload = NULL; // Reset the cookie data (if it has been used)
   
   ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
+
+  // Store the peer's SPI (in network byte order)
+  session->peer_spi_high = ike_hdr->sa_responder_spi_high;
+  session->peer_spi_low = ike_hdr->sa_responder_spi_low;
   
   // Store a copy of this first message from the peer for later use
   // in the autentication calculations.
@@ -407,7 +408,7 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 
   IKE_STATEM_INCRMYMSGID(session);
   IKE_STATEM_TRANSITION(session);
-  
+    
   return 1;
 
   // This ends the INIT exchange. Borth parties has now negotiated the IKE SA's parameters and created a common DH secret.
@@ -423,6 +424,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
     .start = msg_buf,
     .session = session
   };
+  
   // Write the IKE header
   SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH);
 
@@ -431,12 +433,13 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   ike_statem_prepare_sk(&payload_arg);
 
   // ID payload. We use the e-mail address type of ID
-  ike_payload_generic_hdr_t *id_genpayloadhdr;
-  SET_GENPAYLOADHDR(id_genpayloadhdr, &payload_arg, IKE_PAYLOAD_IDi);
-
-  ike_id_payload_t *id_payload;
-  SET_IDPAYLOAD(id_payload, payload_arg, IKE_ID_RFC822_ADDR, ike_id, sizeof(ike_id));
-  id_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) id_genpayloadhdr);
+  ike_payload_generic_hdr_t *id_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
+  ike_statem_set_id_payload(&payload_arg, IKE_PAYLOAD_IDi);
+  ike_id_payload_t *id_payload = (ike_id_payload_t *) ((uint8_t *) id_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t);
+  printf("ike_id: %u\n", sizeof(ike_id));
+  printf("id_genpayload_hdr: %p\n", id_genpayloadhdr);
+  printf("id_genpayload_hdr->len: %u\n", uip_ntohs(id_genpayloadhdr->len));
+  printf("payload_arg.start: %p\n", payload_arg.start);
   
   /**
     * Write the AUTH payload (section 2.15)
@@ -448,7 +451,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   ike_payload_auth_t *auth_payload = (ike_payload_auth_t *) payload_arg.start;
   auth_payload->auth_type = IKE_AUTH_SHARED_KEY_MIC;
   payload_arg.start += sizeof(ike_payload_auth_t);
-
+  
   uint8_t *data_to_sign = payload_arg.start + SA_PRF_MAX_OUTPUT_LEN;
   uint16_t data_to_sign_len = ike_statem_get_authdata(session, 1, data_to_sign, id_payload, uip_ntohs(id_genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t));
   
@@ -464,6 +467,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   payload_arg.start += SA_PRF_OUTPUT_LEN(session);
   auth_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) auth_genpayloadhdr); // Length of the AUTH payload
 
+  end:
   /**
     * Write SAi2 (offer for the child SA)
     */
@@ -477,12 +481,11 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
     */
   //ike_statem_write_tsitsr(&payload_arg);
 
-  // All payloads have been written. Finish up.
-
+    
   // Protect the SK payload. Write trailing fields.
-  ike_statem_finalize_sk(payload_arg.session, sk_genpayloadhdr, payload_arg.start - (uint8_t *) id_genpayloadhdr);
+  ike_statem_finalize_sk(&payload_arg, sk_genpayloadhdr, payload_arg.start - (((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t)));
 
-  return payload_arg.start - msg_buf;  // Return written length
+  return uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len);  // Return written length
 }
 
 

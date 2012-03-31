@@ -133,11 +133,11 @@ typedef struct {
   * payload_arg is of type *payload_arg_t
   * payload_id is of type ike_payload_type_t
   */
-#define SET_GENPAYLOADHDR(genpayloadhdr, payload_arg, payload_id)                       \
+#define SET_GENPAYLOADHDR(genpayloadhdr, payload_arg, payload_id)                         \
                      genpayloadhdr = (ike_payload_generic_hdr_t *) (payload_arg)->start;  \
                      *(payload_arg)->prior_next_payload = payload_id;                     \
                      (payload_arg)->prior_next_payload = &genpayloadhdr->next_payload;    \
-                     genpayloadhdr->clear = IKE_MSG_ZERO;                               \
+                     genpayloadhdr->clear = IKE_MSG_ZERO;                                 \
                      (payload_arg)->start += sizeof(ike_payload_generic_hdr_t)
 
 #define SET_NO_NEXT_PAYLOAD(payload_arg) \

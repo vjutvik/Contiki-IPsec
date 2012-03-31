@@ -563,15 +563,16 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
   */
 void ike_statem_prepare_sk(payload_arg_t *payload_arg)
 {
-  ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
+  ike_payload_generic_hdr_t *sk_genpayloadhdr;
   SET_GENPAYLOADHDR(sk_genpayloadhdr, payload_arg, IKE_PAYLOAD_SK);
+  printf("Writing sk_genpayloadhdr at: %p\n", sk_genpayloadhdr);
 
   // Generate the IV
   uint8_t n;
   for (n = 0; n < SA_ENCR_CURRENT_IVLEN(payload_arg->session); n += 2)
     payload_arg->start[n] = random_rand();
-
-  sk_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) sk_genpayloadhdr);
+  payload_arg->start += n;
+  printf("sk_genpayloadhdr ends at: %p IVLEN: %u\n", payload_arg->start, SA_ENCR_CURRENT_IVLEN(payload_arg->session));
 }
 
 
@@ -612,48 +613,80 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   * \parameter sk_genpayloadhdr The generic payload header of the SK payload, as created by \c ike_statem_prepare_sk()
   * \parameter len The length of the IV + the data to be encrypted
   */
-void ike_statem_finalize_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t data_len)
+void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t data_len)
 {
   // Confidentiality / Combined mode
-  encr_data_t encr_data =  {    
-    .type = session->sa.encr,
-    .keylen = session->sa.encr_keylen,
+  encr_data_t encr_data =  {
+    .type = payload_arg->session->sa.encr,
+    .keylen = payload_arg->session->sa.encr_keylen,
     .integ_data = msg_buf,                    // Beginning of the ESP header (ESP) or the IKEv2 header (SK)
     .encr_data = (uint8_t *) sk_genpayloadhdr + sizeof(ike_payload_generic_hdr_t),
     .encr_datalen = data_len,                 // From the beginning of the IV to the IP next header field (ESP) or the padding field (SK).
     .ip_next_hdr = NULL
   };
 
-  if(IKE_STATEM_IS_INITIATOR(session))
-    encr_data.keymat = session->sa.sk_ei;
+  if(IKE_STATEM_IS_INITIATOR(payload_arg->session))
+    encr_data.keymat = payload_arg->session->sa.sk_ei;
   else
-    encr_data.keymat = session->sa.sk_er;                // Address of the keying material
+    encr_data.keymat = payload_arg->session->sa.sk_er;                // Address of the keying material
   
   espsk_pack(&encr_data); // Encrypt / combined mode
-
   
+  /**
+    * Before calculating the ICV value we need to set the final length
+    * of the IKE message and the SK payload
+    */
+  SET_NO_NEXT_PAYLOAD(payload_arg);
+
+  // sk_len = ike_payload_generic_hdr_t size + ICV and data + pad length + pad length field + IPSEC_ICVLEN
+  uint16_t sk_len = sizeof(ike_payload_generic_hdr_t) + data_len + encr_data.padlen + 1 + IPSEC_ICVLEN;
+  sk_genpayloadhdr->len = uip_htons(sk_len);
+  payload_arg->start = ((uint8_t *) sk_genpayloadhdr) + sk_len;
+  uint32_t msg_len = payload_arg->start - msg_buf;
+  ((ike_payload_ike_hdr_t *) msg_buf)->len = uip_htonl(msg_len);
+  printf("sk_genpayloadhdr->len: %u data_len: %u\n", uip_ntohs(sk_genpayloadhdr->len), data_len);
+    
   // Integrity
-  if (session->sa.integ) {
+  if (payload_arg->session->sa.integ) {
     // Length of data to be integrity protected:
     // IKE header + (anything in between) + SK header + IV + data + padding + padding length field
-    uint8_t integ_datalen = ((uint8_t *) sk_genpayloadhdr - msg_buf) + sizeof(ike_payload_generic_hdr_t) + data_len + encr_data.padlen + 1;
+    uint8_t integ_datalen = msg_len - IPSEC_ICVLEN;
 
     integ_data_t integ_data = {
-      .type = session->sa.integ,
-      .data = msg_buf,                  // The start of the data
-      .datalen = integ_datalen,         // Data to be integrity protected
-      .out = msg_buf + integ_datalen    // Where the output will be written. IPSEC_ICVLEN bytes will be written.
+      .type = payload_arg->session->sa.integ,
+      .data = msg_buf,                        // The start of the data
+      .datalen = integ_datalen,               // Data to be integrity protected
+      .out = msg_buf + integ_datalen          // Where the output will be written. IPSEC_ICVLEN bytes will be written.
     };
+    printf("integ_datalen: %u\n", integ_datalen);
     
-    if(IKE_STATEM_IS_INITIATOR(session))
-      integ_data.keymat = session->sa.sk_ai;
+    if(IKE_STATEM_IS_INITIATOR(payload_arg->session))
+      integ_data.keymat = payload_arg->session->sa.sk_ai;
     else
-      integ_data.keymat = session->sa.sk_ar;                // Address of the keying material
+      integ_data.keymat = payload_arg->session->sa.sk_ar;                // Address of the keying material
 
     integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
   }
 }
 
+
+/**
+  * Sets the Identification payload to the e-mail address defined auth.c
+  */
+void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t payload_type)
+{
+  ike_payload_generic_hdr_t *id_genpayloadhdr;
+  SET_GENPAYLOADHDR(id_genpayloadhdr, payload_arg, payload_type);
+
+  ike_id_payload_t *id_payload = (ike_id_payload_t *) payload_arg->start;
+   /* Clear the RESERVED area */
+  *((uint32_t *) id_payload) = 0;
+  *((uint8_t *) id_payload) = IKE_ID_RFC822_ADDR;
+  payload_arg->start += sizeof(ike_id_payload_t);
+  memcpy(payload_arg->start, (uint8_t *) ike_id, sizeof(ike_id));
+  payload_arg->start += sizeof(ike_id);
+  id_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) id_genpayloadhdr);
+}
 
 /**
   * This function decrypts an SK payload using the IKE SA's parameters and the starting address of the SK payload's generic header.
@@ -756,7 +789,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   PRINTF(IPSEC_IKE "Calculating shared secret\n");
   uint8_t gir[IKE_DH_GIR_LEN];
   ecdh_get_shared_secret(gir, ECDH_DESERIALIZE_TO_POINTT(peer_pub_key), ECDH_DESERIALIZE_TO_NN(session->ephemeral_info->my_prv_key));
-  PRINTF("done\n");
+
   /**
     * The order of the strings will depend on who's the initiator. Prepare that.
     */
