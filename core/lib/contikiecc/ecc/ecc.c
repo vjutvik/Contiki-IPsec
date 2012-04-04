@@ -702,7 +702,7 @@ void ecc_gen_private_key(NN_DIGIT *PrivateKey)
   
   while(!done) {
     //PrivateKey[] = { 323FA316 9D8E9C65 93F59476 BC142000 AB5BE0E2 49C43426 };
-    
+    /*
     PrivateKey[24] = 0x0;
     PrivateKey[23] = 0x32;
     PrivateKey[22] = 0x3F;
@@ -728,8 +728,8 @@ void ecc_gen_private_key(NN_DIGIT *PrivateKey)
     PrivateKey[2] = 0xC4;
     PrivateKey[1] = 0x34;
     PrivateKey[0] = 0x26;
-
-  /*
+    */
+    
     for (ri = 0; ri < order_digit_len; ri++) {
 #ifdef THIRTYTWO_BIT_PROCESSOR
       PrivateKey[ri] = rand32();
@@ -737,7 +737,6 @@ void ecc_gen_private_key(NN_DIGIT *PrivateKey)
       PrivateKey[ri] = rand16();
 #endif
     }
-    */
     
     for (ri = order_digit_len; ri < NUMWORDS; ri++) {
       PrivateKey[ri] = 0;
