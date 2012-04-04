@@ -629,6 +629,9 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
     encr_data.keymat = payload_arg->session->sa.sk_ei;
   else
     encr_data.keymat = payload_arg->session->sa.sk_er;                // Address of the keying material
+ 
+  PRINTF("integ key len: %u\n", encr_data.keylen);
+  MEMPRINTF("integ_key", encr_data.keymat, 15);
   
   espsk_pack(&encr_data); // Encrypt / combined mode
   
@@ -658,13 +661,14 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
       .datalen = integ_datalen,               // Data to be integrity protected
       .out = msg_buf + integ_datalen          // Where the output will be written. IPSEC_ICVLEN bytes will be written.
     };
-    printf("integ_datalen: %u\n", integ_datalen);
     
     if(IKE_STATEM_IS_INITIATOR(payload_arg->session))
       integ_data.keymat = payload_arg->session->sa.sk_ai;
     else
       integ_data.keymat = payload_arg->session->sa.sk_ar;                // Address of the keying material
 
+    PRINTF("encr key len: %u\n", SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session));
+    MEMPRINTF("encr_key", integ_data.keymat, 15);
     integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
   }
 }
@@ -780,15 +784,16 @@ void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t pa
                     = prf+ (SKEYSEED, Ni | Nr | SPIi | SPIr )
   *
   * \parameter session The session concerned
-  * \parameter peer_pub_key Address of the beginning of the field "Key Exchange Data" in the peer's KE payload
+  * \parameter peer_pub_key Address of the beginning of the field "Key Exchange Data" in the peer's KE payload (network byte order).
   * \return The address that follows the last byte of the nonce
   */
 void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 {
   // Calculate the DH exponential: g^ir
   PRINTF(IPSEC_IKE "Calculating shared secret\n");
-  uint8_t gir[IKE_DH_GIR_LEN];
-  ecdh_get_shared_secret(gir, ECDH_DESERIALIZE_TO_POINTT(peer_pub_key), ECDH_DESERIALIZE_TO_NN(session->ephemeral_info->my_prv_key));
+  uint8_t gir[IKE_DH_SCALAR_LEN];
+  ecdh_get_shared_secret(gir, peer_pub_key, session->ephemeral_info->my_prv_key);
+  MEMPRINTF("shared secret (g^ir)", gir, IKE_DH_SCALAR_LEN);
 
   /**
     * The order of the strings will depend on who's the initiator. Prepare that.
@@ -838,7 +843,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
       .key = first_key,
       .keylen = first_keylen,
       .data = gir,
-      .datalen = IKE_DH_GIR_LEN
+      .datalen = IKE_DH_SCALAR_LEN
     };
   prf(session->sa.prf, &prf_data);
 

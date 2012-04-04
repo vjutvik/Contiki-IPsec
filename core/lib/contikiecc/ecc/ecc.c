@@ -682,8 +682,10 @@ ecc_get_base_p()
 
 /*---------------------------------------------------------------------------*/
 
-void 
-ecc_gen_private_key(NN_DIGIT *PrivateKey)
+/**
+  * \param PrivateKey Must IKE_DH_SCALAR_CONTIKIECC_LEN bytes long
+  */
+void ecc_gen_private_key(NN_DIGIT *PrivateKey)
 {
   printf("Generating private ECC key\n");
   NN_UINT order_digit_len, order_bit_len;
@@ -699,6 +701,35 @@ ecc_gen_private_key(NN_DIGIT *PrivateKey)
   printf("order_digit_len: %u\n", order_digit_len);
   
   while(!done) {
+    //PrivateKey[] = { 323FA316 9D8E9C65 93F59476 BC142000 AB5BE0E2 49C43426 };
+    
+    PrivateKey[24] = 0x0;
+    PrivateKey[23] = 0x32;
+    PrivateKey[22] = 0x3F;
+    PrivateKey[21] = 0xA3;
+    PrivateKey[20] = 0x16;
+    PrivateKey[19] = 0x9D;
+    PrivateKey[18] = 0x8E;
+    PrivateKey[17] = 0x9C;
+    PrivateKey[16] = 0x65;
+    PrivateKey[15] = 0x93;
+    PrivateKey[14] = 0xF5;
+    PrivateKey[13] = 0x94;
+    PrivateKey[12] = 0x76;
+    PrivateKey[11] = 0xBC;
+    PrivateKey[10] = 0x14;
+    PrivateKey[9] = 0x20;
+    PrivateKey[8] = 0x00;
+    PrivateKey[7] = 0xAB;
+    PrivateKey[6] = 0x5B;
+    PrivateKey[5] = 0xE0;
+    PrivateKey[4] = 0xE2;
+    PrivateKey[3] = 0x49;
+    PrivateKey[2] = 0xC4;
+    PrivateKey[1] = 0x34;
+    PrivateKey[0] = 0x26;
+
+  /*
     for (ri = 0; ri < order_digit_len; ri++) {
 #ifdef THIRTYTWO_BIT_PROCESSOR
       PrivateKey[ri] = rand32();
@@ -706,7 +737,8 @@ ecc_gen_private_key(NN_DIGIT *PrivateKey)
       PrivateKey[ri] = rand16();
 #endif
     }
-
+    */
+    
     for (ri = order_digit_len; ri < NUMWORDS; ri++) {
       PrivateKey[ri] = 0;
     }

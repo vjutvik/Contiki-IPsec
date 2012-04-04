@@ -136,7 +136,8 @@ typedef struct {
   uint8_t peer_first_msg[IKE_STATEM_FIRSTMSG_MAXLEN];
   uint16_t peer_first_msg_len;
 
-  NN_DIGIT my_prv_key[IKE_DH_PRVKEY_LEN / sizeof(NN_DIGIT)];
+  // My private asymmetric key store in small endian ContikiECC format
+  NN_DIGIT my_prv_key[IKE_DH_SCALAR_CONTIKIECC_LEN / sizeof(NN_DIGIT)];
 } ike_statem_ephemeral_info_t;
 
 

@@ -13,7 +13,7 @@
 
 #define MEMPRINTF(str, ptr, len) \
   do {                    \
-    printf(str  "\n");          \
+    printf(str  " (len %u):\n", len);          \
     memprint(ptr, len);   \
   } while(0);
 

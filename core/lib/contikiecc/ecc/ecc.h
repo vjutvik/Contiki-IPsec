@@ -161,7 +161,7 @@ void ecc_m_dbl_projective(point_t * P0, NN_DIGIT *Z0, uint8_t m);
 void ecc_win_mul_base(point_t * P0, NN_DIGIT * n);
 
 /**
-  * \brief            Generate a private key at address prvKey of 24 bytes length (192 bits)
+  * \brief            Generate a private key at address prvKey of IKE_DH_SCALAR_CONTIKIECC_LEN bytes length (192 bits key length)
   */
 void ecc_gen_private_key(NN_DIGIT * prvKey);
 

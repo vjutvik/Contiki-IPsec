@@ -75,7 +75,7 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   ke->clear = IKE_MSG_ZERO;
 
   // Write key exchange data (varlen)
-  // (Note: We cast the first arg of ecdh_enc...() in the firm belief that payload_arg.start begins at a 4 byte offset)
+  // (Note: We cast the first arg of ecdh_enc...() in the firm belief that payload_arg.start is at a 4 byte alignment)
   payload_arg.start = ecdh_encode_public_key((uint32_t *) (payload_arg.start + sizeof(ike_payload_ke_t)), session->ephemeral_info->my_prv_key);
   ke_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) ke_genpayloadhdr);
   // End KE payload
