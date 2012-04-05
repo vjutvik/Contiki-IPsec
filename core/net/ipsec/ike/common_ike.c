@@ -801,6 +801,8 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   uint8_t first_keylen = IKE_PAYLOAD_MYNONCE_LEN + session->ephemeral_info->peernonce_len;
   uint8_t first_key[first_keylen];
 
+  PRINTF("first_keylen: %d\n", first_keylen);
+  
   uint8_t second_msg[IKE_PAYLOAD_MYNONCE_LEN +   // Ni or Nr
       session->ephemeral_info->peernonce_len +    // Ni or Nr 
       2 * 8   // 2 * SPI
@@ -836,7 +838,8 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   uint8_t skeyseed[SA_PRF_OUTPUT_LEN(session)];
   random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);
   memcpy(peernonce_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
-
+  PRINTF("PRF #1 Key: %.*s", first_keylen, first_key);
+  
   prf_data_t prf_data =
     {
       .out = skeyseed,
@@ -847,7 +850,8 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     };
   prf(session->sa.prf, &prf_data);
 
-
+  MEMPRINTF("SKEYSEED", gir, 20);
+  
   /**
     * Complete the next step:
     * 

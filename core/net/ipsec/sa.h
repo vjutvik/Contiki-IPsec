@@ -42,17 +42,9 @@ typedef enum {
   * When the limitations in TinyECC are fixed the defines below should be replaced with a
   * complete table decribing the size requirements for each DH transform.
   */
-#define IKE_DH_SCALAR_LEN 24  // MUST be a multiple of sizeof(NN_DIGIT), which is usually the word size of the CPU.
-#define IKE_DH_SCALAR_CONTIKIECC_LEN (IKE_DH_SCALAR_LEN + sizeof(NN_DIGIT)) // ContikiECC requires an extra NN_DIGIT for its arithmetic
-#define IKE_DH_POINT_LEN (2 * IKE_DH_SCALAR_LEN)
-#define IKE_DH_POINT_CONTIKIECC_LEN (2 * IKE_DH_SCALAR_CONTIKIECC_LEN)
-
-/*
-#define IKE_DH_PRVKEY_LEN 24                        // MUST be a multiple of sizeof(NN_DIGIT), which is usually the word size of the CPU.
-#define IKE_DH_PUBKEY_LEN (2 * IKE_DH_PUBKEY_LEN)   // (2 * 192 bits)
-#define IKE_DH_GIR_LEN IKE_DH_PRVKEY_LEN
-#define IKE_DH_PRVKEY_CONTIKIECC_LEN (IKE_DH_PRVKEY_LEN + sizeof(NN_DIGIT)) // ContikiECC requires an extra NN_DIGIT for its arithmetic
-*/
+#define IKE_DH_SCALAR_BUF_LEN ((KEYDIGITS + 1) * NN_DIGIT_LEN)  // Length of ContikiECC's buffer in the session struct
+#define IKE_DH_SCALAR_LEN (KEYDIGITS * NN_DIGIT_LEN)  // Length of a deserialized scalar
+#define IKE_DH_POINT_LEN (2 * IKE_DH_SCALAR_LEN)  // Length of a deserialized point
 
 /**
   * Transform type #1 for ESP and IKEv2: Encryption (confidentiality / combined mode)

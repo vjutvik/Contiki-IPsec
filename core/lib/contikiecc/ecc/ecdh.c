@@ -102,9 +102,9 @@ void ecdh_get_shared_secret(uint8_t *shared_key, uint8_t *peerKeData, NN_DIGIT *
   */
   
   //uint16_t len = KEYDIGITS * NN_DIGIT_LEN;
-  NN_Decode(peerPubPoint.x, MAX_NN_DIGITS /* KEYDIGITS */, peerKeData, KEYDIGITS * 1);  
-  peerKeData += KEYDIGITS;
-  NN_Decode(peerPubPoint.y, MAX_NN_DIGITS /* KEYDIGITS */, peerKeData, KEYDIGITS * 1);  
+  NN_Decode(peerPubPoint.x, MAX_NN_DIGITS, peerKeData, KEYDIGITS * NN_DIGIT_LEN);  
+  peerKeData += KEYDIGITS * NN_DIGIT_LEN;
+  NN_Decode(peerPubPoint.y, MAX_NN_DIGITS, peerKeData, KEYDIGITS * NN_DIGIT_LEN);  
   
   point_t tempP;
   #ifdef SLIDING_WIN
@@ -116,6 +116,6 @@ void ecdh_get_shared_secret(uint8_t *shared_key, uint8_t *peerKeData, NN_DIGIT *
   #endif  //SLIDING_WIN
   
   // Encode the shared key to string. Big endian.
-  NN_Encode(shared_key, KEYDIGITS * 1, tempP.x, KEYDIGITS);
+  NN_Encode(shared_key, KEYDIGITS * NN_DIGIT_LEN, tempP.x, KEYDIGITS);
 }
 

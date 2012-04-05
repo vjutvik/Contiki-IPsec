@@ -137,7 +137,7 @@ typedef struct {
   uint16_t peer_first_msg_len;
 
   // My private asymmetric key store in small endian ContikiECC format
-  NN_DIGIT my_prv_key[IKE_DH_SCALAR_CONTIKIECC_LEN / sizeof(NN_DIGIT)];
+  NN_DIGIT my_prv_key[IKE_DH_SCALAR_BUF_LEN];
 } ike_statem_ephemeral_info_t;
 
 
