@@ -84,12 +84,12 @@ void prf_psk(uint8_t transform, prf_data_t *data)
 /**
   * Get a random string. Any given output will be reproduced for the same seed and len.
   */
-void random_ike(uint8_t *out, uint16_t len, uint16_t *seed)
+void random_ike(uint8_t *out, uint16_t len, uint16_t seed)
 {
-  if (seed == NULL)
+  if (seed == 0)
     random_init(123);
   else
-    random_init(*seed);
+    random_init(seed);
   
   uint8_t *ptr;
   for (ptr = out; ptr < out + len; ++ptr)

@@ -141,7 +141,9 @@ void ike_statem_setup_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *co
   session->ephemeral_info = malloc(sizeof(ike_statem_ephemeral_info_t));
   memcpy((void *) &session->ephemeral_info->triggering_pkt, (void *) triggering_pkt_addr, sizeof(*triggering_pkt_addr));
   session->ephemeral_info->spd_entry = commanding_entry;
-  session->ephemeral_info->my_nonce_seed = rand16(); // This random seed will be used for generating our nonce
+
+  // This random seed will be used for generating our nonce (or'ed with 1 so that it'll never be 0)
+  session->ephemeral_info->my_nonce_seed = 1U | rand16();
    
   /**
     * Generate the private key

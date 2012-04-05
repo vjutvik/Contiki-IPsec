@@ -836,9 +836,9 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     *
     */
   uint8_t skeyseed[SA_PRF_OUTPUT_LEN(session)];
-  random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);
+  random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);
   memcpy(peernonce_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
-  PRINTF("PRF #1 Key: %.*s", first_keylen, first_key);
+  MEMPRINTF("PRF #1 Key", first_key, first_keylen);
   
   prf_data_t prf_data =
     {
@@ -850,7 +850,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     };
   prf(session->sa.prf, &prf_data);
 
-  MEMPRINTF("SKEYSEED", gir, 20);
+  MEMPRINTF("SKEYSEED", skeyseed, 20);
   
   /**
     * Complete the next step:
@@ -862,7 +862,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   /**
     * Compile the second message (Ni | Nr | SPIi | SPIr)
     */
-  random_ike(ni_start, IKE_PAYLOAD_MYNONCE_LEN, &session->ephemeral_info->my_nonce_seed);      
+  random_ike(ni_start, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);      
   memcpy(nr_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
   *((uint32_t *) spii_start) = IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session);
   *(((uint32_t *) spii_start) + 1) = IKE_STATEM_MYSPI_GET_MYSPI_LOW(session);
