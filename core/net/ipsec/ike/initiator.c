@@ -467,7 +467,6 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   payload_arg.start += SA_PRF_OUTPUT_LEN(session);
   auth_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) auth_genpayloadhdr); // Length of the AUTH payload
 
-  end:
   /**
     * Write SAi2 (offer for the child SA)
     */

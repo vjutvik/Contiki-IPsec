@@ -630,8 +630,7 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
   else
     encr_data.keymat = payload_arg->session->sa.sk_er;                // Address of the keying material
  
-  PRINTF("integ key len: %u\n", encr_data.keylen);
-  MEMPRINTF("integ_key", encr_data.keymat, 15);
+  MEMPRINTF("encr_key", encr_data.keymat, 15);
   
   espsk_pack(&encr_data); // Encrypt / combined mode
   
@@ -667,8 +666,7 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
     else
       integ_data.keymat = payload_arg->session->sa.sk_ar;                // Address of the keying material
 
-    PRINTF("encr key len: %u\n", SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session));
-    MEMPRINTF("encr_key", integ_data.keymat, 15);
+    MEMPRINTF("integ keymat", integ_data.keymat, SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session));
     integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
   }
 }
@@ -869,6 +867,8 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   *((uint32_t *) spir_start) = session->peer_spi_high;
   *(((uint32_t *) spir_start) + 1) = session->peer_spi_low;
 
+  MEMPRINTF("second msg", second_msg, sizeof(second_msg));
+
   /**
     * Run the second, and last, PRF operation
     */
@@ -890,14 +890,14 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     *     "The lengths of SK_d, SK_pi and SK_pr MUST be the preferred key length of the PRF agreed upon."
     *
     */
-  uint8_t *sk_ptr[] = { sa->sk_d,                             sa->sk_ai,                        sa->sk_ar,                            sa->sk_ei,                      sa->sk_er,                        session->ephemeral_info->sk_pi,       session->ephemeral_info->sk_pr};
-  uint8_t sk_len[]  = { SA_PRF_PREFERRED_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYLEN(session), SA_ENCR_CURRENT_KEYLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session)};
+  uint8_t *sk_ptr[] = { sa->sk_d,                             sa->sk_ai,                        sa->sk_ar,                            sa->sk_ei,                      sa->sk_er,                        session->ephemeral_info->sk_pi,       session->ephemeral_info->sk_pr };
+  uint8_t sk_len[]  = { SA_PRF_PREFERRED_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYMATLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session) };
   
   prfplus_data_t prfplus_data = {
     .prf = sa->prf,
     .key = skeyseed,
     .keylen = sizeof(skeyseed),
-    .no_chunks = 7,
+    .no_chunks = sizeof(sk_len),
     .data = second_msg,
     .datalen = sizeof(second_msg),
     .chunks = sk_ptr,

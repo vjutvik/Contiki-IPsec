@@ -168,7 +168,7 @@ void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
 
 void prf_plus(prfplus_data_t *plus_data)
 {
-  const uint8_t prf_keylen = sa_prf_preferred_keymatlen[plus_data->prf];
+  const uint8_t prf_outputlen = sa_prf_output_len[plus_data->prf];
   
   // Loop over chunks_len and find the longest chunk
   uint16_t chunk_maxlen = 0;
@@ -179,11 +179,11 @@ void prf_plus(prfplus_data_t *plus_data)
   }
   
   // Set up the buffers
-  uint16_t outbuf_maxlen = chunk_maxlen + prf_keylen;
-  uint16_t msgbuf_maxlen = prf_keylen + plus_data->keylen + 1;   // Maximum length of TN + S + 0xNN
+  uint16_t outbuf_maxlen = chunk_maxlen + prf_outputlen;
+  uint16_t msgbuf_maxlen = prf_outputlen + plus_data->datalen + 1;   // Maximum length of TN + S + 0xNN
   uint8_t outbuf[outbuf_maxlen];   // The buffer for intermediate storage of the output from the PRF. To be copied into the chunks.
   uint8_t msgbuf[msgbuf_maxlen];   // Assembly buffer for the message
-  uint8_t lastout[prf_keylen];
+  uint8_t lastout[prf_outputlen];
 
   // Loop over the chunks
   prf_data_t prf_data = {
@@ -195,41 +195,63 @@ void prf_plus(prfplus_data_t *plus_data)
   uint8_t prf_ctr = 1;
   uint8_t curr_chunk;
   for (curr_chunk = 0; curr_chunk < plus_data->no_chunks; ++curr_chunk) {
+//    MEMPRINTF("OUTBUF is now", outbuf, prf_outputlen);
     uint8_t curr_chunk_len = plus_data->chunks_len[curr_chunk];
     
-    // Now, how much PRF output data do we need for this chunk? If we don't have enough generate more data.
+    // Now, how much PRF output data do we need for this chunk? Generate more data if we don't have enough .
     if (curr_chunk_len > outbuf_len) {
       // We need more data in the output buffer
+//      MEMPRINTF("OUTBUF is now", outbuf, prf_outputlen);
       
-      for (; outbuf_len < curr_chunk_len; outbuf_len += prf_keylen, ++prf_ctr) {
-        // Prepare the next message
+      for (; outbuf_len < curr_chunk_len; outbuf_len += prf_outputlen, ++prf_ctr) {
+        
+        // Compose the message
         uint8_t *ptr = msgbuf;
+//        PRINTF("ptr: %p msgbuf: %p\n", ptr, msgbuf);
         if (prf_ctr > 1) {
           // The message is T(N - 1) | S | 0xN where N is ptr_ctr
-          memcpy(ptr, &lastout, prf_keylen); // Copy TN (the last PRF output)
-          ptr += prf_keylen;
+          memcpy(ptr, lastout, prf_outputlen); // Copy TN (the last PRF output)
+          ptr += prf_outputlen;
         }
         // else: The message is S | 0x01
-        
+        // MEMPRINTF("OUTBUF is now (bef msg assembly)", outbuf, prf_outputlen);
+        // PRINTF("ptr: %p msgbuf: %p\n", ptr, msgbuf);
         memcpy(ptr, plus_data->data, plus_data->datalen);   // Add S
+        // PRINTF("plus_data->datalen: %d, sizeof(msgbuf): %d\n", plus_data->datalen, sizeof(msgbuf));
+        // MEMPRINTF("OUTBUF is now(1)", outbuf, prf_outputlen);
+
         ptr += plus_data->datalen;
         *ptr = prf_ctr;                                     // Add 0xN
         ++ptr;
+        // MEMPRINTF("OUTBUF is now(bef prf_data def)", outbuf, prf_outputlen);
         
         // Message compiled. Run the PRF operation.
         prf_data.out = &outbuf[outbuf_len];
         prf_data.datalen = ptr - msgbuf;
+        // PRINTF("outputting 20 bytes to %p. outbuf[0] at %p\n", prf_data.out, outbuf);
         prf(plus_data->prf, &prf_data);
-        memcpy(lastout, &outbuf[outbuf_len], prf_keylen); // Take a copy of this output for use as the next TN string
+        // MEMPRINTF("OUTBUF is now (bfe memcpy)", outbuf, prf_outputlen);
+        memcpy(lastout, &outbuf[outbuf_len], prf_outputlen); // Take a copy of this output for use as the next TN string
+        // MEMPRINTF("OUTBUF is now (after memcpy)", outbuf, prf_outputlen);
       }
     }
+  
+    // PRINTF("curr_chunk_len: %d\n", curr_chunk_len);
+    // MEMPRINTF("PRF+ OUTPUT", outbuf, prf_outputlen);
     
     // We have exited the loop and... given the complexity of the above loop... 
     // ... we can surmise that outbuf contains enough data to fill plus_data->chunks_len[curr_chunk]
     memcpy(plus_data->chunks[curr_chunk], outbuf, curr_chunk_len); // Copy the data to the chunk
+    MEMPRINTF("Chunk is", plus_data->chunks[curr_chunk], curr_chunk_len);
     
     // We have probably left some trailing data in the buffer. Move it to the beginning so as to save it for the next chunk.
     outbuf_len = outbuf_len - curr_chunk_len;
-    memcpy(outbuf, &outbuf[curr_chunk_len], outbuf_len);
+    memmove(outbuf, &outbuf[curr_chunk_len], outbuf_len);
+    // PRINTF("outbuf_len: %d\n", outbuf_len);
+    // MEMPRINTF("OUTBUF is now", outbuf, prf_outputlen);
+    // PRINTF("NEXT CHUNK!\n");
+    // if (outbuf_len == 4)
+    //   PRINTF("#############################\n");
+    
   }
 }
