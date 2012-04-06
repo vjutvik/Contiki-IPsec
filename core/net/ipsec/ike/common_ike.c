@@ -200,7 +200,6 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       proposal->proposal_number = proposal_number;
       proposal->proto_id = offer[n].value;
 
-      numtransforms = 0;
 
       ++proposal_number;
       ptr += sizeof(ike_payload_proposal_t);
@@ -218,6 +217,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
           // p.79: "For an initial IKE SA negotiation, this field MUST be zero"
           proposal->spi_size = IKE_MSG_ZERO;
         }
+        numtransforms = 0;
       }
       else { // AH and ESP
         proposal->spi_size = 4;
@@ -232,6 +232,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
         transform->len = uip_htons(sizeof(ike_payload_transform_t));
         transform->id = uip_htons(SA_ESN_NO);
         ptr += sizeof(ike_payload_transform_t);
+        numtransforms = 1;
       }
       break;
       
