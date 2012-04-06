@@ -569,8 +569,8 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
 
   // Generate the IV
   uint8_t n;
-  for (n = 0; n < SA_ENCR_CURRENT_IVLEN(payload_arg->session); n += 2)
-    payload_arg->start[n] = random_rand();
+  for (n = 0; n < SA_ENCR_CURRENT_IVLEN(payload_arg->session); ++n)
+    payload_arg->start[n] = rand16();
   payload_arg->start += n;
   printf("sk_genpayloadhdr ends at: %p IVLEN: %u\n", payload_arg->start, SA_ENCR_CURRENT_IVLEN(payload_arg->session));
 }

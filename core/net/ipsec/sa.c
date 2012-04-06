@@ -49,7 +49,7 @@ const uint8_t sa_encr_ivlen[] =
   0,
   0,
   0,
-  8,  // 3DES
+  8,    // 3DES
   0,
   0,
   0,
@@ -57,9 +57,9 @@ const uint8_t sa_encr_ivlen[] =
   0,
   0,
   0,
-  0,  // NULL
-  16,  // AES CBC
-  8,  // AES CTR. See RFC 3686, section 4
+  1,    // NULL (its block size)
+  16,   // AES CBC
+  8,    // AES CTR. See RFC 3686, section 4
 };
 
 
