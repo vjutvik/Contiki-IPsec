@@ -508,8 +508,10 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
     PRINTF("Next payload is %d\n", payload_type);
     switch (payload_type) {
       case IKE_PAYLOAD_SK:
-      if (ike_statem_unpack_sk(session, (ike_payload_generic_hdr_t *) genpayloadhdr))
+      if (ike_statem_unpack_sk(session, (ike_payload_generic_hdr_t *) genpayloadhdr)) {
+        PRINTF(IPSEC_IKE_ERROR "Integrity check of peer's message failed\n");
         return 0;
+      }
       break;
       
       case IKE_PAYLOAD_N: 
@@ -523,7 +525,6 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
           PRINTF(IPSEC_IKE "Ignoring unknown Notify payload of type %u\n", uip_ntohs(n_payload->notify_msg_type));
       }
       break;
-      
       
       case IKE_PAYLOAD_IDr:
       break;

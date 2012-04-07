@@ -582,14 +582,14 @@ u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr
     //MEMPRINTF("integ keymat", integ_data.keymat, SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session));
     integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
 
-    if (! memcmp(expected_icv, msg_buf + (integ_datalen - IPSEC_ICVLEN), IPSEC_ICVLEN))
+    if (memcmp(expected_icv, msg_buf + integ_datalen, IPSEC_ICVLEN) != 0)
       return 1;
   }
   
   // Confidentiality / Combined mode
   uint16_t datalen = uip_ntohs(sk_genpayloadhdr->len) - IPSEC_ICVLEN - sizeof(ike_payload_generic_hdr_t);
   
-  encr_data_t encr_data =  {
+  encr_data_t encr_data = {
     .type = session->sa.encr,
     .keylen = session->sa.encr_keylen,
     .encr_data = ((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t),
