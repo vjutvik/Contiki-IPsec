@@ -15,7 +15,6 @@ extern void ike_statem_write_notification(payload_arg_t *payload_arg,
                                 uint8_t notify_payload_len);
 extern void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t payload_type);
 extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi);
-extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 extern void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
 extern void ike_statem_transition(ike_statem_session_t *session);
 extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
@@ -32,9 +31,11 @@ extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
 extern void ike_statem_finalize_sk(payload_arg_t *payload_arg, 
                                         ike_payload_generic_hdr_t *sk_genpayloadhdr, 
                                         uint16_t data_len);
+extern u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
+extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 
 #define IPSEC_IKE "IPsec IKEv2: "
-
+#define IPSEC_IKE_ERROR "IPsec IKEv2: Error: "
 
 #define IKE_STATEM_ASSERT_COOKIE(payload_arg)                                                         \
   do {                                                                                                \

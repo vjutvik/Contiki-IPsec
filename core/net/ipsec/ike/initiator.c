@@ -164,8 +164,8 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       // Loop over the responder's offer and that of ours in order to verify that the former
       // is indeed a subset of ours.
       session->proposal_reply = malloc(10 * sizeof(spd_proposal_tuple_t));  // 10 entries should be enough
-      if (ike_statem_parse_sa_payload(CURRENT_IKE_PROPOSAL, 
-                                      genpayloadhdr, 
+      if (ike_statem_parse_sa_payload((struct spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL, 
+                                      (ike_payload_generic_hdr_t *) genpayloadhdr, 
                                       ke_dh_group,
                                       &session->sa,
                                       NULL,
@@ -495,66 +495,102 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
 {
   // If everything went well, we should see something like
   // <--  HDR, SK {IDr, [CERT,] AUTH, SAr2, TSi, TSr}
-  PRINTF("state_authrespwait stub!\n");
-  return 1;
-}
 
-//   ike_payload_ike_hdr_t *ike_hdr = msg_buf;
-//   
-//   ike_ts_payload_t *tsi, *tsr;
-//   uint8_t *ptr = ike_hdr + sizeof(ike_payload_ike_hdr_t);
-//   ike_payload_type_t payload_type = ike_hdr->next_payload;
-//   while (ptr - msg_buf < msg_buf_len) { // Payload loop
-//     ike_payload_generic_hdr_t *genpayloadhdr = ptr;
-//     uint8_t *payload_start = genpayloadhdr + sizeof(genpayloadhdr);
-//     uint8_t *payload_end = genpayloadhdr + uip_ntohs(genpayloadhdr->len);
-//     
-//     switch (payload_type) {
-//       case IKE_PAYLOAD_SK:
-//       if (ike_statem_decrypt(session, ptr)) {
-//         ike_statem_remove_session(session);
-//         return;
-//       }
-//       break;
-//       
-//       case IKE_PAYLOAD_IDr:
-//       break;
-//       
-//       case IKE_PAYLOAD_AUTH:
-//       break;
-// 
-//       case IKE_PAYLOAD_SA:
-//       break;
-//       
-//       case IKE_PAYLOAD_TSi:
-//       tsi = payload_start + sizeof(ike_payload_generic_hdr_t);
-//       break;
-//       
-//       case IKE_PAYLOAD_TSr:
-//       tsr = payload_start + sizeof(ike_payload_generic_hdr_t);
-//       break;
-//       
-//       default:
-//       // Info: Unexpected payload
-//     }
-//     
-//     ptr = payload_end;
-//     payload_type = genpayloadhdr->next_payload;
-//   }
-//   
+  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
+  ike_ts_t *tsi, *tsr;
+  
+  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  ike_payload_type_t payload_type = ike_hdr->next_payload;
+  while (ptr - msg_buf < uip_datalen()) { // Payload loop
+    const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
+    const uint8_t *payload_start = (uint8_t *) genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
+    
+    PRINTF("Next payload is %d\n", payload_type);
+    switch (payload_type) {
+      case IKE_PAYLOAD_SK:
+      if (ike_statem_unpack_sk(session, (ike_payload_generic_hdr_t *) genpayloadhdr))
+        return 0;
+      break;
+      
+      case IKE_PAYLOAD_N: 
+      {
+        ike_payload_notify_t *n_payload = (ike_payload_notify_t *) payload_start;
+        if (uip_ntohs(n_payload->notify_msg_type) == IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED) {
+          PRINTF(IPSEC_IKE_ERROR "Peer could not authenticate us.\n");
+          return 0;
+        }
+        else
+          PRINTF(IPSEC_IKE "Ignoring unknown Notify payload of type %u\n", uip_ntohs(n_payload->notify_msg_type));
+      }
+      break;
+      
+      
+      case IKE_PAYLOAD_IDr:
+      break;
+      
+      case IKE_PAYLOAD_AUTH:
+      break;
+
+      case IKE_PAYLOAD_SA:
+      break;
+      
+      case IKE_PAYLOAD_TSi:
+      tsi = payload_start + sizeof(ike_payload_generic_hdr_t);
+      break;
+      
+      case IKE_PAYLOAD_TSr:
+      tsr = payload_start + sizeof(ike_payload_generic_hdr_t);
+      break;
+      
+      default:
+      /**
+        * Unknown / unexpected payload. Is the critical flag set?
+        *
+        * From p. 30:
+        *
+        * "If the critical flag is set
+        * and the payload type is unrecognized, the message MUST be rejected
+        * and the response to the IKE request containing that payload MUST
+        * include a Notify payload UNSUPPORTED_CRITICAL_PAYLOAD, indicating an
+        * unsupported critical payload was included.""
+        */
+
+      if (genpayloadhdr->clear > 0) {
+        PRINTF(IPSEC_IKE "Error: Encountered an unknown critical payload\n");
+        return 0;
+      }
+      else
+        PRINTF(IPSEC_IKE "Ignoring unknown non-critical payload of type %u\n", payload_type);
+      // Info: Ignored unknown payload
+    }
+
+    ptr = (uint8_t *) genpayloadhdr + uip_ntohs(genpayloadhdr->len);
+    payload_type = genpayloadhdr->next_payload;
+  } // End payload loop
+
+  if (payload_type != IKE_PAYLOAD_NO_NEXT) {  
+    PRINTF(IPSEC_IKE "Error: Unexpected end of peer message.\n");
+    return 0;
+  }
+  
+  return 0;
+}
+  
   /**
     * Assert values of traffic selectors
     */
-  // uint8_t tmp[100];
-  // ike_statem_write_tsitsr(session, &tmp);
-  // 
-  // // Assert Traffic Selectors' syntax
-  // ipsec_assert_ts_invariants  
-  // 
-  // 
-  // ike_statem_assert_tsa_is_subset_of_tsb(ai, ar, tmp + ioffset, tmp + roffset);  
-  // ts_to_addr_set(ai, ar);
-  // 
+  /*
+  uint8_t tmp[100];
+  ike_statem_write_tsitsr(session, &tmp);
+  */
+  // Assert Traffic Selectors' syntax
+  /*
+  ipsec_assert_ts_invariants  
+  
+  
+  ike_statem_assert_tsa_is_subset_of_tsb(ai, ar, tmp + ioffset, tmp + roffset);  
+  ts_to_addr_set(ai, ar);
+  */
   /**
     * Derive SA key material (KEYMAT calulcation)
     */

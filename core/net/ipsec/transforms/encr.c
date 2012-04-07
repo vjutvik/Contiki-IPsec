@@ -227,6 +227,8 @@ void espsk_unpack(encr_data_t *data)
     aes_ctr(data);
     break;
 
+    case SA_ENCR_NULL:
+    break;
 
     default:
     PRINTF(IPSEC "Error: Unknown encryption type\n");

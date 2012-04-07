@@ -548,6 +548,75 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
 }
 
 
+
+/**
+  * Unpacks (i.e. checks integrity and decrypts) an SK payload / IKE message. 
+  *
+  * \parameter session Session concerned
+  * \parameter sk_genpayloadhdr The generic paylod header of the SK payload
+  *
+  * \return 1 if the integrity check fails, 0 if successfull
+  */
+u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr)
+{
+  uint16_t integ_datalen = uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len) - IPSEC_ICVLEN;
+  
+  // Integrity
+  if (session->sa.integ) {
+    // Length of data to be integrity protected:
+    // IKE header + (anything in between) + SK header + IV + data + padding + padding length field
+    uint8_t expected_icv[IPSEC_ICVLEN];
+
+    integ_data_t integ_data = {
+      .type = session->sa.integ,
+      .data = msg_buf,                        // The start of the data
+      .datalen = integ_datalen,               // Data to be integrity protected
+      .out = expected_icv          // Where the output will be written. IPSEC_ICVLEN bytes will be written.
+    };
+    
+    if(IKE_STATEM_IS_INITIATOR(session))
+      integ_data.keymat = session->sa.sk_ar;                // Address of the keying material
+    else
+      integ_data.keymat = session->sa.sk_ai;
+
+    //MEMPRINTF("integ keymat", integ_data.keymat, SA_INTEG_CURRENT_KEYMATLEN(payload_arg->session));
+    integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
+
+    if (! memcmp(expected_icv, msg_buf + (integ_datalen - IPSEC_ICVLEN), IPSEC_ICVLEN))
+      return 1;
+  }
+  
+  // Confidentiality / Combined mode
+  uint16_t datalen = uip_ntohs(sk_genpayloadhdr->len) - IPSEC_ICVLEN - sizeof(ike_payload_generic_hdr_t);
+  
+  encr_data_t encr_data =  {
+    .type = session->sa.encr,
+    .keylen = session->sa.encr_keylen,
+    .encr_data = ((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t),
+    // From the beginning of the IV to the pad length field
+    .encr_datalen = datalen,
+    .ip_next_hdr = NULL
+  };
+
+  if(IKE_STATEM_IS_INITIATOR(session))
+    encr_data.keymat = session->sa.sk_er;                // Address of the keying material
+  else
+    encr_data.keymat = session->sa.sk_ei;
+ 
+  //MEMPRINTF("encr_key", encr_data.keymat, 15);
+  
+  espsk_unpack(&encr_data); // Encrypt / combined mode
+  
+  // Move the data over the IV as the former's length might not be a multiple of four
+  uint8_t *iv_start = (uint8_t *) sk_genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
+  memmove(iv_start, iv_start + sa_encr_ivlen[session->sa.encr], datalen);
+  sk_genpayloadhdr->len = uip_htons(sizeof(ike_payload_generic_hdr_t));
+  
+  return 0;
+}
+
+
+
 /**
   * Writes a "skeleton" of the SK payload. You can continue building your message right after the
   * resulting SK payload and then finish the encryption by calling \c ike_statem_finalize_sk()

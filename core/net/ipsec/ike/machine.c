@@ -53,7 +53,7 @@ void ike_statem_timeout_handler(void *session);
   */
 #define IKE_STATEM_ENTERSTATE(session)                                \
   /* Stop retransmission timer (if any has been set) */               \
-  PRINTF(IPSEC_IKE "Entering state %p\n", (session)->next_state_fn);  \
+  PRINTF(IPSEC_IKE "Session %p is entering state %p\n", (session), (session)->next_state_fn);  \
   STOP_RETRANSTIMER((session));                                       \
   if (!(*(session)->next_state_fn)(session)) {                        \
     PRINTF(IPSEC_IKE "Removing session %p\n", session);               \
