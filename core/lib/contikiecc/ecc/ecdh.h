@@ -18,7 +18,7 @@ uint8_t *ecdh_encode_public_key(uint32_t *start, NN_DIGIT *myPrvKey);
   * \parameter peerPubKey The public key (commonly that of the other party)
   * \parameter myPrvKey The private key (commonly ours). 24 bytes long.
   */
-void ecdh_get_shared_secret(uint8_t *shared_key, point_t *peerPubKey, NN_DIGIT *myPrvKey);
+void ecdh_get_shared_secret(uint8_t *shared_key, uint8_t *peerPubKey, NN_DIGIT *myPrvKey);
 
 
 // Deserialization. Takes an u8_t * as argument.

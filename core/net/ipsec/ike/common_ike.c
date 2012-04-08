@@ -361,7 +361,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
               peertransform->type == SA_CTRL_TRANSFORM_TYPE_DH &&
               uip_ntohs(peertransform->id) != ke_dh_group) {
             PRINTF(IPSEC_IKE "#4 Peer proposal with DH group that differs from that of the KE payload. Rejecting.\n");
-            goto next_peertransform;      
+            goto next_peertransform;
           }
           
           // Check for extended sequence number
@@ -393,7 +393,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
                   }
                   
                   // Accept the candidate keylen (which might be longer than the one in our proposal)
-                  candidate_keylen = uip_ntohs(peer_attrib->attribute_value);
+                  candidate_keylen =  uip_ntohs(peer_attrib->attribute_value) >> 3; // Divide by eight
                 }
               }
               else
@@ -451,12 +451,14 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
   // Set the SA
   if (ike) {
     ike_sa->encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
+    ike_sa->encr_keylen = candidate_keylen;
     ike_sa->integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
     ike_sa->prf = candidates[SA_CTRL_TRANSFORM_TYPE_PRF];
     ike_sa->dh = candidates[SA_CTRL_TRANSFORM_TYPE_DH];
   }
   else {
     child_sa->encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
+    child_sa->encr_keylen = candidate_keylen;
     child_sa->integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
   }
   
@@ -685,6 +687,12 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   */
 void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t data_len)
 {
+  /**
+    * Before calculating the ICV value we need to set the final length
+    * of the IKE message and the SK payload
+    */
+  SET_NO_NEXT_PAYLOAD(payload_arg);
+  
   // Confidentiality / Combined mode
   encr_data_t encr_data =  {
     .type = payload_arg->session->sa.encr,
@@ -700,16 +708,11 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
   else
     encr_data.keymat = payload_arg->session->sa.sk_er;                // Address of the keying material
  
-  MEMPRINTF("encr_key", encr_data.keymat, 15);
+  PRINTF("encr: %u\n", encr_data.type);
+  MEMPRINTF("encr_key", encr_data.keymat, encr_data.keylen);
   
   espsk_pack(&encr_data); // Encrypt / combined mode
   
-  /**
-    * Before calculating the ICV value we need to set the final length
-    * of the IKE message and the SK payload
-    */
-  SET_NO_NEXT_PAYLOAD(payload_arg);
-
   // sk_len = ike_payload_generic_hdr_t size + ICV and data + pad length + pad length field + IPSEC_ICVLEN
   uint16_t sk_len = sizeof(ike_payload_generic_hdr_t) + data_len + encr_data.padlen + 1 + IPSEC_ICVLEN;
   sk_genpayloadhdr->len = uip_htons(sk_len);
@@ -843,6 +846,106 @@ void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t pa
 // }
 
 
+
+/**
+  * Function that delivers suitable actions and suitable informational / error messages.
+  * Should work for all cases
+  *
+  * \return 1 if the notify message implies that the peer has hung up, 0 otherwise.
+  */
+u8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
+{
+  notify_msg_type_t type = uip_ntohs(notify_payload->notify_msg_type);
+  
+  /**
+    * See payload.h for a complete list of notify message types
+    */
+  if (type < IKE_PAYLOAD_NOTIFY_INITIAL_CONTACT) {
+    switch (type) {
+      /*
+      IKE_PAYLOAD_NOTIFY_UNSUPPORTED_CRITICAL_PAYLOAD = 1,
+      IKE_PAYLOAD_NOTIFY_INVALID_IKE_SPI = 4,
+      IKE_PAYLOAD_NOTIFY_INVALID_MAJOR_VERSION = 5,
+      */    
+      case IKE_PAYLOAD_NOTIFY_INVALID_SYNTAX:
+      PRINTF(IPSEC_IKE_ERROR "Peer didn't recognize our message's syntax\n");
+      break;
+      
+      case IKE_PAYLOAD_NOTIFY_INVALID_MESSAGE_ID:
+      PRINTF(IPSEC_IKE_ERROR "Peer believes our message's ID is incorrect\n");
+      break;
+      
+      /* IKE_PAYLOAD_NOTIFY_INVALID_SPI = 11, */
+      case IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN:
+      PRINTF(IPSEC_IKE_ERROR "Peer didn't not accept any of our proposals\n");
+      break;
+      
+      case IKE_PAYLOAD_NOTIFY_INVALID_KE_PAYLOAD:
+      PRINTF(IPSEC_IKE_ERROR "Peer found our KE payload (public key) to be invalid\n");
+      break;
+      
+      case IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED:
+      PRINTF(IPSEC_IKE_ERROR "Peer could not authenticate us.\n");
+      break;
+      
+      case IKE_PAYLOAD_NOTIFY_SINGLE_PAIR_REQUIRED:
+      PRINTF("Peer requires a single pair of Traffic Selectors\n");
+      break;
+      
+      /*
+      IKE_PAYLOAD_NOTIFY_NO_ADDITIONAL_SAS = 35,
+      IKE_PAYLOAD_NOTIFY_INTERNAL_ADDRESS_FAILURE = 36,
+      IKE_PAYLOAD_NOTIFY_FAILED_CP_REQUIRED = 37,
+      */
+      
+      case IKE_PAYLOAD_NOTIFY_TS_UNACCEPTABLE:
+      PRINTF(IPSEC_IKE_ERROR "Peer found our Traffic Selectors to be unacceptable\n");
+      break;
+      
+      case IKE_PAYLOAD_NOTIFY_INVALID_SELECTORS:
+      PRINTF(IPSEC_IKE_ERROR "Peer found or Traffic Selectors to be invalid.\n");
+      break;
+      
+      default:
+      PRINTF(IPSEC_IKE_ERROR "Received error notify message type no. %u\n", type);
+    }
+    return 1;
+  }  
+  else {
+    // Informational types
+    
+    /*
+    IKE_PAYLOAD_NOTIFY_TEMPORARY_FAILURE = 43,
+    IKE_PAYLOAD_NOTIFY_CHILD_SA_NOT_FOUND = 44,
+    */
+    switch (type) {
+      /*
+      IKE_PAYLOAD_NOTIFY_INITIAL_CONTACT = 16384,
+      IKE_PAYLOAD_NOTIFY_SET_WINDOW_SIZE = 16385,
+      IKE_PAYLOAD_NOTIFY_ADDITIONAL_TS_POSSIBLE = 16386,
+      IKE_PAYLOAD_NOTIFY_IPCOMP_SUPPORTED = 16387,
+      IKE_PAYLOAD_NOTIFY_NAT_DETECTION_SOURCE_IP = 16388,
+      IKE_PAYLOAD_NOTIFY_NAT_DETECTION_DESTINATION_IP = 16389,
+      */
+      
+      case IKE_PAYLOAD_NOTIFY_COOKIE:
+      PRINTF(IPSEC_IKE_ERROR "Peer has handed us a cookie and expects us to use it, but we can't handle cookies\n");
+      return 1;      
+      
+      /*
+      IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE = 16391,
+      IKE_PAYLOAD_NOTIFY_HTTP_CERT_LOOKUP_SUPPORTED = 16392,
+      IKE_PAYLOAD_NOTIFY_REKEY_SA = 16393,
+      IKE_PAYLOAD_NOTIFY_ESP_TFC_PADDING_NOT_SUPPORTED = 16394,
+      IKE_PAYLOAD_NOTIFY_NON_FIRST_FRAGMENTS_ALSO = 16395
+      */
+      default:
+      PRINTF(IPSEC_IKE_ERROR "Received informative notify message no. %u\n", type);
+    }
+  }
+  return 0;
+}
+
 /**
   * Performs the calculations as described in section 2.14
   *
@@ -858,10 +961,10 @@ void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t pa
 void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 {
   // Calculate the DH exponential: g^ir
-  PRINTF(IPSEC_IKE "Calculating shared secret\n");
+  PRINTF(IPSEC_IKE "Calculating shared DH secret\n");
   uint8_t gir[IKE_DH_SCALAR_LEN];
   ecdh_get_shared_secret(gir, peer_pub_key, session->ephemeral_info->my_prv_key);
-  MEMPRINTF("shared secret (g^ir)", gir, IKE_DH_SCALAR_LEN);
+  MEMPRINTF("Shared DH secret (g^ir)", gir, IKE_DH_SCALAR_LEN);
 
   /**
     * The order of the strings will depend on who's the initiator. Prepare that.
@@ -869,8 +972,6 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   uint8_t first_keylen = IKE_PAYLOAD_MYNONCE_LEN + session->ephemeral_info->peernonce_len;
   uint8_t first_key[first_keylen];
 
-  PRINTF("first_keylen: %d\n", first_keylen);
-  
   uint8_t second_msg[IKE_PAYLOAD_MYNONCE_LEN +   // Ni or Nr
       session->ephemeral_info->peernonce_len +    // Ni or Nr 
       2 * 8   // 2 * SPI
@@ -906,7 +1007,6 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   uint8_t skeyseed[SA_PRF_OUTPUT_LEN(session)];
   random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);
   memcpy(peernonce_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
-  MEMPRINTF("PRF #1 Key", first_key, first_keylen);
   
   prf_data_t prf_data =
     {
@@ -937,8 +1037,6 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
   *((uint32_t *) spir_start) = session->peer_spi_high;
   *(((uint32_t *) spir_start) + 1) = session->peer_spi_low;
 
-  MEMPRINTF("second msg", second_msg, sizeof(second_msg));
-
   /**
     * Run the second, and last, PRF operation
     */
@@ -962,7 +1060,7 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     */
   uint8_t *sk_ptr[] = { sa->sk_d,                             sa->sk_ai,                        sa->sk_ar,                            sa->sk_ei,                      sa->sk_er,                        session->ephemeral_info->sk_pi,       session->ephemeral_info->sk_pr };
   uint8_t sk_len[]  = { SA_PRF_PREFERRED_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_INTEG_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYMATLEN(session), SA_ENCR_CURRENT_KEYMATLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session), SA_PRF_PREFERRED_KEYMATLEN(session) };
-  
+
   prfplus_data_t prfplus_data = {
     .prf = sa->prf,
     .key = skeyseed,

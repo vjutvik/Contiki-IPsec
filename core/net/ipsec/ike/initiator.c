@@ -347,13 +347,10 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       break;
       
       case IKE_PAYLOAD_N:
-      n_payload = (ike_payload_notify_t *) payload_start;
-      if (uip_ntohs(n_payload->notify_msg_type) == IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN) {
-        PRINTF(IPSEC_IKE "Peer did not accept proposal.\n");
+      if (ike_statem_handle_notify((ike_payload_notify_t *) payload_start)) {
+        ike_statem_remove_session(session);
         return 0;
       }
-      else
-        PRINTF(IPSEC_IKE "Ignoring unknown Notify payload of type %u\n", uip_ntohs(n_payload->notify_msg_type));
       break;
       
       case IKE_PAYLOAD_CERTREQ:
@@ -471,6 +468,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
     * Write SAi2 (offer for the child SA)
     */
   session->ephemeral_info->local_spi = SAD_GET_NEXT_SAD_LOCAL_SPI;
+  ike_payload_generic_hdr_t *sa_payload = payload_arg.start;
   ike_statem_write_sa_payload(&payload_arg, session->ephemeral_info->spd_entry->offer, session->ephemeral_info->local_spi);
 
   /**
@@ -515,14 +513,9 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       break;
       
       case IKE_PAYLOAD_N: 
-      {
-        ike_payload_notify_t *n_payload = (ike_payload_notify_t *) payload_start;
-        if (uip_ntohs(n_payload->notify_msg_type) == IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED) {
-          PRINTF(IPSEC_IKE_ERROR "Peer could not authenticate us.\n");
-          return 0;
-        }
-        else
-          PRINTF(IPSEC_IKE "Ignoring unknown Notify payload of type %u\n", uip_ntohs(n_payload->notify_msg_type));
+      if (ike_statem_handle_notify((ike_payload_notify_t *) payload_start)) {
+        ike_statem_remove_session(session);
+        return 0;
       }
       break;
       
