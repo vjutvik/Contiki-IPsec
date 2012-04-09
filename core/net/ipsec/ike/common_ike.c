@@ -466,6 +466,41 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
 }
 
 /**
+  * Helper for ike_statem_get_authdata
+  */
+uint32_t rerun_init_req(uint8_t *out, ike_statem_session_t *session)
+{
+  /**
+    * Stash the current state
+    */
+    
+  // Stash peer SPI
+  uint32_t peer_spi_high = session->peer_spi_high;
+  uint32_t peer_spi_low = session->peer_spi_low;
+  session->peer_spi_high = 0;
+  session->peer_spi_low = 0;
+  
+  // Stash my msg ID
+  uint32_t my_msg_id = session->my_msg_id;
+  session->my_msg_id = 0;
+  
+  // Buffers
+  uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
+  msg_buf = out;
+  ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start  
+  
+  /** 
+    * Restore old state
+    */
+  msg_buf = msg_buf_save;
+  session->peer_spi_high = peer_spi_high;
+  session->peer_spi_low = peer_spi_low;
+  session->my_msg_id = my_msg_id;
+  
+  return uip_ntohl(((ike_payload_ike_hdr_t *) out)->len);
+}
+
+/**
   * Get InitiatorSignedOctets or ResponderSignedOctets (depending on session) as described on p. 48.
   *
   * \param session      Current session
@@ -500,13 +535,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
     
     case 1:
     PRINTF("Re-running our first message's transition\n");
-    {     
-      uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
-      msg_buf = ptr;
-      ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start
-      ptr += uip_ntohl(((ike_payload_ike_hdr_t *) ptr)->len);
-      msg_buf = msg_buf_save;
-    }
+    ptr += rerun_init_req(ptr, session);
     break;
     
     case 2:
@@ -517,13 +546,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
     case 3:
     // FIX RESPONSE: trans_initreq is probably the wrong method!
     PRINTF("Re-running our first message's transition\n");
-    {   
-      uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
-      msg_buf = ptr;
-      ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start
-      ptr += uip_ntohl(((ike_payload_ike_hdr_t *) ptr)->len);
-      msg_buf = msg_buf_save;
-    } 
+    ptr += rerun_init_req(ptr, session);
   }
   
   // Nonce(I/R)Data
@@ -534,18 +557,30 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
   prf_data_t prf_data =
   {
     .out = ptr,
-    .keylen = SA_PRF_PREFERRED_KEYMATLEN(session), // sk_pi is always of the PRF's preferred keymat length
+    .keylen = SA_PRF_PREFERRED_KEYMATLEN(session), // SK_px is always of the PRF's preferred keymat length
     .data = (uint8_t *) id_payload,
     .datalen = id_payload_len
   };
-  if (type % 3)
-    prf_data.key = session->ephemeral_info->sk_pr;
-  else
+  
+  MEMPRINTF("id_payload", id_payload, id_payload_len);
+  /*
+  0:pr
+  1:pi
+  2:pi
+  3:pr
+  */
+  if (type % 3) {
     prf_data.key = session->ephemeral_info->sk_pi;
+    MEMPRINTF("Using key sk_pi", prf_data.key, prf_data.keylen);
+  }
+  else {
+    prf_data.key = session->ephemeral_info->sk_pr;
+    MEMPRINTF("Using key sk_pr", prf_data.key, prf_data.keylen);
+  }
 
   prf(session->sa.prf, &prf_data);
   ptr += SA_PRF_PREFERRED_KEYMATLEN(session);
-  
+  MEMPRINTF("InitiatorSignedOctets", out, ptr - out);
   return ptr - out;
 }
 
@@ -907,7 +942,7 @@ u8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
       break;
       
       default:
-      PRINTF(IPSEC_IKE_ERROR "Received error notify message type no. %u\n", type);
+      PRINTF(IPSEC_IKE_ERROR "Received error notify message of type no. %u\n", type);
     }
     return 1;
   }  
@@ -940,7 +975,7 @@ u8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
       IKE_PAYLOAD_NOTIFY_NON_FIRST_FRAGMENTS_ALSO = 16395
       */
       default:
-      PRINTF(IPSEC_IKE_ERROR "Received informative notify message no. %u\n", type);
+      PRINTF(IPSEC_IKE "Received informative notify message of type no. %u\n", type);
     }
   }
   return 0;

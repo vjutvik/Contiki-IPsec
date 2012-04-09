@@ -432,7 +432,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   // ID payload. We use the e-mail address type of ID
   ike_payload_generic_hdr_t *id_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
   ike_statem_set_id_payload(&payload_arg, IKE_PAYLOAD_IDi);
-  ike_id_payload_t *id_payload = (ike_id_payload_t *) ((uint8_t *) id_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t);
+  ike_id_payload_t *id_payload = (ike_id_payload_t *) ((uint8_t *) id_genpayloadhdr + sizeof(ike_payload_generic_hdr_t));
   printf("ike_id: %u\n", sizeof(ike_id));
   printf("id_genpayload_hdr: %p\n", id_genpayloadhdr);
   printf("id_genpayload_hdr->len: %u\n", uip_ntohs(id_genpayloadhdr->len));
@@ -449,18 +449,18 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   auth_payload->auth_type = IKE_AUTH_SHARED_KEY_MIC;
   payload_arg.start += sizeof(ike_payload_auth_t);
   
-  uint8_t *data_to_sign = payload_arg.start + SA_PRF_MAX_OUTPUT_LEN;
-  uint16_t data_to_sign_len = ike_statem_get_authdata(session, 1, data_to_sign, id_payload, uip_ntohs(id_genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t));
+  uint8_t *signed_octets = payload_arg.start + SA_PRF_MAX_OUTPUT_LEN;
+  uint16_t signed_octets_len = ike_statem_get_authdata(session, 1, signed_octets, id_payload, uip_ntohs(id_genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t));
   
-  // Calculate the PSK hash
-  prf_data_t data = {
+  /**
+    * AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
+    */
+  prf_data_t auth_data = {
     .out = payload_arg.start,
-    .key = (uint8_t *) ike_auth_sharedsecret,
-    .keylen = sizeof(ike_auth_sharedsecret),
-    .data = data_to_sign,
-    .datalen = data_to_sign_len
-  };
-  prf_psk(session->sa.prf, &data);
+    .data = signed_octets,
+    .datalen = signed_octets_len
+  };  
+  auth_psk(session->sa.prf, &auth_data);
   payload_arg.start += SA_PRF_OUTPUT_LEN(session);
   auth_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) auth_genpayloadhdr); // Length of the AUTH payload
 

@@ -6,8 +6,6 @@
 #include "machine.h"
 #include "hmac-sha1/hmac-sha1.h"
 
-static const uint8_t auth_keypad[] = "Key Pad for IKEv2";
-
 /**
   * Compute the hash as described in RFC 5996, p. 49:
   *
@@ -55,31 +53,6 @@ uint8_t *mynonce(uint8_t *start, ike_statem_ephemeral_info_t *ephemeral_info)
   return ptr; 
 }
 */
-
-/**
-  * Implementation of AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <*SignedOctets>)
-  * as seen on p. 49. Used for authentication with pre-shared keys.
-  */
-void prf_psk(uint8_t transform, prf_data_t *data)
-{
-  const uint8_t prf_len = SA_PRF_OUTPUT_LEN_BY_ID(transform);
-  uint8_t data_out[prf_len];
-  
-  prf_data_t keypad_arg = {
-    .out = data_out,
-    .key = data->key,
-    .keylen = data->keylen,
-    .data = (uint8_t *) auth_keypad,
-    .datalen = sizeof(auth_keypad)
-  };
-  prf(transform, &keypad_arg);
-  
-  // prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
-  data->key = data_out;
-  data->keylen = prf_len;
-  
-  prf(transform, data);
-}
 
 /**
   * Get a random string. Any given output will be reproduced for the same seed and len.
@@ -242,7 +215,7 @@ void prf_plus(prfplus_data_t *plus_data)
     // We have exited the loop and... given the complexity of the above loop... 
     // ... we can surmise that outbuf contains enough data to fill plus_data->chunks_len[curr_chunk]
     memcpy(plus_data->chunks[curr_chunk], outbuf, curr_chunk_len); // Copy the data to the chunk
-    MEMPRINTF("Chunk is", plus_data->chunks[curr_chunk], curr_chunk_len);
+    //MEMPRINTF("Chunk is", plus_data->chunks[curr_chunk], curr_chunk_len);
     
     // We have probably left some trailing data in the buffer. Move it to the beginning so as to save it for the next chunk.
     outbuf_len = outbuf_len - curr_chunk_len;
