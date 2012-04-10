@@ -11,6 +11,8 @@
 //#include "payload.h"
 #include "common_ike.h"
 #include "auth.h"
+#include "uip.h"
+
 
 /**
   * State machine for servicing an established session
@@ -72,41 +74,44 @@ void ike_statem_write_notification(payload_arg_t *payload_arg,
 /**
   * Writes the initial TSi and TSr payloads
   */
-/*
 void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
 {
   ipsec_addr_set_t *spd_selector = &payload_arg->session->ephemeral_info->spd_entry->selector;
-  ipsec_addr_t *trigger_addr = &payload_arg->session->ephemeral_info->triggering_pkt;
-    
+  ipsec_addr_t *trigger_addr = &(payload_arg->session->ephemeral_info->triggering_pkt);
+  uint8_t *ptr = payload_arg->start; 
+  PRINTF("packet_tag.addr is: ");
+  PRINT6ADDR(trigger_addr->addr);
+  PRINTF("\n");
   
+  
+  /**
     * Initiator's traffic selectors (i.e. describing the source of the traffic)
     *
     * In blatant violation of the RFC the PFP flags are hardcoded. PFP is only used on
     * the address selector, other parameters are fetched from the matching SPD entry.
-  
+    */
   //
   // PFP is hardcoded. PFP(SRCADDR) PFP(DSTADDR), other parameters are taken from SPD entry
 
-  uint8_t *ptr = payload_arg->start;
-
   // TSi payload
   ike_payload_generic_hdr_t *tsi_genpayloadhdr;
-  uint16_t tsir_size = sizeof(tsi_genpayloadhdr) + 2 * sizeof(ike_ts_t);
+  uint16_t tsir_size = sizeof(ike_payload_generic_hdr_t) + sizeof(ike_ts_payload_t) + 1 * sizeof(ike_ts_t);
   SET_GENPAYLOADHDR(tsi_genpayloadhdr, payload_arg, IKE_PAYLOAD_TSi);
   tsi_genpayloadhdr->len = uip_htons(tsir_size);
   ike_ts_payload_t *tsi_payload = (ike_ts_payload_t *) payload_arg->start;
-  SET_TSPAYLOAD(tsi_payload, 2);
-  ptr += sizeof(tsi_payload);
+  SET_TSPAYLOAD(tsi_payload, 1);
+  payload_arg->start += sizeof(ike_ts_payload_t);
   
   // Initiator's first traffic selector (triggering packet's params)
-  ike_ts_t *tsi1 = (ike_ts_t *) ptr;
-  ptr += sizeof(ike_ts_t);
+  ike_ts_t *tsi1 = (ike_ts_t *) payload_arg->start;
+  payload_arg->start += sizeof(ike_ts_t);
   SET_TSSELECTOR_INIT(tsi1);
-  SET_TSSAMEADDR(tsi1, trigger_addr->srcaddr);
+  SET_TSSAMEADDR(tsi1, my_ip_addr /* Source address */);
   tsi1->proto = trigger_addr->nextlayer_type;
-  tsi1->start_port = uip_htons(addr->srcport);
-  tsi1->end_port = uip_htons(addr->srcport);
-  
+  tsi1->start_port = uip_htons(trigger_addr->src_port);
+  tsi1->end_port = uip_htons(trigger_addr->src_port);
+
+  /*
   // Initiator's second traffic selector (instanciation of the matching SPD entry)
   ike_ts_t *tsi2 = (ike_ts_t *) ptr;
   ptr += sizeof(ike_ts_t);
@@ -115,39 +120,43 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   tsi2->proto = spd_selector->nextlayer_type; // Not PFP (SPD entry)
   tsi2->start_port = uip_htons(spd_selector->nextlayer_src_port_range_from); // Not PFP (SPD entry)
   tsi2->end_port = uip_htons(spd_selector->nextlayer_src_port_range_to); // Not PFP (SPD entry)
+  */
 
+  PRINTF("trigger_addr->addr;\n");
+  PRINT6ADDR(trigger_addr->addr);
+  MEMPRINTF("\ntsi_genpayloadhdr", tsi_genpayloadhdr, uip_ntohs(tsi_genpayloadhdr->len));
 
   // TSr payload
-  ike_payload_generic_hdr_t *tsr_genpayloadhdr = (ike_payload_generic_hdr_t *) ptr;
-  SET_GENPAYLOADHDR(tsr_genpayloadhdr, IKE_PAYLOAD_TSr);
-  tsr_genpayloadhdr->len = tsir_size;
-  ptr += sizeof(tsr_genpayloadhdr);
-  ike_ts_payload_t *tsr_payload = (ike_ts_payload_t *) ptr;  
-  SET_TSPAYLOAD(tsr_payload, 2);
-  ptr += sizeof(tsr_payload);
-
+  ike_payload_generic_hdr_t *tsr_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
+  SET_GENPAYLOADHDR(tsr_genpayloadhdr, payload_arg, IKE_PAYLOAD_TSr);
+  tsr_genpayloadhdr->len = uip_htons(tsir_size);
+  ike_ts_payload_t *tsr_payload = (ike_ts_payload_t *) payload_arg->start;  
+  SET_TSPAYLOAD(tsr_payload, 1);
+  payload_arg->start += sizeof(ike_ts_payload_t);
+  
   // Responder's first traffic selector
-  ike_ts_t *tsr1 = (ike_ts_t *) ptr;
-  ptr += sizeof(ike_ts_t);
+  ike_ts_t *tsr1 = (ike_ts_t *) payload_arg->start;
+  payload_arg->start += sizeof(ike_ts_t);
   SET_TSSELECTOR_INIT(tsr1);
-  tsr1->proto = addr->nextlayer_type;
-  tsr1->start_port = addr->dstport;
-  tsr1->end_port = addr->dstport;
-  memcpy(&tsr1->start_addr, addr->srcaddr, sizeof(addr->srcaddr));
-  memcpy(&tsr1->end_addr, addr->srcaddr, sizeof(addr->srcaddr));
-
+  SET_TSSAMEADDR(tsr1, trigger_addr->addr /* Destination address */);
+  tsr1->proto = trigger_addr->nextlayer_type;
+  tsr1->start_port = uip_htons(trigger_addr->dest_port);
+  tsr1->end_port = uip_htons(trigger_addr->dest_port);
+  
+  /*
   // Responder's second traffic selector
   ike_ts_t *tsr2 = (ike_ts_t *) ptr;
   ptr += sizeof(ike_ts_t);
   SET_TSSELECTOR_INIT(tsr2);
   SET_TSSAMEADDR(tsr2, trigger_addr->dstaddr); // PFP (triggering pkt)
   tsr2->proto = spd_selector->nextlayer_type; // Not PFP (SPD entry)
-  tsr2->start_port = uip_htons(spd_selector->nextlayer_dst_port_range_from); // Not PFP (SPD entry)
-  tsr2->end_port = uip_htons(spd_selector->nextlayer_dst_port_range_to); // Not PFP (SPD entry)
+  tsr2->start_port = uip_htons(spd_selector->nextlayer_dest_port_range_from); // Not PFP (SPD entry)
+  tsr2->end_port = uip_htons(spd_selector->nextlayer_dest_port_range_to); // Not PFP (SPD entry)
+  */
   
-  payload_arg->start = ptr;
+  MEMPRINTF("tsr_genpayloadhdr", tsr_genpayloadhdr, uip_ntohs(tsr_genpayloadhdr->len));
+  PRINTF("len: %u\n", payload_arg->start - ptr);
 }
-*/
 
 
 /**
@@ -722,6 +731,7 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
   */
 void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_t *sk_genpayloadhdr, uint16_t data_len)
 {
+  PRINTF("msg_buf: %p\n", msg_buf);
   /**
     * Before calculating the ICV value we need to set the final length
     * of the IKE message and the SK payload
@@ -753,6 +763,7 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
   sk_genpayloadhdr->len = uip_htons(sk_len);
   payload_arg->start = ((uint8_t *) sk_genpayloadhdr) + sk_len;
   uint32_t msg_len = payload_arg->start - msg_buf;
+  PRINTF("msg_len: %u\n", msg_len);
   ((ike_payload_ike_hdr_t *) msg_buf)->len = uip_htonl(msg_len);
   printf("sk_genpayloadhdr->len: %u data_len: %u\n", uip_ntohs(sk_genpayloadhdr->len), data_len);
     
@@ -760,7 +771,7 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
   if (payload_arg->session->sa.integ) {
     // Length of data to be integrity protected:
     // IKE header + (anything in between) + SK header + IV + data + padding + padding length field
-    uint8_t integ_datalen = msg_len - IPSEC_ICVLEN;
+    uint16_t integ_datalen = msg_len - IPSEC_ICVLEN;
 
     integ_data_t integ_data = {
       .type = payload_arg->session->sa.integ,
@@ -768,6 +779,8 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
       .datalen = integ_datalen,               // Data to be integrity protected
       .out = msg_buf + integ_datalen          // Where the output will be written. IPSEC_ICVLEN bytes will be written.
     };
+    PRINTF("msg_buf: %p\n", msg_buf);
+    PRINTF("integ_data.out: %p\n", integ_data.out);
     
     if(IKE_STATEM_IS_INITIATOR(payload_arg->session))
       integ_data.keymat = payload_arg->session->sa.sk_ai;

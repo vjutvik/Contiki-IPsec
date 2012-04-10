@@ -79,6 +79,7 @@ PROCESS_THREAD(ike2_service, ev, data)
     if (ev == ike_negotiate_event) {
       PRINTF(IPSEC_IKE "Negotiating child SAs in response to SPD entry %p for triggering packet\n", data);
       // PRINTADDR(&ike_arg_packet_tag);
+      
       ike_negotiate_sa(&ike_arg_packet_tag, (spd_entry_t *) data);
 
       //ike_negotiate_sa((ipsec_addr_t *) ((u8_t **) data)[0], (spd_entry_t *) ((u8_t **) data)[1]);

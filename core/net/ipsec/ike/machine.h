@@ -34,12 +34,15 @@
   */
 #define IKE_STATEM_TIMEOUT 5 * CLOCK_SECOND
 
-
 /**
   * Global buffers used for communicating information with the state machine
   */
 extern uint8_t *msg_buf; // Pointing at the first word of the UDP datagram's data areas
 //extern uip_ip6addr_t *uip_addr6_remote; // IPv6 address of remote peer
+extern const uip_ip6addr_t *my_ip_addr;
+
+extern uint8_t *global;
+
 
 /**
   * Code for state related stuff

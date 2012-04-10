@@ -2553,11 +2553,12 @@ uip_process(uint8_t flag)
  
   // We use the SAD as an SPD-S cache (RFC 4301).
   // Is there an SA entry that matches this traffic?
-  sad_entry = sad_get_outgoing(&packet_tag);
+  sad_entry = sad_get_outgoing(&packet_tag.addr);
 
   // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
   if (sad_entry == NULL) {
     // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
+
     spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
     
     switch (spd_entry->proc_action) {
@@ -2567,8 +2568,9 @@ uip_process(uint8_t flag)
       //#if WITH_IPSEC_IKE
       PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
         " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
-      
+
       ike_arg_packet_tag = packet_tag;
+
       //void *argv[2] = { &packet_tag, spd_entry };
       // This asynchronous call will be processed after uip_process() has finished
       process_post(&ike2_service, ike_negotiate_event, spd_entry);

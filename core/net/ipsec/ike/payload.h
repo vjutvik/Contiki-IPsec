@@ -473,9 +473,9 @@ typedef struct {
 // The maximum number of TS payloads that we support.
 // This value can NOT be changed without altering the algorithm for T
 #define IKE_PAYLOADFIELD_MAX_TS_COUNT 2 
-#define SET_TSPAYLOAD(ts_payload, number_of_ts) \
-           *((uint32_t *) ts_payload) = IKE_MSG_ZERO; \
-           ts_payload->number_of_ts = number_of_ts
+#define SET_TSPAYLOAD(ts_payload, no_of_ts)         \
+           *((uint32_t *) (ts_payload)) = 0;              \
+           (ts_payload)->number_of_ts = (no_of_ts)
 typedef struct {
   uint8_t number_of_ts;
   uint8_t clear1;
@@ -508,14 +508,13 @@ typedef struct {
 #define IKE_PAYLOADFIELD_TS_NL_ANY_PROTOCOL SPD_SELECTOR_NL_ANY_PROTOCOL
 #define IKE_PAYLOADFIELD_TS_IPV6_ADDR_RANGE 8
 #define IKE_PAYLOADFIELD_TS_TYPE IKE_PAYLOADFIELD_TS_IPV6_ADDR_RANGE
+#define SET_TSSELECTOR_INIT(ts)                                   \
+              (ts)->ts_type = IKE_PAYLOADFIELD_TS_TYPE;           \
+              (ts)->selector_len = uip_htons(sizeof(ike_ts_t))
 
-#define SET_TSSELECTOR_INIT(ts) \
-              ts->ts_type = IKE_PAYLOADFIELD_TS_TYPE; \
-              ts->selector_len = UIP_HTONS(sizeof(ike_ts_t))
-
-#define SET_TSSAMEADDR(ts, addr) \
-              memcpy(&ts->start_addr, addr, sizeof(addr)); \
-              memcpy(&ts->end_addr, addr, sizeof(addr))
+#define SET_TSSAMEADDR(ts, addr)                                        \
+              memcpy((ts)->start_addr.u8, addr, sizeof(uip_ip6addr_t));    \
+              memcpy((ts)->end_addr.u8, addr, sizeof(uip_ip6addr_t))
 
 #define GET_ADDRSETFROMTS(addrset, ts_src, ts_dst) \
               memcpy(&addrset->ip6addr_src_range_from, &ts_src->start_addr, sizeof(uip_ip6addr_t)); \
@@ -541,13 +540,13 @@ typedef struct {
 
 #define IKE_PAYLOADFIELD_TS_PROTO_ANY 0
 typedef struct {
-  uip_ip6addr_t start_addr;
-  uip_ip6addr_t end_addr;
   uint8_t ts_type;
   uint8_t proto; // nextlayer protocol
   uint16_t selector_len;
   uint16_t start_port;
   uint16_t end_port;
+  uip_ip6addr_t start_addr;
+  uip_ip6addr_t end_addr;
 } ike_ts_t;
 
 

@@ -370,7 +370,7 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
         * unsupported critical payload was included.""
         */
 
-      if (genpayloadhdr->clear > 0) {
+      if (genpayloadhdr->clear) {
         PRINTF(IPSEC_IKE "Error: Encountered an unknown critical payload\n");
         return 0;
       }
@@ -468,7 +468,6 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
     * Write SAi2 (offer for the child SA)
     */
   session->ephemeral_info->local_spi = SAD_GET_NEXT_SAD_LOCAL_SPI;
-  ike_payload_generic_hdr_t *sa_payload = payload_arg.start;
   ike_statem_write_sa_payload(&payload_arg, session->ephemeral_info->spd_entry->offer, session->ephemeral_info->local_spi);
 
   /**
@@ -476,7 +475,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
     *
     * Read more at "2.9.  Traffic Selector Negotiation" p. 40
     */
-  //ike_statem_write_tsitsr(&payload_arg);
+  ike_statem_write_tsitsr(&payload_arg);
 
     
   // Protect the SK payload. Write trailing fields.
@@ -513,10 +512,8 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       break;
       
       case IKE_PAYLOAD_N: 
-      if (ike_statem_handle_notify((ike_payload_notify_t *) payload_start)) {
-        ike_statem_remove_session(session);
+      if (ike_statem_handle_notify((ike_payload_notify_t *) payload_start))
         return 0;
-      }
       break;
       
       case IKE_PAYLOAD_IDr:
@@ -529,11 +526,11 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       break;
       
       case IKE_PAYLOAD_TSi:
-      tsi = payload_start + sizeof(ike_payload_generic_hdr_t);
+      //tsi = payload_start + sizeof(ike_payload_generic_hdr_t);
       break;
       
       case IKE_PAYLOAD_TSr:
-      tsr = payload_start + sizeof(ike_payload_generic_hdr_t);
+      //tsr = payload_start + sizeof(ike_payload_generic_hdr_t);
       break;
       
       default:
@@ -549,8 +546,8 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
         * unsupported critical payload was included.""
         */
 
-      if (genpayloadhdr->clear > 0) {
-        PRINTF(IPSEC_IKE "Error: Encountered an unknown critical payload\n");
+      if (genpayloadhdr->clear) {
+        PRINTF(IPSEC_IKE_ERROR "Encountered an unknown critical payload\n");
         return 0;
       }
       else

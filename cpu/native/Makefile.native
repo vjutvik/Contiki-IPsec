@@ -12,7 +12,7 @@ STRIP    = strip
 ifdef WERROR
 CFLAGSWERROR=-Werror -pedantic -std=c99 -Werror
 endif
-CFLAGSNO = -Wall -g -I/usr/local/include $(CFLAGSWERROR)
+CFLAGSNO = -Wall -g -O0 -I/usr/local/include $(CFLAGSWERROR)
 #CFLAGS  += $(CFLAGSNO) -O
 CFLAGS  += $(CFLAGSNO) #FIX: Turned of CC opt
 ifeq ($(HOST_OS),Linux)

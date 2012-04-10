@@ -34,6 +34,7 @@ extern void ike_statem_finalize_sk(payload_arg_t *payload_arg,
 extern u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 
+
 #define IPSEC_IKE "IPsec IKEv2: "
 #define IPSEC_IKE_ERROR "IPsec IKEv2: Error: "
 

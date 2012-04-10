@@ -29,6 +29,12 @@ endif
 include $(CONTIKI)/Makefile.include
 
 connect-router:	$(CONTIKI_PROJECT).native
-	sudo ./$(CONTIKI_PROJECT).native -s /dev/null aaaa::1/64
+	sudo  ./$(CONTIKI_PROJECT).native -s /dev/null aaaa::1/64
 
+# Favourite arguments
+#  valgrind --leak-check=yes  --error-limit=no
+# --gen-suppressions=all --log-file=valgrind/minimalraw.log
+# --suppressions=valgrind/ipsec.supp
+#--gen-suppressions=all --log-file=valgrind/minimalraw.log
+# valgrind --leak-check=yes
 # gdb -tui --args
