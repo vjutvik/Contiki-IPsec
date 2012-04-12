@@ -295,12 +295,11 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   * responder SA(1) -> initiator offer (n): set transforms in SA, return subset
   * initiator SA(n) -> responder offer (n): set transforms in SA, return subset
   */
-  
 int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
                                 ike_payload_generic_hdr_t *sa_payload_hdr, 
                                 uint8_t ke_dh_group,
                                 sa_ike_t *ike_sa,
-                                sa_child_t *child_sa,
+                                sad_entry_t *sad_entry,
                                 spd_proposal_tuple_t *accepted_transform_subset)
 {
   
@@ -315,6 +314,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
   uint8_t candidates[10];       // 10 is arbitrary, but enough
   uint8_t candidate_keylen = 0;
   uint8_t acc_proposal_ctr;
+  uint32_t candidate_spi = 0;
   ike_payload_proposal_t *peerproposal = (ike_payload_proposal_t *) (((uint8_t *) sa_payload_hdr) + sizeof(ike_payload_generic_hdr_t));
   PRINTF("sa_payload_hdr: %p, peerproposal: %p\n", sa_payload_hdr, peerproposal);
   
@@ -331,6 +331,8 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
       PRINTF(IPSEC_IKE "#1 Rejecting non-ESP proposal\n");
       goto next_peerproposal;
     }
+    
+    candidate_spi = *((uint32_t *) (((uint8_t *) peerproposal) + sizeof(ike_payload_proposal_t)));
     
     spd_proposal_tuple_t *mytuple = my_offer;
     accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
@@ -466,9 +468,10 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     ike_sa->dh = candidates[SA_CTRL_TRANSFORM_TYPE_DH];
   }
   else {
-    child_sa->encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
-    child_sa->encr_keylen = candidate_keylen;
-    child_sa->integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
+    sad_entry->spi = candidate_spi;
+    sad_entry->sa.encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
+    sad_entry->sa.encr_keylen = candidate_keylen;
+    sad_entry->sa.integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
   }
   
   return 0; // Success

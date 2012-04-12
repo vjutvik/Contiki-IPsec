@@ -63,8 +63,8 @@ extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
     uint32_t len = uip_ntohl(ike_hdr_ptr->len);                                             \
     if (len > IKE_STATEM_FIRSTMSG_MAXLEN) {                                                 \
       /* Error: Responder's first message is too big  */                                    \
-      PRINTF(IPSEC_IKE " Reponder's first message is too big\n");                           \
-      return 0;                                                                               \
+      PRINTF(IPSEC_IKE_ERROR " Reponder's first message is too big\n");                     \
+      return 0;                                                                             \
     }                                                                                       \
     else {                                                                                  \
       session_ptr->ephemeral_info->peer_first_msg_len = (uint16_t) len;                     \

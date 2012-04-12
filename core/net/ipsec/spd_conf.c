@@ -107,8 +107,8 @@ const spd_proposal_tuple_t my_ah_esp_proposal[9] =
   .ip6addr_##direction##_to = ip6addr
 
 #define set_any_ip6addr() \
-  .addr_from = &spd_conf_ip6addr_min,     \
-  .addr_to = &spd_conf_ip6addr_max
+  .peer_addr_from = &spd_conf_ip6addr_min,     \
+  .peer_addr_to = &spd_conf_ip6addr_max
 
 /*
 #define set_localhost_src_ip6addr \

@@ -56,8 +56,8 @@ void sad_conf()
     * This will match all incoming UDP traffic from the address peer.
     */
   // Source address range
-  my_incoming_entry->traffic_desc.addr_from = &molniya;
-  my_incoming_entry->traffic_desc.addr_to = &molniya;
+  my_incoming_entry->traffic_desc.peer_addr_from = &molniya;
+  my_incoming_entry->traffic_desc.peer_addr_to = &molniya;
   my_incoming_entry->traffic_desc.nextlayer_type = UIP_PROTO_UDP;
   my_incoming_entry->traffic_desc.direction = SPD_INCOMING_TRAFFIC;
   // No HTONS needed here as the maximum and miniumum unsigned ints are represented the same way
@@ -103,8 +103,8 @@ void sad_conf()
     * This will match all outgoing UDP traffic from the address peer.
     */
   // Destination address range
-  my_outgoing_entry->traffic_desc.addr_from = &molniya;
-  my_outgoing_entry->traffic_desc.addr_to = &molniya;
+  my_outgoing_entry->traffic_desc.peer_addr_from = &molniya;
+  my_outgoing_entry->traffic_desc.peer_addr_to = &molniya;
   my_outgoing_entry->traffic_desc.nextlayer_type = UIP_PROTO_UDP;
   my_outgoing_entry->traffic_desc.direction = SPD_OUTGOING_TRAFFIC;
   // No HTONS needed here as the maximum and miniumum unsigned ints are represented the same way

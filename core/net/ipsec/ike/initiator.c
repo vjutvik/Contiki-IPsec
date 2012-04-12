@@ -177,117 +177,6 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       PRINTF(IPSEC_IKE "Peer proposal accepted\n");
       break;
       
-      //ike_statem_session_init_triggerdata_t *triggerdata = session->transition_arg;
-      proposal_tuple = session->ephemeral_info->spd_entry->offer;
-      ptr = (uint8_t *) payload_start;
-      while (ptr < payload_end) { // Loop over proposals
-        ike_payload_proposal_t *thisproposal = (ike_payload_proposal_t *) ptr;
-        uint8_t *thisproposal_end = ptr + uip_ntohs(thisproposal->proposal_len);
-
-/*
-        typedef struct {
-          uint8_t last_more;
-          uint8_t clear;
-          uint16_t proposal_len;
-
-          uint8_t proposal_number;
-          uint8_t proto_id;
-          uint8_t spi_size;
-          uint8_t numtransforms;
-*/
-
-        // Assert properties
-        if (thisproposal->proto_id != SA_PROTO_IKE || thisproposal->spi_size != 0) {
-          PRINTF(IPSEC_IKE "This doesn't look like a proposal for an IKE SA.\n");
-        }
-
-        /*
-        typedef struct {
-          uint8_t last_more;
-          uint8_t clear;
-          uint16_t transform_len;
-
-          uint8_t type;
-          uint8_t clear;
-          uint16_t id;
-        } ike_payload_transform_t;
-        */
-
-        // Loop over the transforms
-        u8_t esn_required = 1;
-        uint8_t accepted_transforms = 0;
-        SA_UNASSIGN_SA(&session->sa); // Prepare the responder's SA entry for this proposal
-
-        ptr += sizeof(ike_payload_proposal_t);
-        while (ptr < thisproposal_end) {  // Transform loop
-          ike_payload_transform_t *thistransform = (ike_payload_transform_t *) ptr;
-          uint8_t *thistransform_end = ptr + uip_ntohs(thistransform->len);
-          ptr += sizeof(ike_payload_transform_t); // ptr should now be at the beginning of whatever comes after this transform
-          
-          // Edge case: The KE payload _might_ have been processed, and in that case we've already
-          // accepted that payload's DH group.
-          if (ke_dh_group && thistransform->type == SA_CTRL_TRANSFORM_TYPE_DH && uip_ntohs(thistransform->id) != ke_dh_group) {
-            // This means the the responder has already specified the DH group by
-            // using the dh num field in the KE payload. Ignore all other DH groups in the SA payload.
-            continue;
-          }
-          
-          
-          // We only accept sequence numbers of four bytes
-          if (thistransform->type == SA_CTRL_TRANSFORM_TYPE_ESN && uip_ntohs(thistransform->id) == SA_ESN_NO)
-            esn_required = 0;
-          
-          // Any key length attribute (the only attribute defined in the RFC)?
-          if (ptr < thistransform_end) {
-            ike_payload_attribute_t *attrib = (ike_payload_attribute_t *) ptr;
-            
-            // Assert a few values
-            if (uip_ntohs(attrib->af_attribute_type) != IKE_PAYLOADFIELD_ATTRIB_VAL) {
-              PRINTF(IKE "Error: Unrecognized attribute type: %x\n", uip_ntohs(attrib->af_attribute_type));
-            }
-
-            session->sa.encr_keylen = uip_ntohs(attrib->attribute_value) >> 3; // Divide by 8 to turn bits into bytes
-            
-            ptr += sizeof(ike_payload_attribute_t);
-            if (ptr < thistransform_end) {
-              PRINTF(IPSEC_IKE "Error: This transform seems to contain more than one attribute.\n");
-              return 0;
-            }
-          } // End attribute loop
-
-          // Loop over the proposal that we sent and see if this transform is a member of that          
-          while (proposal_tuple->type != SA_CTRL_END_OF_OFFER) { // Loop over own offer
-            if (proposal_tuple->type == thistransform->type) {
-              
-              // ( Couldn't we figure out a way to mash these two comparisons into one? )
-              if (proposal_tuple->value != uip_ntohs(thistransform->id)) {
-                // This is a member of our offer. Set the SA for this transform type, if not already set.
-                
-                if (SA_GET_PARAM_BY_INDEX(&session->sa, thistransform->type) == SA_UNASSIGNED_TYPE) {
-                  SA_GET_PARAM_BY_INDEX(&session->sa, thistransform->type) = uip_ntohs(thistransform->id);
-                  ++accepted_transforms;
-                  PRINTF("Accepted ");
-                }
-              }
-            }
-            ++proposal_tuple;
-          } // End loop over own offer
-          
-          // ptr should now be at the beginning of whatever comes after the transform
-
-          // So, did we manage to find a common configuration subset?
-          // If so, we're done.
-          if (!esn_required && accepted_transforms == 4)
-            goto proposal_accepted;
-        } // End transform loop
-        
-      } // End proposal loop
-      
-      PRINTF(IKE "Error: If we end up here we couldn't accept the responder's offer. Kill the session.\n");
-      
-      proposal_accepted:
-      break;
-      
       case IKE_PAYLOAD_NiNr:
       // This is the responder's nonce
       session->ephemeral_info->peernonce_len = payload_end - payload_start;
@@ -495,6 +384,13 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
 
   ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
   ike_ts_t *tsi, *tsr;
+  uint8_t *id_data = NULL;
+  uint8_t *id_datalen;
+  ike_payload_generic_hdr_t *auth_hdr = NULL;
+  
+  sad_entry_t *outgoing_sad_entry = sad_create_outgoing(clock_time());
+  sad_entry_t *incoming_sad_entry = sad_create_incoming(clock_time());
+
   
   u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
   ike_payload_type_t payload_type = ike_hdr->next_payload;
@@ -507,29 +403,59 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       case IKE_PAYLOAD_SK:
       if (ike_statem_unpack_sk(session, (ike_payload_generic_hdr_t *) genpayloadhdr)) {
         PRINTF(IPSEC_IKE_ERROR "Integrity check of peer's message failed\n");
-        return 0;
+        goto fail;
       }
       break;
       
       case IKE_PAYLOAD_N: 
       if (ike_statem_handle_notify((ike_payload_notify_t *) payload_start))
-        return 0;
+        goto fail;
       break;
       
       case IKE_PAYLOAD_IDr:
+      id_data = payload_start;
+      id_datalen = uip_ntohs(genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t);
       break;
       
       case IKE_PAYLOAD_AUTH:
+      auth_hdr = genpayloadhdr;
+      ike_payload_auth_t = (ike_payload_auth_t *) auth_hdr + sizeof(ike_payload_generic_hdr_t);
+      if (auth_hdr->auth_type != IKE_AUTH_SHARED_KEY_MIC) {
+        PRINTF(IPSEC_IKE_ERROR "Peer not using pre-shared key authentication\n");
+        goto fail;
+      }      
       break;
 
       case IKE_PAYLOAD_SA:
+      /**
+        * Assert that the responder's child offer is a subset of that of ours
+        */
+      spd_proposal_tuple_t proposal_reply[10];  // 10 entries should be enough
+      if (ike_statem_parse_sa_payload(session->ephemeral_info->spd_entry->offer, 
+                                      genpayloadhdr,
+                                      0,
+                                      NULL,
+                                      outgoing_sad_entry,
+                                      proposal_reply)) {
+        PRINTF(IPSEC_IKE "The peer's offer was unacceptable\n");
+        goto fail;
+      }
+      
+      // SAD entry
+      incoming_sad_entry->encr = outgoing_sad_entry->encr;
+      incoming_sad_entry->encr_keylen = outgoing_sad_entry->encr_keylen;
+      incoming_sad_entry->integ = outgoing_sad_entry->integ;
+
+      PRINTF(IPSEC_IKE "Peer proposal accepted\n");
       break;
       
       case IKE_PAYLOAD_TSi:
+      // Ignore! We offered the smallest possible traffic set
       //tsi = payload_start + sizeof(ike_payload_generic_hdr_t);
       break;
       
       case IKE_PAYLOAD_TSr:
+      // Ignore! We offered the smallest possible traffic set
       //tsr = payload_start + sizeof(ike_payload_generic_hdr_t);
       break;
       
@@ -548,7 +474,7 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
 
       if (genpayloadhdr->clear) {
         PRINTF(IPSEC_IKE_ERROR "Encountered an unknown critical payload\n");
-        return 0;
+        goto fail;
       }
       else
         PRINTF(IPSEC_IKE "Ignoring unknown non-critical payload of type %u\n", payload_type);
@@ -561,9 +487,59 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
 
   if (payload_type != IKE_PAYLOAD_NO_NEXT) {  
     PRINTF(IPSEC_IKE "Error: Unexpected end of peer message.\n");
-    return 0;
+    goto fail;
   }
   
+  /**
+    * Assert AUTH data
+    */
+  if (id_data == NULL || auth_data == NULL) {
+    PRINTF(IPSEC_IKE_ERROR "IDr or AUTH payload is missing\n");
+    goto fail;
+  }
+
+  uint8_t initiator_signed_octets[session_ptr->ephemeral_info->peer_first_msg_len + session->ephemeral_info->peernonce_len + SA_PRF_OUTPUT_LEN(session)];
+  uint16_t signed_octets_len = ike_statem_get_authdata(session, 0, initiator_signed_octets, id_data, id_datalen);
+  uint8_t mac[SA_PRF_OUTPUT_LEN(session)];
+
+  /**
+    * AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
+    */
+  prf_data_t auth_data = {
+    .out = mac,
+    .data = signed_octets,
+    .datalen = signed_octets_len
+  };  
+  auth_psk(session->sa.prf, &auth_data);
+  
+  if (memcmp(mac, auth_hdr + 16, sizeof(mac))) {
+    PRINTF(IPSEC_IKE_ERROR "Verification of the peer's AUTH data failed");
+    goto fail;
+  }
+
+  // Save traffic descriptors
+  outgoing_sad_entry->traffic_desc = TSr
+  incoming_sad_entry->traffic_desc = TSr;
+  
+  PRINTF(IPSEC_IKE "Outgoing SAD entry registered with SPI %u. Incoming SAD entry registered with SPI %u.\n", outgoing_sad_entry->spi, incoming_sad_entry->spi);
+  
+  /**
+    * We've now succesfully negotiated the Child SA. Register it in the SAD and clean up.
+    */
+  // Jump
+  // Transition to state autrespwait
+  session->transition_fn = NULL;
+  session->next_state_fn = &ike_statem_state_established;
+
+  //session->transition_arg = &session_trigger;
+
+  IKE_STATEM_INCRMYMSGID(session);
+  IKE_STATEM_TRANSITION(session);
+  return 1;
+  
+  fail:
+  sad_remove_outgoing(outgoing_sad_entry);
+  sad_remove_incoming(incoming_sad_entry);
   return 0;
 }
   

@@ -97,13 +97,16 @@ typedef struct x2 {
     * packet requiring protection. This makes this table a SPD-S cache implementation as well.
     *
     * In the context of \b incoming traffic it's used to verify that an SA referenced (via the SPI) by the packet has a traffic
-    * selector that includes the packet's tag in question.
+    * selector that includes the incoming packet's source address.
     *
     * Please note that although the \c traffic_desc can express IPv6 address ranges only one address is used on for each end
     * in sad_entry_t. This is because this implementation only supports transport mode (see section 1.1.2 RFC 5996) unicast.
     *
+    * (In short: This address range matches the peer's end of the traffic "pipe")
     */
   ipsec_addr_set_t traffic_desc;
+  
+  uip_ip6addr_t peer; // Remote peer. To be used by traffic_desc
     
   // The author can't see any reason as to why we should store the SPIs in host byte order.
   // Therefore the SPI below is stored in network byte order. This saves some memory by eliding the conversion.

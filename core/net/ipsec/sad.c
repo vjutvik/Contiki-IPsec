@@ -95,9 +95,7 @@ sad_spds_key sad_hdr_to_spds_key(struct uip_ip_hdr *hdr) {
 /**
   * Inserts an entry into the SAD for outgoing traffic.
   *
-  * \param traffic_desc The type of traffic that can travel over the SA
-  * \param spi SPI value
-  * \param sa The SA's datastructure
+  * \param time_of_creation Time of creation. A value of zero signifies that this is a manual SA.
   */
 sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
 {
@@ -125,6 +123,8 @@ sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
 
 /**
   * Create a new SAD entry for incoming traffic, insert it into the incomming SAD and allocate a new SPI
+  *
+  * \param time_of_creation Time of creation. A value of zero signifies that this is a manual SA.
   */
 sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation)
 {

@@ -39,8 +39,8 @@
 // Prints the contents of an ipsec_addr_set_t located at the given address
 #define PRINTADDRSET(addr_set)                                    \
   do {                                                            \
-    PRINT6ADDR((addr_set)->addr_from);                            \
-    PRINT6ADDR((addr_set)->addr_to);                              \
+    PRINT6ADDR((addr_set)->peer_addr_from);                            \
+    PRINT6ADDR((addr_set)->peer_addr_to);                              \
     PRINTDIR((addr_set)->direction);                              \
     PRINTF("nl: %u\n", (addr_set)->nextlayer_type);             \
     PRINTF("Source ports: %u - %u\n", uip_ntohs((addr_set)->src_port_from), uip_ntohs((addr_set)->src_port_to)); \
@@ -79,8 +79,8 @@ typedef enum {
   * An ipsec_addr_set_t struct represents a set of incoming or outgoing traffic (or their union). Depending on the direction
   * of the traffic, the semantics of the fields differ.
   *
-  * The addr_from field is a pointer to an IPv6 address that marks the beginning of a closed address range,
-  * addr_to marks its end. This address range is coupled to a packet's source address if it's incoming traffic,
+  * The peer_addr_from field is a pointer to an IPv6 address that marks the beginning of a closed address range,
+  * peer_addr_to marks its end. This address range is coupled to a packet's source address if it's incoming traffic,
   * its destination address otherwise.
   * 
   * dest_port_from represents the beginning of a closed range of ports, dest_port_to its end. This always represents the
@@ -93,7 +93,7 @@ typedef enum {
   * Addresses and ports are stored in network byte order.
   */
 typedef struct {
-  uip_ip6addr_t *addr_from, *addr_to;
+  uip_ip6addr_t *peer_addr_from, *peer_addr_to;
 
   /**
     * Next layer protocol type. 
