@@ -107,7 +107,6 @@ typedef struct {
 
   uint16_t src_port_from, src_port_to; // Next layer destination port range
   uint16_t dest_port_from, dest_port_to; // Next layer destination port range
-  // uint16_t nextlayer_dst_port_range_from, nextlayer_dst_port_range_to; 
 } ipsec_addr_set_t;
 
 
@@ -129,12 +128,25 @@ typedef struct {
   uint16_t dest_port;
 } ipsec_addr_t;
 
+
+/**
+  * Traffic descriptors are used in SAD entries
+  * to describe the source (SAs for incoming traffic)
+  * or destination (SAs for outgoing traffic) of traffic flows.
+  */
+typedef struct {
+  uip_ip6addr_t peer_addr;
+  uint8_t nextlayer_type;
+  uint16_t port_from;
+  uint16_t port_to;
+} ipsec_traffic_desc_t;
+
+
 // Please note that the following next header value can be interpreted as "IPv6 Hop-by-Hop Option".
 // We choose 0 anyway since it's the wildcard value used in the TS selector. Why RFC 5996 specifies
 // that value and not the reserved value of 255 is interesting question.
 // (Ref. IANA "Assigned Internet Protocol Numbers")
-#define SPD_SELECTOR_NL_ANY_PROTOCOL 0 
-
+#define SPD_SELECTOR_NL_ANY_PROTOCOL 0
 
 /**
   * Convenience macros for address comparison

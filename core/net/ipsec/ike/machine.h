@@ -82,14 +82,17 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_STATEM_MYSPI_GET_I(var) (var & IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_IS_INITIATOR(session) (IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi))
 #define IKE_STATEM_MYSPI_SET_I(var) (var = var | IKE_STATEM_MYSPI_I_MASK)
-#define IKE_STATEM_MYSPI_SET_NEXT(var) (++(var))  // (Note: This will overflow into the Initiator bit after 2^15 - 1 calls)
+#define IKE_STATEM_MYSPI_SET_NEXT(var) (var = (var | (rand16() & ~IKE_STATEM_MYSPI_I_MASK))) /* (next_my_spi++ & ~IKE_STATEM_MYSPI_I_MASK)*/  // (Note: This will overflow into the Initiator bit after 2^15 - 1 calls)
 #define IKE_STATEM_MYSPI_CLEAR_I(var) (var = var & ~IKE_STATEM_MYSPI_I_MASK)
+
+/*
+// Disused code for IKE SPI overrun check
 #define IKE_STATEM_MYSPI_INCR(var_addr)         \
   do {                                          \
     if (next_my_spi > IKE_STATEM_MYSPI_MAX)     \
-      /* DIE! SPI overrun */                    \
     *var_addr = next_my_spi++;                  \
   } while (false)
+*/
 
 /*
 #define IKE_STATEM_GET_8BYTE_SPIi(session)
@@ -116,7 +119,7 @@ typedef struct {
   ipsec_addr_t triggering_pkt;
   spd_entry_t *spd_entry;
 
-  uint32_t local_spi;
+  uint32_t my_child_spi;
 
   // Used for generating the AUTH payload. Length MUST equal the key size of the negotiated PRF.
   uint8_t sk_pi[SA_PRF_MAX_PREFERRED_KEYMATLEN];   

@@ -6,7 +6,12 @@
 #include "ipsec.h"
 #include "machine.h"
 #include "payload.h"
+#include "sad.h"
 
+// Common states
+extern int8_t ike_statem_state_responder(ike_statem_session_t *session);
+
+// Other
 extern void ike_statem_write_notification(payload_arg_t *payload_arg, 
                                 sa_ipsec_proto_type_t proto_id,
                                 uint32_t spi, 
@@ -15,14 +20,16 @@ extern void ike_statem_write_notification(payload_arg_t *payload_arg,
                                 uint8_t notify_payload_len);
 extern void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t payload_type);
 extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi);
-extern void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
+extern void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
+extern void ike_statem_get_child_keymat(ike_statem_session_t *session, sa_child_t *incoming, sa_child_t *outgoing);
 extern void ike_statem_transition(ike_statem_session_t *session);
 extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
                                 ike_payload_generic_hdr_t *sa_payload_hdr, 
                                 uint8_t ke_dh_group,
                                 sa_ike_t *ike_sa,
-                                sa_child_t *child_sa,
+                                sad_entry_t *sad_entry,
                                 spd_proposal_tuple_t *accepted_transform_subset);
+extern void ike_statem_clean_session(ike_statem_session_t *session);
 extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
                                         uint8_t myauth, 
                                         uint8_t *out, 
@@ -31,8 +38,11 @@ extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
 extern void ike_statem_finalize_sk(payload_arg_t *payload_arg, 
                                         ike_payload_generic_hdr_t *sk_genpayloadhdr, 
                                         uint16_t data_len);
+extern u8_t ike_statem_handle_notify(ike_payload_notify_t *payload_start);
 extern u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
+extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg);
+extern void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, direction_t direction, ike_ts_t *ts_src, ike_ts_t *ts_dest);
 
 
 #define IPSEC_IKE "IPsec IKEv2: "

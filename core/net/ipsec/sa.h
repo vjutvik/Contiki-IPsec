@@ -75,9 +75,10 @@ extern const uint8_t sa_encr_ivlen[];
 extern const uint8_t sa_encr_keymat_extralen[];
 extern const uint8_t sa_prf_preferred_keymatlen[];
 extern const uint8_t sa_prf_output_len[];
-#define SA_ENCR_CURRENT_IVLEN(session) sa_encr_ivlen[session->sa.encr]
+#define SA_ENCR_CURRENT_IVLEN(session) sa_encr_ivlen[(session)->sa.encr]
 #define SA_ENCR_IVLEN_BY_TYPE(encr) sa_encr_ivlen[encr]
-#define SA_ENCR_CURRENT_KEYMATLEN(session) (sa_encr_keymat_extralen[session->sa.encr] + session->sa.encr_keylen)
+#define SA_ENCR_CURRENT_KEYMATLEN(session) (sa_encr_keymat_extralen[(session)->sa.encr] + (session)->sa.encr_keylen)
+#define SA_ENCR_KEYMATLEN_BY_SA(sa) (sa_encr_keymat_extralen[(sa).encr] + (sa).encr_keylen)
 
 
 /**

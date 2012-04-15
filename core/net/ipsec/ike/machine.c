@@ -100,15 +100,16 @@ void ike_statem_transition(ike_statem_session_t *session)
 
 
 /**
-  * Next free value for SPI allocation. To be incremented upon creation of a new IKE SA.
+  * Next free value for IKE SPI allocation. To be incremented upon creation of a new IKE SA.
   */
-uint16_t next_my_spi;
+//uint16_t next_my_spi;
 
 // Initialize the state machine
 void ike_statem_init()
 {
   list_init(sessions);
-  next_my_spi = 1;
+  srand(clock_time());
+  //next_my_spi = rand16() & ~IKE_STATEM_MYSPI_I_MASK;
   
   // Set up the UDP port for incoming traffic
   printf("ike_statem_init: calling udp_new\n");
@@ -144,6 +145,8 @@ void ike_statem_setup_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *co
   session->peer_spi_low = IKE_MSG_ZERO;
   IKE_STATEM_MYSPI_SET_I(session->initiator_and_my_spi);
   IKE_STATEM_MYSPI_SET_NEXT(session->initiator_and_my_spi);
+
+  MEMPRINTF("initiatandmyspi", &session->initiator_and_my_spi, 2);
   
   session->my_msg_id = session->peer_msg_id = 0;
   

@@ -4,6 +4,7 @@
 
 #include <lib/random.h>
 //#include "machine.h"
+#include <stdlib.h>
 #include "contikiecc/ecc/ecc.h"
 #include "contikiecc/ecc/ecdh.h"
 #include "transforms/integ.h"
@@ -52,12 +53,12 @@ void ike_statem_write_notification(payload_arg_t *payload_arg,
   
   ike_payload_notify_t *notifyhdr = (ike_payload_notify_t *) payload_arg->start;
   notifyhdr->proto_id = proto_id;
-  notifyhdr->notify_msg_type = type;
+  notifyhdr->notify_msg_type = uip_ntohs(type);
   payload_arg->start += sizeof(ike_payload_notify_t);
   if (spi != 0) {
     notifyhdr->spi_size = 4;
     *payload_arg->start = spi;
-    *payload_arg->start += 4;
+    payload_arg->start += 4;
   }
   else
     notifyhdr->spi_size = 0;
@@ -76,7 +77,7 @@ void ike_statem_write_notification(payload_arg_t *payload_arg,
   */
 void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
 {
-  ipsec_addr_set_t *spd_selector = &payload_arg->session->ephemeral_info->spd_entry->selector;
+  //ipsec_addr_set_t *spd_selector = &payload_arg->session->ephemeral_info->spd_entry->selector;
   ipsec_addr_t *trigger_addr = &(payload_arg->session->ephemeral_info->triggering_pkt);
   uint8_t *ptr = payload_arg->start; 
   PRINTF("packet_tag.addr is: ");
@@ -108,8 +109,8 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   SET_TSSELECTOR_INIT(tsi1);
   SET_TSSAMEADDR(tsi1, my_ip_addr /* Source address */);
   tsi1->proto = trigger_addr->nextlayer_type;
-  tsi1->start_port = uip_htons(trigger_addr->src_port);
-  tsi1->end_port = uip_htons(trigger_addr->src_port);
+  tsi1->start_port = trigger_addr->src_port;
+  tsi1->end_port = trigger_addr->src_port;
 
   /*
   // Initiator's second traffic selector (instanciation of the matching SPD entry)
@@ -140,8 +141,8 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   SET_TSSELECTOR_INIT(tsr1);
   SET_TSSAMEADDR(tsr1, trigger_addr->addr /* Destination address */);
   tsr1->proto = trigger_addr->nextlayer_type;
-  tsr1->start_port = uip_htons(trigger_addr->dest_port);
-  tsr1->end_port = uip_htons(trigger_addr->dest_port);
+  tsr1->start_port = trigger_addr->dest_port;
+  tsr1->end_port = trigger_addr->dest_port;
   
   /*
   // Responder's second traffic selector
@@ -335,11 +336,13 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     candidate_spi = *((uint32_t *) (((uint8_t *) peerproposal) + sizeof(ike_payload_proposal_t)));
     
     spd_proposal_tuple_t *mytuple = my_offer;
-    accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
-    if (ike)
-      accepted_transform_subset[0].value = SA_PROTO_IKE;
-    else
-      accepted_transform_subset[0].value = SA_PROTO_ESP;
+    if (accepted_transform_subset) {
+      accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
+      if (ike)
+        accepted_transform_subset[0].value = SA_PROTO_IKE;
+      else
+        accepted_transform_subset[0].value = SA_PROTO_ESP;
+    }
     
     // (#2) Loop over my proposals and see if any of them is a superset of this peer's current proposal
     while (mytuple->type != SA_CTRL_END_OF_OFFER) {
@@ -415,10 +418,12 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
             
             // Add the transform to the resulting output offer
             ++acc_proposal_ctr;
-            memcpy(&accepted_transform_subset[++acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
-            if (candidate_keylen) {
-              accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
-              accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
+            if (accepted_transform_subset) {
+              memcpy(&accepted_transform_subset[++acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
+              if (candidate_keylen) {
+                accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
+                accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
+              }
             }
             PRINTF(IPSEC_IKE "#4 acc_proposal_ctr (output offer pointer) increased: %u\n", acc_proposal_ctr);
             
@@ -457,7 +462,9 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     * We've found an acceptable proposal.
     */
   found_acceptable_proposal:
-  accepted_transform_subset[acc_proposal_ctr + 1].type = SA_CTRL_END_OF_OFFER;
+  
+  if (accepted_transform_subset)
+    accepted_transform_subset[acc_proposal_ctr + 1].type = SA_CTRL_END_OF_OFFER;
 
   // Set the SA
   if (ike) {
@@ -512,6 +519,31 @@ uint32_t rerun_init_req(uint8_t *out, ike_statem_session_t *session)
   return uip_ntohl(((ike_payload_ike_hdr_t *) out)->len);
 }
 
+
+void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, direction_t direction, ike_ts_t *ts_me, ike_ts_t *ts_peer)
+{
+  ike_ts_t *ts_src, *ts_dest;
+  if (direction == SPD_INCOMING_TRAFFIC) {
+    ts_src = ts_peer;
+    ts_dest = ts_me;
+  }
+  else {
+    ts_src = ts_me;
+    ts_dest = ts_peer;
+  }
+
+  traffic_desc->direction = direction;
+  
+  // peer_addr_from and peer_addr_to should point to the same memory location
+  memcpy(traffic_desc->peer_addr_from, &ts_peer->start_addr, sizeof(uip_ip6addr_t));
+  
+  traffic_desc->src_port_from = ts_src->start_port;
+  traffic_desc->src_port_to = ts_src->end_port;
+  traffic_desc->dest_port_from = ts_dest->start_port;
+  traffic_desc->dest_port_to = ts_dest->end_port;
+}
+
+
 /**
   * Get InitiatorSignedOctets or ResponderSignedOctets (depending on session) as described on p. 48.
   *
@@ -523,7 +555,7 @@ uint32_t rerun_init_req(uint8_t *out, ike_statem_session_t *session)
   *
   * \return length of *SignedOctets, 0 if an error occurred
   */
-uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, uint8_t *out, ike_id_payload_t *id_payload, uint16_t id_payload_len)
+uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t myauth, uint8_t *out, ike_id_payload_t *id_payload, uint16_t id_payload_len)
 {
   uint8_t *ptr = out;
 
@@ -541,8 +573,9 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
   PRINTF("RealMessage1: ");
   switch (type) {
     case 0:
-    PRINTF("Using peer_first_msg\n");
+    PRINTF("Using peer_first_msg, len %u\n", session->ephemeral_info->peer_first_msg_len);
     memcpy(ptr, session->ephemeral_info->peer_first_msg, session->ephemeral_info->peer_first_msg_len);
+    ptr += session->ephemeral_info->peer_first_msg_len;
     break;
     
     case 1:
@@ -551,8 +584,9 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
     break;
     
     case 2:
-    PRINTF("Using peer_first_msg\n");    
+    PRINTF("Using peer_first_msg\n");
     memcpy(ptr, session->ephemeral_info->peer_first_msg, session->ephemeral_info->peer_first_msg_len);
+    ptr += session->ephemeral_info->peer_first_msg_len;
     break;
     
     case 3:
@@ -562,9 +596,15 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
   }
   
   // Nonce(I/R)Data
-  memcpy(ptr, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
-  ptr += session->ephemeral_info->peernonce_len;
-
+  if (type % 3) {
+    memcpy(ptr, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
+    ptr += session->ephemeral_info->peernonce_len;    
+  }
+  else {
+    random_ike(ptr, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);
+    ptr += IKE_PAYLOAD_MYNONCE_LEN;
+  }
+  
   // MACedIDForI ( prf(SK_pi, IDType | RESERVED | InitIDData) = prf(SK_pi, RestOfInitIDPayload) )
   prf_data_t prf_data =
   {
@@ -592,7 +632,8 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
 
   prf(session->sa.prf, &prf_data);
   ptr += SA_PRF_PREFERRED_KEYMATLEN(session);
-  MEMPRINTF("InitiatorSignedOctets", out, ptr - out);
+
+  //MEMPRINTF("*SignedOctets", out, ptr - out);
   return ptr - out;
 }
 
@@ -604,11 +645,12 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, uint8_t myauth, 
   * \parameter session Session concerned
   * \parameter sk_genpayloadhdr The generic paylod header of the SK payload
   *
-  * \return 1 if the integrity check fails, 0 if successfull
+  * \return 0 if the integrity check fails. If successfull, the number of trailing bytes is returned
   */
 u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr)
 {
   uint16_t integ_datalen = uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len) - IPSEC_ICVLEN;
+  uint8_t trailing_bytes = 0;
   
   // Integrity
   if (session->sa.integ) {
@@ -632,7 +674,9 @@ u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr
     integ(&integ_data);                      // This will write Encrypted Payloads, padding and pad length  
 
     if (memcmp(expected_icv, msg_buf + integ_datalen, IPSEC_ICVLEN) != 0)
-      return 1;
+      return 0;
+      
+    trailing_bytes += IPSEC_ICVLEN;
   }
   
   // Confidentiality / Combined mode
@@ -646,7 +690,7 @@ u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr
     .encr_datalen = datalen,
     .ip_next_hdr = NULL
   };
-
+  
   if(IKE_STATEM_IS_INITIATOR(session))
     encr_data.keymat = session->sa.sk_er;                // Address of the keying material
   else
@@ -655,13 +699,17 @@ u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr
   //MEMPRINTF("encr_key", encr_data.keymat, 15);
   
   espsk_unpack(&encr_data); // Encrypt / combined mode
-  
+    
   // Move the data over the IV as the former's length might not be a multiple of four
   uint8_t *iv_start = (uint8_t *) sk_genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
   memmove(iv_start, iv_start + sa_encr_ivlen[session->sa.encr], datalen);
   sk_genpayloadhdr->len = uip_htons(sizeof(ike_payload_generic_hdr_t));
   
-  return 0;
+  // Adjust trailing bytes
+  //                IV length                       + padding         + pad length field
+  trailing_bytes += sa_encr_ivlen[session->sa.encr] + encr_data.padlen +        1;
+  
+  return trailing_bytes;
 }
 
 
@@ -983,8 +1031,11 @@ u8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
       PRINTF(IPSEC_IKE_ERROR "Peer has handed us a cookie and expects us to use it, but we can't handle cookies\n");
       return 1;      
       
+      case IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE:
+      PRINTF(IPSEC_IKE "Peer demands child SAs to use transport, not tunnel mode\n");
+      break;
+        
       /*
-      IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE = 16391,
       IKE_PAYLOAD_NOTIFY_HTTP_CERT_LOOKUP_SUPPORTED = 16392,
       IKE_PAYLOAD_NOTIFY_REKEY_SA = 16393,
       IKE_PAYLOAD_NOTIFY_ESP_TFC_PADDING_NOT_SUPPORTED = 16394,
@@ -1009,7 +1060,7 @@ u8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
   * \parameter peer_pub_key Address of the beginning of the field "Key Exchange Data" in the peer's KE payload (network byte order).
   * \return The address that follows the last byte of the nonce
   */
-void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
+void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 {
   // Calculate the DH exponential: g^ir
   PRINTF(IPSEC_IKE "Calculating shared DH secret\n");
@@ -1029,8 +1080,9 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
       ];
   
   uint8_t *mynonce_start, *peernonce_start;
-  uint8_t *ni_start, *nr_start, *spii_start, *spir_start;
+  uint8_t *ni_start, *nr_start, *spii_start, *spir_start;  
   if (IKE_STATEM_IS_INITIATOR(session)) {
+    PRINTF("I am i\n");
     mynonce_start = first_key;
     peernonce_start = mynonce_start + IKE_PAYLOAD_MYNONCE_LEN;
     
@@ -1040,6 +1092,8 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     spir_start = spii_start + 8;
   }
   else {
+    PRINTF("I am r\n");
+
     peernonce_start = first_key;
     mynonce_start = peernonce_start + session->ephemeral_info->peernonce_len;
     
@@ -1055,10 +1109,16 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
       SKEYSEED = prf(Ni | Nr, g^ir)
     *
     */
-  uint8_t skeyseed[SA_PRF_OUTPUT_LEN(session)];
   random_ike(mynonce_start, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);
   memcpy(peernonce_start, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
+  PRINTF("first_keylen: %u peernonce_len: %u\n", first_keylen, session->ephemeral_info->peernonce_len);
+
+  MEMPRINTF("Ni | Nr", first_key, first_keylen);
   
+  MEMPRINTF("Shared DH secret (g^ir)", gir, IKE_DH_SCALAR_LEN);
+
+  uint8_t skeyseed[SA_PRF_OUTPUT_LEN(session)];
+
   prf_data_t prf_data =
     {
       .out = skeyseed,
@@ -1127,10 +1187,80 @@ void ike_statem_get_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
     * Execute prf+ (SKEYSEED, Ni | Nr | SPIi | SPIr )
     *
     * This will populate the IKE SA (the SK_* fields)
-    */  
+    */
   prf_plus(&prfplus_data);
 }
 
+
+/**
+  * Get Child SA keying material as outlined in section 2.17
+  *
+  *     KEYMAT = prf+(SK_d, Ni | Nr)
+  *
+  * Encryption material from KEYMAT are used as follows:
+   
+      o All keys for SAs carrying data from the initiator to the responder are taken before SAs going from the responder to the initiator.
+      
+      o If multiple IPsec protocols are negotiated, keying material for each Child SA is taken in the order in which the protocol headers 
+        will appear in the encapsulated packet.
+        
+      o If an IPsec protocol requires multiple keys, the order in which they are taken from the SA’s keying material needs to be described
+        in the protocol’s specification. For ESP and AH, [IPSECARCH] defines the order, namely: the encryption key (if any) MUST be taken 
+        from the first bits and the integrity key (if any) MUST be taken from the remaining bits.
+  *
+  * \parameter session The IKE session
+  * \parameter incoming Incoming child SA
+  * \parameter outgoing Outgoing child SA
+  */
+void ike_statem_get_child_keymat(ike_statem_session_t *session, sa_child_t *incoming, sa_child_t *outgoing)
+{
+  sa_child_t *i_to_r, *r_to_i;
+  if (IKE_STATEM_IS_INITIATOR(session)) {
+    i_to_r = outgoing;
+    r_to_i = incoming;
+  }
+  else {
+    r_to_i = outgoing;
+    i_to_r = incoming;
+  }
+  
+  uint8_t *keymat_ptr[] = { i_to_r->sk_e,                     i_to_r->sk_a,                                     r_to_i->sk_e,                     r_to_i->sk_a };
+  uint8_t keymat_len[]  = { SA_ENCR_KEYMATLEN_BY_SA(*i_to_r), SA_INTEG_KEYMATLEN_BY_TYPE(i_to_r->integ), SA_ENCR_KEYMATLEN_BY_SA(*r_to_i), SA_INTEG_KEYMATLEN_BY_TYPE(r_to_i->integ) };
+
+  // Compose message (Ni | Nr)
+  uint8_t msg[IKE_PAYLOAD_MYNONCE_LEN + session->ephemeral_info->peernonce_len];
+  uint8_t *my_nonce, *peer_nonce;
+  if (IKE_STATEM_IS_INITIATOR(session)) {
+    my_nonce = msg;
+    peer_nonce = msg + IKE_PAYLOAD_MYNONCE_LEN; 
+  }
+  else {
+    peer_nonce = msg;
+    my_nonce = msg + session->ephemeral_info->peernonce_len; 
+  }
+  random_ike(my_nonce, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);      
+  memcpy(peer_nonce, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
+    
+  prfplus_data_t prfplus_data = {
+    .prf = session->sa.prf,
+    .key = session->sa.sk_d,
+    .keylen = sizeof(session->sa.sk_d),
+    .no_chunks = sizeof(keymat_len),
+    .data = msg,
+    .datalen = sizeof(msg),
+    .chunks = keymat_ptr,
+    .chunks_len = keymat_len
+  };
+  prf_plus(&prfplus_data);
+}
+
+/**
+  * Clean an IKE session when the SA has been established
+  */
+void ike_statem_clean_session(ike_statem_session_t *session)
+{
+  free(session->ephemeral_info);
+}
 
 /* Don't use it. */
 /*

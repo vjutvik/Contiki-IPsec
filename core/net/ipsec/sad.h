@@ -94,7 +94,7 @@ typedef struct x2 {
     * This field is used to associate \b outgoing traffic with certain SAs. For example; a packet whose traffic selector is destined
     * for the PROTECT policy in the SPD might be associated with an SA in the SAD. Remember that for every SPD entry there might be
     * several SAs in the SAD due to the PFP mechanism. \c traffic_desc allows us to discriminate what SA to apply to an outgoing
-    * packet requiring protection. This makes this table a SPD-S cache implementation as well.
+    * packet on the basis of source port, destination port and destination address. This makes this table a SPD-S cache implementation as well.
     *
     * In the context of \b incoming traffic it's used to verify that an SA referenced (via the SPI) by the packet has a traffic
     * selector that includes the incoming packet's source address.
@@ -102,7 +102,6 @@ typedef struct x2 {
     * Please note that although the \c traffic_desc can express IPv6 address ranges only one address is used on for each end
     * in sad_entry_t. This is because this implementation only supports transport mode (see section 1.1.2 RFC 5996) unicast.
     *
-    * (In short: This address range matches the peer's end of the traffic "pipe")
     */
   ipsec_addr_set_t traffic_desc;
   
@@ -153,8 +152,8 @@ typedef struct x2 {
   */
 void sad_init(void);
 uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno);
-sad_entry_t *sad_get_outgoing(ipsec_addr_t *outgoing_pkt);
-sad_entry_t *sad_get_incoming(uint32_t spi);
+sad_entry_t *sad_get_outgoing_entry(ipsec_addr_t *outgoing_pkt);
+sad_entry_t *sad_get_incoming_entry(uint32_t spi);
 sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation);
 sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation);
 void sad_remove_outgoing_entry(sad_entry_t *sad_entry);

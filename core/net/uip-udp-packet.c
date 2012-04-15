@@ -39,33 +39,86 @@
  */
 
 #include "contiki-conf.h"
+#include "net/uip-udp-packet.h"
+#include <string.h>
 
 extern uint16_t uip_slen;
 
-#include "net/uip-udp-packet.h"
+/*---------------------------------------------------------------------------*/
+void
+uip_udp_buffer_clear(void)
+{
+  uip_slen = 0;
+}
+/*---------------------------------------------------------------------------*/
+void *
+uip_udp_buffer_dataptr(void)
+{
+  return &uip_buf[UIP_LLH_LEN + UIP_IPUDPH_LEN];
+}
+/*---------------------------------------------------------------------------*/
+uint16_t
+uip_udp_buffer_datalen(void)
+{
+  return uip_slen;
+}
+/*---------------------------------------------------------------------------*/
+void
+uip_udp_buffer_set_datalen(uint16_t len)
+{
+  uip_slen = len;
+}
+/*---------------------------------------------------------------------------*/
+static void
+send_buffer(struct uip_udp_conn *c)
+{
+#if UIP_UDP
+  uip_udp_conn = c;
+  uip_process(UIP_UDP_SEND_CONN);
+#if UIP_CONF_IPV6
+  tcpip_ipv6_output();
+#else
+  if(uip_len > 0) {
+    tcpip_output();
+  }
+#endif /* UIP_CONF_IPV6 */
+  uip_slen = 0;
+#endif /* UIP_UDP */
+}
+/*---------------------------------------------------------------------------*/
+void
+uip_udp_buffer_sendto(struct uip_udp_conn *c, uip_ipaddr_t *toaddr, uint16_t toport)
+{
+  uip_ipaddr_t curaddr;
+  uint16_t curport;
 
-#include <string.h>
+  if(toaddr != NULL && uip_slen > 0) {
+    /* Save current IP addr/port. */
+    uip_ipaddr_copy(&curaddr, &c->ripaddr);
+    curport = c->rport;
 
+    /* Load new IP addr/port */
+    uip_ipaddr_copy(&c->ripaddr, toaddr);
+    c->rport = toport;
+
+    send_buffer(c);
+
+    /* Restore old IP addr/port */
+    uip_ipaddr_copy(&c->ripaddr, &curaddr);
+    c->rport = curport;
+  }
+}
 /*---------------------------------------------------------------------------*/
 void
 uip_udp_packet_send(struct uip_udp_conn *c, const void *data, int len)
 {
 #if UIP_UDP
   if(data != NULL) {
-    uip_udp_conn = c;
     uip_slen = len;
     memcpy(&uip_buf[UIP_LLH_LEN + UIP_IPUDPH_LEN], data,
            len > UIP_BUFSIZE? UIP_BUFSIZE: len);
-    uip_process(UIP_UDP_SEND_CONN);
-#if UIP_CONF_IPV6
-    tcpip_ipv6_output();
-#else
-    if(uip_len > 0) {
-      tcpip_output();
-    }
-#endif
+    send_buffer(c);
   }
-  uip_slen = 0;
 #endif /* UIP_UDP */
 }
 /*---------------------------------------------------------------------------*/

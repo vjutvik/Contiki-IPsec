@@ -160,7 +160,7 @@ void sad_remove_outgoing_entry(sad_entry_t *entry)
   * NULL is returned if there's no such match.
   *
   */
-sad_entry_t *sad_get_outgoing(ipsec_addr_t *addr)
+sad_entry_t *sad_get_outgoing_entry(ipsec_addr_t *addr)
 {
   sad_entry_t *entry;
   //PRINTF(IPSEC "sad_get_outgoing: finding SAD entry\n");
@@ -184,7 +184,7 @@ sad_entry_t *sad_get_outgoing(ipsec_addr_t *addr)
   * \return A pointer to the SAD entry whose SPI match that of \c spi. NULL is returned if there's no such match.
   *
   */
-sad_entry_t *sad_get_incoming(uint32_t spi)
+sad_entry_t *sad_get_incoming_entry(uint32_t spi)
 {
   sad_entry_t *entry;
   for (entry = list_head(sad_incoming); entry != NULL; entry = list_item_next(entry)) {

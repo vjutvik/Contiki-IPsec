@@ -43,6 +43,14 @@
 
 #include "net/uip.h"
 
+#define UIP_UDP_BUFFER_SIZE (UIP_BUFSIZE - UIP_LLH_LEN - UIP_UDPH_LEN)
+
+void uip_udp_buffer_clear(void);
+void *uip_udp_buffer_dataptr(void);
+uint16_t uip_udp_buffer_datalen(void);
+void uip_udp_buffer_set_datalen(uint16_t len);
+void uip_udp_buffer_sendto(struct uip_udp_conn *c, uip_ipaddr_t *toaddr, uint16_t toport);
+
 void uip_udp_packet_send(struct uip_udp_conn *c, const void *data, int len);
 void uip_udp_packet_sendto(struct uip_udp_conn *c, const void *data, int len,
 			   const uip_ipaddr_t *toaddr, uint16_t toport);

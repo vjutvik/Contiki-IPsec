@@ -37,7 +37,7 @@ void auth_psk(uint8_t transform, prf_data_t *auth_data)
     .datalen = sizeof(auth_keypad)
   };
   prf(transform, &keypad_arg);
-  
+
   // Perform the outer PRF operation
   auth_data->key = data_out;
   auth_data->keylen = prf_out_len;

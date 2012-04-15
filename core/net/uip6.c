@@ -1353,7 +1353,7 @@ uip_process(uint8_t flag)
         // No network-to-host conversion of the SPI as we store our SPIs in network byte order internally
         //PRINTF("uIP6 SPI %u esp_header %x uip_buf %x UIP_ESP_BUF %x\n", esp_header->spi, esp_header, &uip_buf, UIP_ESP_BUF);
         PRINTF(IPSEC "ESP: SPI %lx Sequence no %lu\n", uip_ntohl(esp_header->spi), uip_ntohl(esp_header->seqno));
-        if ((sad_entry = sad_get_incoming(esp_header->spi)) == NULL) {
+        if ((sad_entry = sad_get_incoming_entry(esp_header->spi)) == NULL) {
           // Protected packets whose SAD entry we cannot find must be discarded according to the RFC.
           PRINTF(IPSEC "Dropping incoming protected packet because of missing SAD entry\n");
           goto drop;
@@ -2553,7 +2553,7 @@ uip_process(uint8_t flag)
  
   // We use the SAD as an SPD-S cache (RFC 4301).
   // Is there an SA entry that matches this traffic?
-  sad_entry = sad_get_outgoing(&packet_tag.addr);
+  sad_entry = sad_get_outgoing_entry(&packet_tag.addr);
 
   // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
   if (sad_entry == NULL) {
