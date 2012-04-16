@@ -39,6 +39,7 @@ static const uint8_t *udp_buf = &uip_buf[UIP_LLH_LEN + UIP_IPUDPH_LEN];
 uint8_t *msg_buf;
 static struct uip_udp_conn *my_conn;
 const uip_ip6addr_t *my_ip_addr = &((struct uip_ip_hdr *) &uip_buf[UIP_LLH_LEN])->destipaddr;
+const uip_ip6addr_t *peer_ip_addr = &((struct uip_ip_hdr *) &uip_buf[UIP_LLH_LEN])->srcipaddr;
 
 extern uint16_t uip_slen;
 
@@ -56,14 +57,9 @@ void ike_statem_timeout_handler(void *session);
 #define IKE_STATEM_ENTERSTATE(session)                                \
   /* Stop retransmission timer (if any has been set) */               \
   PRINTF(IPSEC_IKE "Session %p is entering state %p\n", (session), (session)->next_state_fn);  \
-  PRINTF("#########TRIGGERING_PKT:\n"); \
-      PRINT6ADDR(session->ephemeral_info->triggering_pkt.addr);   \
-  PRINTF("#########GLOBAL:\n"); \
-  PRINT6ADDR(global);         \
-  PRINT6ADDR(session->ephemeral_info->triggering_pkt.addr);           \
   STOP_RETRANSTIMER((session));                                       \
-  if (!(*(session)->next_state_fn)(session)) {                        \
-    PRINTF(IPSEC_IKE "Removing session %p\n", session);               \
+  if ((*(session)->next_state_fn)(session) == 0) {                    \
+    PRINTF(IPSEC_IKE "Removing IKE session %p due to termination in state %p\n", session, (session)->next_state_fn);  \
     ike_statem_remove_session(session);                               \
   }                                                                   \
   return
@@ -81,11 +77,6 @@ void ike_statem_timeout_handler(void *session);
 void ike_statem_transition(ike_statem_session_t *session)
 {
   PRINTF(IPSEC_IKE "Entering transition fn %p of session %p\n", (session)->transition_fn, session);  \
-    PRINTF("#########TRIGGERING_PKT:\n");                           
-    PRINT6ADDR(session->ephemeral_info->triggering_pkt.addr);         
-    PRINTF("#########GLOBAL:\n");                           
-    PRINT6ADDR(global);
-
 
   msg_buf = (uint8_t *) udp_buf;                                   
   uint16_t len = (*(session)->transition_fn)((session));           
@@ -125,60 +116,76 @@ void ike_statem_init()
   */
 }
 
-u8_t *global;
+ike_statem_session_t *ike_statem_session_init()
+{
+  ike_statem_session_t *session = malloc(sizeof(ike_statem_session_t));
+  PRINTF(IPSEC_IKE "Initiating IKE session %p\n", session);
+  list_push(sessions, session);
+
+  // Set the SPIs.
+  session->peer_spi_high = IKE_MSG_ZERO;
+  session->peer_spi_low = IKE_MSG_ZERO;
+  IKE_STATEM_MYSPI_SET_NEXT(session->initiator_and_my_spi);
+
+  session->my_msg_id = session->peer_msg_id = 0;
+
+  // malloc() will do as this memory will soon be freed and thus won't clog up the heap for long.
+  session->ephemeral_info = malloc(sizeof(ike_statem_ephemeral_info_t));
+
+  // This random seed will be used for generating our nonce
+  session->ephemeral_info->my_nonce_seed = rand16();
+   
+  /**
+    * Generate the private key
+    *
+    * We're not interested in reusing the DH exponentials across sessions ("2.12.  Reuse of Diffie-Hellman Exponentials")
+    * as the author finds the cost of storing them in memory exceeding the cost of the computation.
+    */
+  ecc_gen_private_key(session->ephemeral_info->my_prv_key);
+
+  return session;
+}
+
+
+void ike_statem_setup_responder_session()
+{
+  ike_statem_session_t *session = ike_statem_session_init();
+
+  // We're the responder
+  IKE_STATEM_MYSPI_SET_R(session->initiator_and_my_spi);
+
+  memcpy(&session->peer, peer_ip_addr, sizeof(uip_ip6addr_t));
+
+  // Transition to state initrespwait
+  session->next_state_fn = &ike_statem_state_handle_initreq;
+
+  IKE_STATEM_ENTERSTATE(session);
+}
+
 
 /**
   * Initializes an new IKE session with the purpose of creating an SA in response to triggering_pkt_addr
   * and commanding_entry
   */
-void ike_statem_setup_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *commanding_entry)
+void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *commanding_entry)
 {
-  PRINTF("Setting up session\n");
-  ike_statem_session_t *session = malloc(sizeof(ike_statem_session_t));
-  list_push(sessions, session);
+  ike_statem_session_t *session = ike_statem_session_init();
   
   // Populate the session entry
   memcpy(&session->peer, triggering_pkt_addr->addr, sizeof(uip_ip6addr_t));
   
-  // Set the SPIs. We're the initiator.
-  session->peer_spi_high = IKE_MSG_ZERO;
-  session->peer_spi_low = IKE_MSG_ZERO;
+  // We're the initiator
   IKE_STATEM_MYSPI_SET_I(session->initiator_and_my_spi);
-  IKE_STATEM_MYSPI_SET_NEXT(session->initiator_and_my_spi);
-
-  MEMPRINTF("initiatandmyspi", &session->initiator_and_my_spi, 2);
-  
-  session->my_msg_id = session->peer_msg_id = 0;
   
   // Transition to state initrespwait
   session->transition_fn = &ike_statem_trans_initreq;
   session->next_state_fn = &ike_statem_state_initrespwait;
   
-  // Populate the ephemeral information with connection setup information
-  
-  // malloc() will do as this memory will soon be freed and thus won't clog up the heap for long.
-  session->ephemeral_info = malloc(sizeof(ike_statem_ephemeral_info_t));
+  // Populate the ephemeral information with connection setup information  
   memcpy((void *) &session->ephemeral_info->triggering_pkt, (void *) triggering_pkt_addr, sizeof(ipsec_addr_t));
   session->ephemeral_info->triggering_pkt.addr = &session->peer;
 
-  global = session->ephemeral_info->triggering_pkt.addr;
-  PRINTF("#########TRIGGERING_PKT:\n");
-
-    PRINT6ADDR(session->ephemeral_info->triggering_pkt.addr);
-    PRINT6ADDR(triggering_pkt_addr->addr);
-
   session->ephemeral_info->spd_entry = commanding_entry;
-
-  // This random seed will be used for generating our nonce (or'ed with 1 so that it'll never be 0)
-  session->ephemeral_info->my_nonce_seed = 1U | rand16();
-   
-  /**
-    * Generate the private key
-    *
-    * We're not interested in reusing the DH exponentials ("2.12.  Reuse of Diffie-Hellman Exponentials")
-    * as the cost of storing them in memory exceeds the cost of the computation. (Source: the author, right now)
-    */
-  ecc_gen_private_key(session->ephemeral_info->my_prv_key);
 
   IKE_STATEM_TRANSITION(session);
 }
@@ -261,7 +268,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     // The purpose of this request is to setup a new IKE session.
     // Don't write this code right now
     PRINTF(IPSEC_IKE "Handling incoming request for a new IKE session\n");
-    ike_statem_state_respond_start();
+    ike_statem_setup_responder_session();
     return;
   }
   
@@ -279,10 +286,11 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
   PRINTF(IPSEC_IKE "Handling incoming request concerning local IKE SPI %u\n", my_spi);
 
   ike_statem_session_t *session = NULL;
+  PRINTF("my_spi: %u\n", my_spi);
   for (session = list_head(sessions); 
         session != NULL && !IKE_STATEM_MYSPI_GET_MYSPI(session) == my_spi; 
         session = list_item_next(session))
-    ;
+    PRINTF("SPI in list: %u\n", IKE_STATEM_MYSPI_GET_MYSPI(session));
 
   if (session != NULL) {
     // We've found the session struct of the session that the message concerns
@@ -291,14 +299,14 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     if (IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER & ike_hdr->flags) {
       // It's response to something we sent. Does it have the right message ID?
       if (uip_ntohl(ike_hdr->message_id) != session->my_msg_id) {
-        PRINTF(IPSEC "Error: Message ID is out of order. Dropping it.\n");
+        PRINTF(IPSEC_IKE_ERROR "Message ID is out of order. Dropping it.\n");
         return;
       }
     }
     else {  
       // It's a request
       if (uip_ntohl(ike_hdr->message_id) != session->peer_msg_id) {
-        PRINTF(IPSEC "Error: Message ID is out of order. Dropping it.\n");
+        PRINTF(IPSEC_IKE_ERROR "Message ID is out of order. Dropping it.\n");
         return;
       }
       

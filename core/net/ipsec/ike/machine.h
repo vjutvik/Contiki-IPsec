@@ -82,6 +82,7 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_STATEM_MYSPI_GET_I(var) (var & IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_IS_INITIATOR(session) (IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi))
 #define IKE_STATEM_MYSPI_SET_I(var) (var = var | IKE_STATEM_MYSPI_I_MASK)
+#define IKE_STATEM_MYSPI_SET_R(var) (var = var & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_SET_NEXT(var) (var = (var | (rand16() & ~IKE_STATEM_MYSPI_I_MASK))) /* (next_my_spi++ & ~IKE_STATEM_MYSPI_I_MASK)*/  // (Note: This will overflow into the Initiator bit after 2^15 - 1 calls)
 #define IKE_STATEM_MYSPI_CLEAR_I(var) (var = var & ~IKE_STATEM_MYSPI_I_MASK)
 
@@ -219,7 +220,7 @@ typedef struct ike_statem_session {
   uint16_t (*transition_fn)(struct ike_statem_session *);
   
   // The above transition will (if all goes well) take us to this state.
-  int8_t (*next_state_fn)(struct ike_statem_session *);
+  uint8_t (*next_state_fn)(struct ike_statem_session *);
 
 } ike_statem_session_t;
 
@@ -252,7 +253,7 @@ typedef struct {
 } payload_arg_t;
 
 ike_statem_session_t *ike_statem_get_session_by_addr(uip_ip6addr_t *addr);
-void ike_statem_setup_session(ipsec_addr_t * triggering_pkt_addr, spd_entry_t * commanding_entry);
+void ike_statem_setup_initiator_session(ipsec_addr_t * triggering_pkt_addr, spd_entry_t * commanding_entry);
 void ike_statem_remove_session(ike_statem_session_t *session);
 
 /**
@@ -282,12 +283,5 @@ typedef struct {
 
 void ike_statem_init();
 void ike_statem_incoming_data_handler();
-
-/**
-  * State machine entry points
-  */
-uint16_t ike_statem_trans_initreq(ike_statem_session_t *session);
-uint16_t ike_statem_state_respond_start(void);
-int8_t ike_statem_state_initrespwait(ike_statem_session_t *session);
 
 #endif

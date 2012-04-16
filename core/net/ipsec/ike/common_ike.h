@@ -8,8 +8,13 @@
 #include "payload.h"
 #include "sad.h"
 
-// Common states
-extern int8_t ike_statem_state_responder(ike_statem_session_t *session);
+/**
+  * State machine states and transitions that are commonly crossreferenced
+  */
+extern uint16_t ike_statem_trans_initreq(ike_statem_session_t *session);
+extern uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session);
+extern uint8_t ike_statem_state_handle_initreq(ike_statem_session_t *session);
+extern uint8_t ike_statem_state_established_handler(ike_statem_session_t *session);
 
 // Other
 extern void ike_statem_write_notification(payload_arg_t *payload_arg, 

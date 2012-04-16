@@ -150,8 +150,9 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
   server_conn->rport = UIP_HTONS(500);
   uip_udp_packet_send(server_conn, "hej", 3);
 */
+
   /* wait for incoming data */
-  /*
+/*
   while(1) {
     PROCESS_YIELD();
     if(ev == tcpip_event) {

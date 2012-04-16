@@ -47,7 +47,7 @@ static void ike_negotiate_sa(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *com
   }
   else {*/
     // We don't have an IKE session with this host. Connect and setup.
-    ike_statem_setup_session(triggering_pkt_addr, commanding_entry);
+    ike_statem_setup_initiator_session(triggering_pkt_addr, commanding_entry);
   //}
 }
 

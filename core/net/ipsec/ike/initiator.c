@@ -73,7 +73,7 @@ uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
   * INITRESPWAIT --- (AUTHREQ) ---> AUTHRESPWAIT
   *              --- (INITREQ) ---> AUTHRESPWAIT
   */
-int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
+uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 {
   // If everything went well, we should see something like
   // <--  HDR, SAr1, KEr, Nr, [CERTREQ]
@@ -132,13 +132,12 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 
       // Loop over the responder's offer and that of ours in order to verify that the former
       // is indeed a subset of ours.
-      session->proposal_reply = malloc(10 * sizeof(spd_proposal_tuple_t));  // 10 entries should be enough
       if (ike_statem_parse_sa_payload((spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL, 
                                       (ike_payload_generic_hdr_t *) genpayloadhdr, 
                                       ke_dh_group,
                                       &session->sa,
                                       NULL,
-                                      session->proposal_reply)) {
+                                      NULL)) {
         PRINTF(IPSEC_IKE "The peer's offer was unacceptable\n");
         return 0;
       }
@@ -244,7 +243,7 @@ int8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
   } // End payload loop
   
   if (payload_type != IKE_PAYLOAD_NO_NEXT) {  
-    PRINTF(IPSEC_IKE "Error: Unexpected end of peer message.\n");
+    PRINTF(IPSEC_IKE_ERROR "Unexpected end of peer message.\n");
     return 0;
   }
 
@@ -548,7 +547,7 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
   // Jump
   // Transition to state autrespwait
   session->transition_fn = NULL;
-  session->next_state_fn = &ike_statem_state_responder;
+  session->next_state_fn = &ike_statem_state_established_handler;
 
   //session->transition_arg = &session_trigger;
 

@@ -1082,7 +1082,6 @@ void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_
   uint8_t *mynonce_start, *peernonce_start;
   uint8_t *ni_start, *nr_start, *spii_start, *spir_start;  
   if (IKE_STATEM_IS_INITIATOR(session)) {
-    PRINTF("I am i\n");
     mynonce_start = first_key;
     peernonce_start = mynonce_start + IKE_PAYLOAD_MYNONCE_LEN;
     
@@ -1092,7 +1091,6 @@ void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_
     spir_start = spii_start + 8;
   }
   else {
-    PRINTF("I am r\n");
 
     peernonce_start = first_key;
     mynonce_start = peernonce_start + session->ephemeral_info->peernonce_len;

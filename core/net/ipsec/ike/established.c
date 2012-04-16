@@ -7,7 +7,7 @@
 #include "ecc/ecdh.h"
 
 
-int8_t ike_statem_state_responder(ike_statem_session_t *session)
+uint8_t ike_statem_state_established_handler(ike_statem_session_t *session)
 {
   PRINTF(IPSEC_IKE "Ignoring IKE message sent by peer\n");
   return 1;
