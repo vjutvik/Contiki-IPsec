@@ -10,6 +10,7 @@
 #include "transforms/integ.h"
 #include "transforms/encr.h"
 //#include "payload.h"
+#include "spd_conf.h"
 #include "common_ike.h"
 #include "auth.h"
 #include "uip.h"
@@ -157,6 +158,183 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
   
   MEMPRINTF("tsr_genpayloadhdr", tsr_genpayloadhdr, uip_ntohs(tsr_genpayloadhdr->len));
   PRINTF("len: %u\n", payload_arg->start - ptr);
+}
+
+
+/**
+  * 
+  */
+uint8_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_payload_ike_hdr_t *ike_hdr, spd_proposal_tuple_t *accepted_offer)
+{
+  // session->cookie_payload = NULL; // Reset the cookie data (if it has been used)
+
+  // Store a copy of this first message from the peer for later use
+  // in the autentication calculations.
+  COPY_FIRST_MSG(session, ike_hdr);
+  
+  // We process the payloads one by one
+  uint8_t *peer_pub_key;
+  uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA's IKE registry
+  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  u8_t *end = msg_buf + uip_datalen();
+  ike_payload_type_t payload_type = ike_hdr->next_payload;
+  while (ptr < end) { // Payload loop
+    const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
+    const uint8_t *payload_start = (uint8_t *) genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
+    const uint8_t *payload_end = (uint8_t *) genpayloadhdr + uip_ntohs(genpayloadhdr->len);
+    ike_payload_ke_t *ke_payload;
+    
+    PRINTF("Next payload is %d\n", payload_type);
+    switch (payload_type) {
+      /*
+      FIX: Cookies disabled as for now
+      case IKE_PAYLOAD_N:
+      ike_payload_notify_t *n_payload = (ike_payload_notify_t *) payload_start;
+      // Now what starts with the letter C?
+      if (n_payload->notify_msg_type == IKE_PAYLOAD_NOTIFY_COOKIE) {
+        // C is for cookie, that's good enough for me
+      */
+        /**
+          * Although the RFC doesn't explicitly state that the COOKIE -notification
+          * is a solitary payload, I believe the discussion at p. 31 implies this.
+          *
+          * Re-transmit the IKE_SA_INIT message with the COOKIE notification as the first payload.
+          */
+      /*
+        session->cookie_payload_ptr = genpayloadhdr; // genpayloadhdr points to the cookie data
+        IKE_STATEM_TRANSITION(session);
+      }
+      */
+      break;
+      
+      case IKE_PAYLOAD_SA:
+      // We expect this SA offer to a subset of ours
+
+      // Loop over the responder's offer and that of ours in order to verify that the former
+      // is indeed a subset of ours.
+      if (ike_statem_parse_sa_payload((spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL, 
+                                      (ike_payload_generic_hdr_t *) genpayloadhdr, 
+                                      ke_dh_group,
+                                      &session->sa,
+                                      NULL,
+                                      accepted_offer)) {
+        PRINTF(IPSEC_IKE "The peer's offer was unacceptable\n");
+        return 0;
+      }
+      
+      PRINTF(IPSEC_IKE "Peer proposal accepted\n");
+      break;
+      
+      case IKE_PAYLOAD_NiNr:
+      // This is the responder's nonce
+      session->ephemeral_info->peernonce_len = payload_end - payload_start;
+      memcpy(&session->ephemeral_info->peernonce, payload_start, session->ephemeral_info->peernonce_len);
+      PRINTF(IPSEC_IKE "Parsed %u B long nonce from the peer\n", session->ephemeral_info->peernonce_len);
+      MEMPRINTF("Peer's nonce", session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
+      break;
+      
+      case IKE_PAYLOAD_KE:
+      // This is the responder's public key
+      ke_payload = (ike_payload_ke_t *) payload_start;
+
+      /**
+        * Our approach to selecting the DH group in the SA proposal is a bit sketchy: We grab the first one that
+        * fits with our offer. This will probably work in most cases, but not all:
+        
+           "The Diffie-Hellman Group Num identifies the Diffie-Hellman group in
+           which the Key Exchange Data was computed (see Section 3.3.2).  This
+           Diffie-Hellman Group Num MUST match a Diffie-Hellman group specified
+           in a proposal in the SA payload that is sent in the same message, and
+           SHOULD match the Diffie-Hellman group in the first group in the first
+           proposal, if such exists."
+                                                                        (p. 87)
+                                                                        
+          It might be so that the SA payload is positioned after the KE payload, and in that case we will adopt
+          the group referred to in the KE payload as the responder's choice for the SA.
+          
+          (Yes, payloads might be positioned in any order, consider the following from page 30:
+          
+           "Although new payload types may be added in the future and may appear
+           interleaved with the fields defined in this specification,
+           implementations SHOULD send the payloads defined in this
+           specification in the order shown in the figures in Sections 1 and 2;
+           implementations MUST NOT reject as invalid a message with those
+           payloads in any other order."
+          
+          )
+        *
+        */
+
+      if (session->sa.dh == SA_UNASSIGNED_TYPE) {
+        // DH group not assigned because we've not yet processed the SA payload
+        // Store a not of this for later SA processing.
+        ke_dh_group = uip_ntohs(ke_payload->dh_group_num);
+        PRINTF(IPSEC_IKE "KE payload: Using group DH no. %hhu\n", ke_dh_group);
+      }
+      else {
+        // DH group has been assigned since we've already processed the SA
+        if (session->sa.dh != uip_ntohs(ke_payload->dh_group_num)) {
+          PRINTF(IPSEC_IKE_ERROR "DH group of the accepted proposal doesn't match that of the KE's.\n");
+          return 0;
+        }
+        PRINTF(IPSEC_IKE "KE payload: Using DH group no. %hhu\n", session->sa.dh);
+      }
+      
+      // Store the address to the beginning of the peer's public key
+      peer_pub_key = ((uint8_t *) ke_payload) + sizeof(ike_payload_ke_t);
+      break;
+      
+      case IKE_PAYLOAD_N:
+      if (ike_statem_handle_notify((ike_payload_notify_t *) payload_start))
+        return 0;
+      break;
+      
+      case IKE_PAYLOAD_CERTREQ:
+      PRINTF(IPSEC_IKE "Ignoring certificate request payload\n");
+      break;
+
+      default:
+      /**
+        * Unknown / unexpected payload. Is the critical flag set?
+        *
+        * From p. 30:
+        *
+        * "If the critical flag is set
+        * and the payload type is unrecognized, the message MUST be rejected
+        * and the response to the IKE request containing that payload MUST
+        * include a Notify payload UNSUPPORTED_CRITICAL_PAYLOAD, indicating an
+        * unsupported critical payload was included.""
+        */
+
+      if (genpayloadhdr->clear) {
+        PRINTF(IPSEC_IKE "Error: Encountered an unknown critical payload\n");
+        return 0;
+      }
+      else
+        PRINTF(IPSEC_IKE "Ignoring unknown non-critical payload of type %u\n", payload_type);
+      // Info: Ignored unknown payload
+
+    } // End payload switch
+
+    ptr = (uint8_t *) payload_end;
+    payload_type = genpayloadhdr->next_payload;
+  } // End payload loop
+  
+  if (payload_type != IKE_PAYLOAD_NO_NEXT) {  
+    PRINTF(IPSEC_IKE_ERROR "Unexpected end of peer's message.\n");
+    return 0;
+  }
+
+  /**
+    * Generate keying material for the IKE SA.
+    * See section 2.14 "Generating Keying Material for the IKE SA"
+    */
+  PRINTF(IPSEC_IKE "Calculating shared Diffie Hellman secret\n");
+  ike_statem_get_ike_keymat(session, peer_pub_key);
+
+  session->ephemeral_info->my_child_spi = SAD_GET_NEXT_SAD_LOCAL_SPI;
+  
+  return 1;
 }
 
 
@@ -336,13 +514,11 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     candidate_spi = *((uint32_t *) (((uint8_t *) peerproposal) + sizeof(ike_payload_proposal_t)));
     
     spd_proposal_tuple_t *mytuple = my_offer;
-    if (accepted_transform_subset) {
-      accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
-      if (ike)
-        accepted_transform_subset[0].value = SA_PROTO_IKE;
-      else
-        accepted_transform_subset[0].value = SA_PROTO_ESP;
-    }
+    accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
+    if (ike)
+      accepted_transform_subset[0].value = SA_PROTO_IKE;
+    else
+      accepted_transform_subset[0].value = SA_PROTO_ESP;
     
     // (#2) Loop over my proposals and see if any of them is a superset of this peer's current proposal
     while (mytuple->type != SA_CTRL_END_OF_OFFER) {
@@ -418,12 +594,13 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
             
             // Add the transform to the resulting output offer
             ++acc_proposal_ctr;
-            if (accepted_transform_subset) {
-              memcpy(&accepted_transform_subset[++acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
-              if (candidate_keylen) {
-                accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
-                accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
-              }
+            memcpy(&accepted_transform_subset[++acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
+            if (candidate_keylen) {
+              if (acc_proposal_ctr >= IKE_REPLY_MAX_PROPOSAL_TUPLES)
+                return 1;
+            
+              accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
+              accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
             }
             PRINTF(IPSEC_IKE "#4 acc_proposal_ctr (output offer pointer) increased: %u\n", acc_proposal_ctr);
             
@@ -463,8 +640,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     */
   found_acceptable_proposal:
   
-  if (accepted_transform_subset)
-    accepted_transform_subset[acc_proposal_ctr + 1].type = SA_CTRL_END_OF_OFFER;
+  accepted_transform_subset[acc_proposal_ctr + 1].type = SA_CTRL_END_OF_OFFER;
 
   // Set the SA
   if (ike) {

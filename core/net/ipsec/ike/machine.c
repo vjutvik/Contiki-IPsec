@@ -157,7 +157,7 @@ void ike_statem_setup_responder_session()
   memcpy(&session->peer, peer_ip_addr, sizeof(uip_ip6addr_t));
 
   // Transition to state initrespwait
-  session->next_state_fn = &ike_statem_state_handle_initreq;
+  session->next_state_fn = &ike_statem_state_parse_initreq;
 
   IKE_STATEM_ENTERSTATE(session);
 }

@@ -80,7 +80,6 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 
   // Otherwise we expect a reply like 
   // COOKIE or INVALID_KE_PAYLOAD  
-  session->cookie_payload = NULL; // Reset the cookie data (if it has been used)
   
   ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
 
@@ -88,6 +87,13 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
   session->peer_spi_high = ike_hdr->sa_responder_spi_high;
   session->peer_spi_low = ike_hdr->sa_responder_spi_low;
   
+  //
+  if (ike_statem_parse_sa_init_msg(session, ike_hdr, session->ephemeral_info->proposal_reply) == 0)
+    return 0;
+
+  /*-------------- CUT ------------------- */
+
+  /*
   // Store a copy of this first message from the peer for later use
   // in the autentication calculations.
   COPY_FIRST_MSG(session, ike_hdr);
@@ -106,6 +112,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
     
     PRINTF("Next payload is %d\n", payload_type);
     switch (payload_type) {
+    */
       /*
       FIX: Cookies disabled as for now
       case IKE_PAYLOAD_N:
@@ -125,6 +132,8 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
         IKE_STATEM_TRANSITION(session);
       }
       */
+      
+    /*
       break;
       
       case IKE_PAYLOAD_SA:
@@ -156,7 +165,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       case IKE_PAYLOAD_KE:
       // This is the responder's public key
       ke_payload = (ike_payload_ke_t *) payload_start;
-
+*/
       /**
         * Our approach to selecting the DH group in the SA proposal is a bit sketchy: We grab the first one that
         * fits with our offer. This will probably work in most cases, but not all:
@@ -184,20 +193,20 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
           )
         *
         */
-
+/*
       if (session->sa.dh == SA_UNASSIGNED_TYPE) {
         // DH group not assigned because we've not yet processed the SA payload
         // Store a not of this for later SA processing.
         ke_dh_group = uip_ntohs(ke_payload->dh_group_num);
-        PRINTF(IPSEC_IKE "KE payload: Using group no. %u\n", ke_dh_group);
+        PRINTF(IPSEC_IKE "KE payload: Using group DH no. %hhu\n", ke_dh_group);
       }
       else {
         // DH group has been assigned since we've already processed the SA
         if (session->sa.dh != uip_ntohs(ke_payload->dh_group_num)) {
-          PRINTF(IPSEC_IKE "Error: DH group of the accepted proposal doesn't match that of the KE's.\n");
+          PRINTF(IPSEC_IKE_ERROR "DH group of the accepted proposal doesn't match that of the KE's.\n");
           return 0;
         }
-        PRINTF(IPSEC_IKE "KE payload: Using group no. %u\n", session->sa.dh);
+        PRINTF(IPSEC_IKE "KE payload: Using DH group no. %hhu\n", session->sa.dh);
       }
       
       // Store the address to the beginning of the peer's public key
@@ -216,6 +225,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
       break;
 
       default:
+*/
       /**
         * Unknown / unexpected payload. Is the critical flag set?
         *
@@ -227,7 +237,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
         * include a Notify payload UNSUPPORTED_CRITICAL_PAYLOAD, indicating an
         * unsupported critical payload was included.""
         */
-
+/*
       if (genpayloadhdr->clear) {
         PRINTF(IPSEC_IKE "Error: Encountered an unknown critical payload\n");
         return 0;
@@ -246,15 +256,18 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
     PRINTF(IPSEC_IKE_ERROR "Unexpected end of peer message.\n");
     return 0;
   }
-
+*/
   /**
     * Generate keying material for the IKE SA.
     * See section 2.14 "Generating Keying Material for the IKE SA"
     */
+/*
   PRINTF(IPSEC_IKE "Calculating shared Diffie Hellman secret\n");
   ike_statem_get_ike_keymat(session, peer_pub_key);
 
   session->ephemeral_info->my_child_spi = SAD_GET_NEXT_SAD_LOCAL_SPI;
+*/
+  /* ----------- CUT --------------- */
 
   // Jump
   // Transition to state autrespwait
@@ -420,7 +433,7 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
                                       0,
                                       NULL,
                                       outgoing_sad_entry,
-                                      NULL)) {
+                                      session->ephemeral_info->proposal_reply)) { /* We're not using proposal_reply, but the fn. expects it */
         PRINTF(IPSEC_IKE "The peer's offer was unacceptable\n");
         goto fail;
       }

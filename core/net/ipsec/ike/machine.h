@@ -32,7 +32,7 @@
 /**
   * Protocol-related stuff
   */
-#define IKE_STATEM_TIMEOUT 5 * CLOCK_SECOND
+#define IKE_STATEM_TIMEOUT 20 * CLOCK_SECOND
 
 /**
   * Global buffers used for communicating information with the state machine
@@ -75,6 +75,9 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 // The maximum size of the peer's first message.
 // Used for calculating the AUTH hash
 #define IKE_STATEM_FIRSTMSG_MAXLEN 800
+
+// The maximum number of tuples that can be returned in a reply from 
+#define IKE_REPLY_MAX_PROPOSAL_TUPLES 15
 
 #define IKE_STATEM_MYSPI_GET_MYSPI(session) ((session)->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
@@ -142,6 +145,9 @@ typedef struct {
 
   uint8_t peer_first_msg[IKE_STATEM_FIRSTMSG_MAXLEN];
   uint16_t peer_first_msg_len;
+  
+  // Internal representation of our reply to a responder's SA offer
+  spd_proposal_tuple_t proposal_reply[IKE_REPLY_MAX_PROPOSAL_TUPLES];
 
   // My private asymmetric key store in small endian ContikiECC format
   NN_DIGIT my_prv_key[IKE_DH_SCALAR_BUF_LEN];
@@ -205,8 +211,6 @@ typedef struct ike_statem_session {
   // of variable size (next and length info in the head, cast everything to smallest
   // common denominator)  
   sa_ike_t sa;
-
-  spd_proposal_tuple_t *proposal_reply;
 
   // Temporary scratchpad for use during setup of the IKE SA
   ike_statem_ephemeral_info_t *ephemeral_info;

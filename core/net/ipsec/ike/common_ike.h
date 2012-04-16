@@ -13,7 +13,7 @@
   */
 extern uint16_t ike_statem_trans_initreq(ike_statem_session_t *session);
 extern uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session);
-extern uint8_t ike_statem_state_handle_initreq(ike_statem_session_t *session);
+extern uint8_t ike_statem_state_parse_initreq(ike_statem_session_t *session);
 extern uint8_t ike_statem_state_established_handler(ike_statem_session_t *session);
 
 // Other
@@ -43,8 +43,8 @@ extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
 extern void ike_statem_finalize_sk(payload_arg_t *payload_arg, 
                                         ike_payload_generic_hdr_t *sk_genpayloadhdr, 
                                         uint16_t data_len);
-extern u8_t ike_statem_handle_notify(ike_payload_notify_t *payload_start);
-extern u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
+extern uint8_t ike_statem_handle_notify(ike_payload_notify_t *payload_start);
+extern uint8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
 extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg);
 extern void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, direction_t direction, ike_ts_t *ts_src, ike_ts_t *ts_dest);
