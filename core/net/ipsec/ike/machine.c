@@ -78,7 +78,7 @@ void ike_statem_transition(ike_statem_session_t *session)
 {
   PRINTF(IPSEC_IKE "Entering transition fn %p of session %p\n", (session)->transition_fn, session);  \
 
-  msg_buf = (uint8_t *) udp_buf;                                   
+  msg_buf = uip_udp_buffer_dataptr(); //(uint8_t *) udp_buf;                                   
   uint16_t len = (*(session)->transition_fn)((session));           
   /* send udp pkt here (len = start_ptr - udp_buf) */              
   PRINTF(IPSEC_IKE "Sending UDP packet of length %u\n", len);      
@@ -106,6 +106,10 @@ void ike_statem_init()
   printf("ike_statem_init: calling udp_new\n");
   my_conn = udp_new(NULL, UIP_HTONS(0), NULL);
   udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
+
+  my_conn->rport = 0;
+  uip_create_unspecified(&my_conn->ripaddr);
+
   PRINTF(IPSEC_IKE "State machine initialized. Listening on UDP port %d.\n", uip_ntohs(my_conn->lport));
   
 
@@ -331,8 +335,14 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
   */
 void ike_statem_send(ike_statem_session_t *session, uint16_t len)
 {
+  /*
   uip_ipaddr_copy(&my_conn->ripaddr, &session->peer);
   my_conn->rport = UIP_HTONS(IKE_UDP_PORT);
+  */
+  
+  uip_udp_buffer_set_datalen(len);
+  uip_udp_buffer_sendto(my_conn, &session->peer, uip_htons(IKE_UDP_PORT));
+  
   //udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
   
   /**
@@ -340,16 +350,17 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len)
     * The following code copies the behaviour of uip_udp_packet_send(),
     * with the exception of the memcpy() operation.
     */
-  uip_udp_conn = my_conn;
+/*  uip_udp_conn = my_conn;
   uip_slen = len;
   uip_process(UIP_UDP_SEND_CONN);
   tcpip_ipv6_output();
-
+*/
   // Reset everything so that we can listen to new packets
-  uip_slen = 0;
-  my_conn->rport = 0;
+  //uip_slen = 0;
   //udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT));
-  uip_create_unspecified(&my_conn->ripaddr);
+
+  //my_conn->rport = 0;
+  //uip_create_unspecified(&my_conn->ripaddr);
 }
 
 /**
