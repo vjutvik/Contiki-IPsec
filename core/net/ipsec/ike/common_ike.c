@@ -10,6 +10,7 @@
 #include "transforms/integ.h"
 #include "transforms/encr.h"
 //#include "payload.h"
+#include "machine.h"
 #include "spd_conf.h"
 #include "common_ike.h"
 #include "auth.h"
@@ -162,9 +163,403 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
 
 
 /**
-  * 
+  * Sends a single Notify payload encapsulated in an SK payload if cryptographic keys have been negotiated. Only to be called from state
+  * function.
+  *
+  * The IKE header's exchange type will be recycled from the header currently sitting in msg_buf. The type will always be response. If the exchange is any other than SA_INIT
+  * the notify payload will be protected by an encrypted payload.
+  *
+  * \param session Session concerned
+  * \param type Notify message type. 0 does nothing.
   */
-uint8_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_payload_ike_hdr_t *ike_hdr, spd_proposal_tuple_t *accepted_offer)
+void ike_statem_send_single_notify(ike_statem_session_t *session, notify_msg_type_t type)
+{
+  payload_arg_t payload_arg = {
+    .start = msg_buf,
+    .session = session
+  };
+  
+  // Don't do anything if type is 0
+  if (!type)
+    return;
+
+  PRINTF(IPSEC_IKE "Sending single notification to peer of type %hhu\n", type);
+
+  ike_payload_ike_hdr_t *old_ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
+  uint8_t protect = old_ike_hdr->exchange_type == IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH || old_ike_hdr->exchange_type == IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_CREATE_CHILD_SA;
+  
+  SET_IKE_HDR_AS_RESPONDER(&payload_arg, old_ike_hdr->exchange_type, IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONSE);
+
+  ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
+  if (protect) {
+    // Write a template of the SK payload for later encryption
+    ike_statem_prepare_sk(&payload_arg);
+  }
+
+  /**
+    * Write notification requesting the peer to create transport mode SAs
+    */
+  ike_statem_write_notification(&payload_arg, SA_PROTO_IKE, 0, type, NULL, 0);
+
+  if (protect) {
+    // Protect the SK payload. Write trailing fields.
+    ike_statem_finalize_sk(&payload_arg, sk_genpayloadhdr, payload_arg.start - (((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t)));
+  }
+  
+  // Send!
+  ike_statem_send(session, uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len));
+  
+  return;
+}
+
+
+/**
+  * Completes a transition that responds to or requests an SA INIT exchange
+  */
+transition_return_t ike_statem_send_sa_init_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, ike_payload_ike_hdr_t *ike_hdr, spd_proposal_tuple_t *offer)
+{
+  // Should we include a COOKIE Notification? (see section 2.6)
+  /**
+    * Disabled as for now -Ville
+  IKE_STATEM_ASSERT_COOKIE(&payload_arg);
+    **/
+  
+  // Write the SA payload
+  // From p. 79: 
+  //    "SPI Size (1 octet) - For an initial IKE SA negotiation, this field MUST be zero; 
+  //    the SPI is obtained from the outer header."
+  //
+  // (Note: We're casting to spd_proposal_tuple * in order to get rid of the const type qualifier of CURRENT_IKE_PROPOSAL)
+  ike_statem_write_sa_payload(payload_arg, offer/* (spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL */, 0); 
+  
+  // Start KE payload
+  ike_payload_generic_hdr_t *ke_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
+  SET_GENPAYLOADHDR(ke_genpayloadhdr, payload_arg, IKE_PAYLOAD_KE);
+  
+  ike_payload_ke_t *ke = (ike_payload_ke_t *) payload_arg->start;
+  ke->dh_group_num = uip_htons(SA_IKE_MODP_GROUP);
+  ke->clear = 0;
+
+  // Write key exchange data (varlen)
+  // (Note: We cast the first arg of ecdh_enc...() in the firm belief that payload_arg->start is at a 4 byte alignment)
+  payload_arg->start = ecdh_encode_public_key((uint32_t *) (payload_arg->start + sizeof(ike_payload_ke_t)), session->ephemeral_info->my_prv_key);
+  ke_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) ke_genpayloadhdr);
+  // End KE payload
+  
+  // Start nonce payload
+  ike_payload_generic_hdr_t *ninr_genpayloadhdr;
+  SET_GENPAYLOADHDR(ninr_genpayloadhdr, payload_arg, IKE_PAYLOAD_NiNr);
+
+  // Write nonce
+  random_ike(payload_arg->start, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);
+  MEMPRINTF("My nonce", payload_arg->start, IKE_PAYLOAD_MYNONCE_LEN);
+  payload_arg->start += IKE_PAYLOAD_MYNONCE_LEN;
+  ninr_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) ninr_genpayloadhdr);
+  // End nonce payload
+  
+  // Wrap up the IKE header and exit state
+  ((ike_payload_ike_hdr_t *) msg_buf)->len = uip_htonl(payload_arg->start - msg_buf);
+  SET_NO_NEXT_PAYLOAD(payload_arg);
+
+  return payload_arg->start - msg_buf;
+}
+
+
+state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
+{
+  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
+  ike_ts_t *tsi, *tsr;
+  ike_id_payload_t *id_data = NULL;
+  uint8_t id_datalen;
+  ike_payload_auth_t *auth_payload = NULL;
+  uint8_t transport_mode_not_accepted = 1;
+  
+  uint32_t time = clock_time();
+  sad_entry_t *outgoing_sad_entry = sad_create_outgoing_entry(time);
+  sad_entry_t *incoming_sad_entry = sad_create_incoming_entry(time);
+
+  // What is our child SA offer?
+  spd_proposal_tuple_t *offer;
+  if (IKE_STATEM_IS_INITIATOR(session))
+    offer = session->ephemeral_info->spd_entry->offer;
+  else
+    offer = my_ah_esp_proposal; // FIX: Derive the proper offer from the SPD with resepect to the traffic selectors
+  
+  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  u8_t *end = msg_buf + uip_datalen();
+  notify_msg_type_t fail_notify_type= 0;
+  ike_payload_type_t payload_type = ike_hdr->next_payload;
+  while (ptr < end) { // Payload loop
+    const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
+    const uint8_t *payload_start = (uint8_t *) genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
+    
+    PRINTF("Next payload is %hhu, %hu bytes remaining\n", payload_type, uip_datalen() - (ptr - msg_buf));
+    switch (payload_type) {
+      case IKE_PAYLOAD_SK:
+      if ((end -= ike_statem_unpack_sk(session, (ike_payload_generic_hdr_t *) genpayloadhdr)) == 0) {
+        PRINTF(IPSEC_IKE_ERROR "SK payload: Integrity check of peer's message failed\n");
+        fail_notify_type = IKE_PAYLOAD_NOTIFY_INVALID_SYNTAX;
+        goto fail;
+      }
+      break;
+      
+      case IKE_PAYLOAD_N:
+      {
+        ike_payload_notify_t *notify = (ike_payload_notify_t *) payload_start;
+        if (uip_ntohs(notify->notify_msg_type) == IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE)
+          transport_mode_not_accepted = 0;
+        if (ike_statem_handle_notify(notify))
+          goto fail;
+      }
+      break;
+      
+      case IKE_PAYLOAD_IDi:
+      case IKE_PAYLOAD_IDr:
+      id_data = (ike_id_payload_t *) payload_start;
+      id_datalen = uip_ntohs(genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t);
+      break;
+      
+      case IKE_PAYLOAD_AUTH:
+      MEMPRINTF("auth payload", genpayloadhdr, uip_ntohs(genpayloadhdr->len));
+      auth_payload = (ike_payload_auth_t *) ((uint8_t *) genpayloadhdr + sizeof(ike_payload_generic_hdr_t));
+      PRINTF("auth_payload: %p\n", auth_payload);
+      
+      if (auth_payload->auth_type != IKE_AUTH_SHARED_KEY_MIC) {
+        PRINTF(IPSEC_IKE_ERROR "Peer using authentication type %hhu instead of pre-shared key authentication\n", auth_payload->auth_type);
+        fail_notify_type = IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED;
+        goto fail;
+      }
+      break;
+
+      case IKE_PAYLOAD_SA:
+      /**
+        * Assert that the responder's child offer is a subset of that of ours
+        */
+      if (ike_statem_parse_sa_payload(offer, 
+                                      (ike_payload_generic_hdr_t *) genpayloadhdr,
+                                      0,
+                                      NULL,
+                                      outgoing_sad_entry,
+                                      session->ephemeral_info->child_proposal_reply)) {
+        PRINTF(IPSEC_IKE_ERROR "The peer's child SA offer was unacceptable\n");
+        fail_notify_type = IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN;
+        goto fail;
+      }
+      
+      // Set incoming SAD entry
+      session->ephemeral_info->peer_child_spi = outgoing_sad_entry->spi;  // For use in the next response
+      incoming_sad_entry->spi = session->ephemeral_info->my_child_spi;
+      incoming_sad_entry->sa.encr = outgoing_sad_entry->sa.encr;
+      incoming_sad_entry->sa.encr_keylen = outgoing_sad_entry->sa.encr_keylen;
+      incoming_sad_entry->sa.integ = outgoing_sad_entry->sa.integ;
+
+      PRINTF(IPSEC_IKE "The peer's proposal was accepted\n");
+      break;
+      
+      case IKE_PAYLOAD_TSi:
+      tsi = (ike_ts_t *) (payload_start + sizeof(ike_payload_generic_hdr_t));
+      PRINTF("tsi set to: %p\n", tsi);
+      break;
+      
+      case IKE_PAYLOAD_TSr:
+      tsr = (ike_ts_t *) (payload_start + sizeof(ike_payload_generic_hdr_t));
+      PRINTF("tsr set to: %p\n", tsr);
+      break;
+      
+      default:
+      /**
+        * Unknown / unexpected payload. Is the critical flag set?
+        *
+        * From p. 30:
+        *
+        * "If the critical flag is set
+        * and the payload type is unrecognized, the message MUST be rejected
+        * and the response to the IKE request containing that payload MUST
+        * include a Notify payload UNSUPPORTED_CRITICAL_PAYLOAD, indicating an
+        * unsupported critical payload was included.""
+        */
+
+      if (genpayloadhdr->clear) {
+        PRINTF(IPSEC_IKE_ERROR "Encountered an unknown critical payload\n");
+        fail_notify_type = IKE_PAYLOAD_NOTIFY_UNSUPPORTED_CRITICAL_PAYLOAD;        
+        goto fail;
+      }
+      else
+        PRINTF(IPSEC_IKE "Ignoring unknown non-critical payload of type %hhu\n", payload_type);
+      // Info: Ignored unknown payload
+    }
+
+    ptr = (uint8_t *) genpayloadhdr + uip_ntohs(genpayloadhdr->len);
+    payload_type = genpayloadhdr->next_payload;
+  } // End payload loop
+
+  if (payload_type != IKE_PAYLOAD_NO_NEXT) {
+    PRINTF(IPSEC_IKE_ERROR "Unexpected end of peer message.\n");
+    fail_notify_type = IKE_PAYLOAD_NOTIFY_INVALID_SYNTAX;
+    goto fail;
+  }
+  
+  /**
+    * Assert that transport mode was accepted
+    */
+  if (transport_mode_not_accepted) {
+    PRINTF(IPSEC_IKE_ERROR "Peer did not accept transport mode child SA\n");
+    fail_notify_type = IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN;
+    goto fail;
+  }
+  
+  /**
+    * Assert AUTH data
+    */
+  if (id_data == NULL || auth_payload == NULL) {
+    PRINTF(IPSEC_IKE_ERROR "IDr or AUTH payload is missing\n");
+    fail_notify_type = IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED;
+    goto fail;
+  }
+  {
+    uint8_t responder_signed_octets[session->ephemeral_info->peer_first_msg_len + session->ephemeral_info->peernonce_len + SA_PRF_OUTPUT_LEN(session)];
+    
+    uint16_t responder_signed_octets_len = ike_statem_get_authdata(session, 0 /* Peer's signed octets */, responder_signed_octets, id_data, id_datalen);
+    uint8_t mac[SA_PRF_OUTPUT_LEN(session)];
+    
+    /**
+      * AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
+      */
+    prf_data_t auth_data = {
+      .out = mac,
+      .data = responder_signed_octets,
+      .datalen = responder_signed_octets_len
+    };  
+    auth_psk(session->sa.prf, &auth_data);
+
+    if (memcmp(mac, ((uint8_t *) auth_payload) + sizeof(ike_payload_auth_t), sizeof(mac))) {
+      PRINTF(IPSEC_IKE_ERROR "AUTH data mismatch\n");
+      fail_notify_type = IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED;
+      goto fail;
+    }
+    PRINTF(IPSEC_IKE "Peer successfully authenticated\n");
+  }
+  /**
+    * Save traffic descriptors
+    */
+  // Fn: ts_pair_to_addr_set, addr_set_is_a_subset_of_addr_set, (addr_set_to_ts_pair in the future)
+  // FIX: Security: Check that the TSs we receive from the peer are a subset of our offer
+  outgoing_sad_entry->traffic_desc.peer_addr_from = outgoing_sad_entry->traffic_desc.peer_addr_to = &outgoing_sad_entry->peer;
+  incoming_sad_entry->traffic_desc.peer_addr_from = incoming_sad_entry->traffic_desc.peer_addr_to = &incoming_sad_entry->peer;
+  PRINTF("tsi prior to fn: %p\n", tsi);
+  
+  if (IKE_STATEM_IS_INITIATOR(session)) {
+    ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, SPD_OUTGOING_TRAFFIC, tsi, tsr);
+    ts_pair_to_addr_set(&incoming_sad_entry->traffic_desc, SPD_INCOMING_TRAFFIC, tsi, tsr);
+  }
+  else {
+    ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, SPD_OUTGOING_TRAFFIC, tsr, tsi);
+    ts_pair_to_addr_set(&incoming_sad_entry->traffic_desc, SPD_INCOMING_TRAFFIC, tsr, tsi);    
+  }
+  
+  /**
+    * Get Child SA keying material as outlined in section 2.17
+    *
+    *     KEYMAT = prf+(SK_d, Ni | Nr)
+    *
+    */
+  if (IKE_STATEM_IS_INITIATOR(session))
+    ike_statem_get_child_keymat(session, &incoming_sad_entry->sa, &outgoing_sad_entry->sa);
+  else
+    ike_statem_get_child_keymat(session, &outgoing_sad_entry->sa, &incoming_sad_entry->sa);
+  
+  PRINTF(IPSEC_IKE "Outgoing SAD entry registered with SPI %u. Incoming SAD entry registered with SPI %u. Encryption type %hhu integrity type %hhu\n",
+   outgoing_sad_entry->spi, incoming_sad_entry->spi, incoming_sad_entry->sa.encr, incoming_sad_entry->sa.integ);
+  
+  PRINTF("OUTGOING SAD ENTRY\n"); 
+  PRINTSADENTRY(outgoing_sad_entry);
+  PRINTF("INCOMING SAD ENTRY\n"); 
+  PRINTSADENTRY(incoming_sad_entry);
+  
+  // Remove stuff that we don't need
+  ike_statem_clean_session(session);
+  
+  return STATE_SUCCESS;
+  
+  fail:
+  ike_statem_send_single_notify(session, fail_notify_type);  
+  sad_remove_outgoing_entry(outgoing_sad_entry);
+  sad_remove_incoming_entry(incoming_sad_entry);
+  return STATE_FAILURE;
+}
+
+
+transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, uint32_t child_sa_spi, spd_proposal_tuple_t *sai2_offer)
+{
+  // Write a template of the SK payload for later encryption
+  ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
+  ike_statem_prepare_sk(payload_arg);
+
+  /**
+    * ID payload. We use the e-mail address type of ID
+    */
+  ike_payload_generic_hdr_t *id_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
+  if (IKE_STATEM_IS_INITIATOR(session))
+    ike_statem_set_id_payload(payload_arg, IKE_PAYLOAD_IDi);
+  else
+    ike_statem_set_id_payload(payload_arg, IKE_PAYLOAD_IDr);
+  
+  ike_id_payload_t *id_payload = (ike_id_payload_t *) ((uint8_t *) id_genpayloadhdr + sizeof(ike_payload_generic_hdr_t));
+  
+  /**
+    * Write the AUTH payload (section 2.15)
+    *
+    * Details depends on the type of AUTH Method specified.
+    */
+  ike_payload_generic_hdr_t *auth_genpayloadhdr;
+  SET_GENPAYLOADHDR(auth_genpayloadhdr, payload_arg, IKE_PAYLOAD_AUTH);
+  ike_payload_auth_t *auth_payload = (ike_payload_auth_t *) payload_arg->start;
+  auth_payload->auth_type = IKE_AUTH_SHARED_KEY_MIC;
+  payload_arg->start += sizeof(ike_payload_auth_t);
+  
+  uint8_t *signed_octets = payload_arg->start + SA_PRF_MAX_OUTPUT_LEN;
+  uint16_t signed_octets_len = ike_statem_get_authdata(session, 1, signed_octets, id_payload, uip_ntohs(id_genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t));
+  
+  /**
+    * AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
+    */
+  prf_data_t auth_data = {
+    .out = payload_arg->start,
+    .data = signed_octets,
+    .datalen = signed_octets_len
+  };
+  auth_psk(session->sa.prf, &auth_data);
+  payload_arg->start += SA_PRF_OUTPUT_LEN(session);
+  auth_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) auth_genpayloadhdr); // Length of the AUTH payload
+
+  /**
+    * Write notification requesting the peer to create transport mode SAs
+    */
+  ike_statem_write_notification(payload_arg, SA_PROTO_IKE, 0, IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE, NULL, 0);
+
+  /**
+    * Write SAi2 (offer for the child SA)
+    */
+  ike_statem_write_sa_payload(payload_arg, sai2_offer, child_sa_spi);
+
+  /**
+    * The TS payload is decided by the triggering packet's header and the policy that applies to it
+    *
+    * Read more at "2.9.  Traffic Selector Negotiation" p. 40
+    */
+  ike_statem_write_tsitsr(payload_arg);
+
+  // Protect the SK payload. Write trailing fields.
+  ike_statem_finalize_sk(payload_arg, sk_genpayloadhdr, payload_arg->start - (((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t)));
+
+  return uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len);  // Return written length
+}
+
+
+/**
+  * Parse an SA INIT message
+  */
+state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_payload_ike_hdr_t *ike_hdr, spd_proposal_tuple_t *accepted_offer)
 {
   // session->cookie_payload = NULL; // Reset the cookie data (if it has been used)
 
@@ -344,7 +739,7 @@ uint8_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_payload_
   *
   * \parameter payload_arg Payload argument
   * \parameter offer The offer chain. Probably one from spd_conf.c.
-  * \parameter spi The SPI of offer's proposals (We only support one SPI per offer. Nothing tells us that this is illegal.)
+  * \parameter spi The SPI of the offer's proposals (We only support one SPI per offer. Nothing tells us that this is illegal.)
   */
 void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi)
 {
@@ -361,6 +756,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   u8_t n = 0;
   uint8_t proposal_number = 1;
   do {  // Loop over the offer's tuples
+    PRINTF("WRITE_SA_PAYLOAD: Offer type: %hu\n", offer[n].type);
     switch(offer[n].type) {
         
       case SA_CTRL_NEW_PROPOSAL:
@@ -454,7 +850,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
       break;
       
       default:
-      PRINTF(IPSEC_IKE ": ike_statem_write_sa_payload: Error: Unexpected SA_CTRL\n");
+      PRINTF(IPSEC_IKE_ERROR "ike_statem_write_sa_payload: Unexpected SA_CTRL\n");
     } // End switch (offer)
   } while(offer[n++].type != SA_CTRL_END_OF_OFFER); // End while (offer)
     
@@ -528,14 +924,14 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
       ++mytuple; // Jump the SA_CTRL_NEW_PROPOSAL
       memset(candidates, 0, sizeof(candidates));
       uint8_t accepted_transforms = 0;  // Number of accepted transforms
+      acc_proposal_ctr = 0;
       
       // (#3) Loop over this proposal in my offer
       while (mytuple->type != SA_CTRL_END_OF_OFFER && mytuple->type != SA_CTRL_NEW_PROPOSAL) {        
         // Does this transform have an attribute?
 
         PRINTF(IPSEC_IKE "\n#3 Looking at mytuple->type %u mytuple->value %u\n", mytuple->type, mytuple->value);
-        u8_t my_keylen = 0;
-        acc_proposal_ctr = 1;
+        uint8_t my_keylen = 0;
         if ((mytuple + 1)->type == SA_CTRL_ATTRIBUTE_KEY_LEN)
           my_keylen = (mytuple + 1)->type;
         
@@ -594,20 +990,21 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
             
             // Add the transform to the resulting output offer
             ++acc_proposal_ctr;
-            memcpy(&accepted_transform_subset[++acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
-            if (candidate_keylen) {
+            PRINTF("PARSE_SA_PAYLOAD: acc_proposal_ctr %hhu, mytuple.type %hhu\n", acc_proposal_ctr, mytuple->type);
+            memcpy(&accepted_transform_subset[acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
+            if (candidate_keylen && mytuple->type == SA_CTRL_TRANSFORM_TYPE_ENCR) {
               if (acc_proposal_ctr >= IKE_REPLY_MAX_PROPOSAL_TUPLES)
                 return 1;
             
               accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
               accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
             }
-            PRINTF(IPSEC_IKE "#4 acc_proposal_ctr (output offer pointer) increased: %u\n", acc_proposal_ctr);
+            PRINTF(IPSEC_IKE "#4 acc_proposal_ctr (output offer pointer) increased: %hhu\n", acc_proposal_ctr);
             
             // Set the SA
             candidates[mytuple->type] = mytuple->value;
             ++accepted_transforms;
-            PRINTF(IPSEC_IKE "#4 Accepted transforms is now %u\n", accepted_transforms);
+            PRINTF(IPSEC_IKE "#4 Accepted transforms is now %hhu\n", accepted_transforms);
             if (accepted_transforms == required_transforms)
               goto found_acceptable_proposal;
           }
@@ -663,7 +1060,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
 /**
   * Helper for ike_statem_get_authdata
   */
-uint32_t rerun_init_req(uint8_t *out, ike_statem_session_t *session)
+uint32_t rerun_init_msg(uint8_t *out, uint8_t initreq, ike_statem_session_t *session)
 {
   /**
     * Stash the current state
@@ -672,17 +1069,28 @@ uint32_t rerun_init_req(uint8_t *out, ike_statem_session_t *session)
   // Stash peer SPI
   uint32_t peer_spi_high = session->peer_spi_high;
   uint32_t peer_spi_low = session->peer_spi_low;
-  session->peer_spi_high = 0;
-  session->peer_spi_low = 0;
+
+  if (initreq) {
+    session->peer_spi_high = 0;
+    session->peer_spi_low = 0;
+  }
   
   // Stash my msg ID
   uint32_t my_msg_id = session->my_msg_id;
-  session->my_msg_id = 0;
+//  uint32_t peer_msg_id = session->peer_msg_id;
+
+  //if (initreq)
+    session->my_msg_id = 0;
+  //else
+  //  session->peer_msg_id = 0;
   
   // Buffers
   uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
   msg_buf = out;
-  ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start  
+  if (initreq)
+    ike_statem_trans_initreq(session);  // Re-write our first message to assembly_start  
+  else
+    ike_statem_trans_initresp(session);
   
   /** 
     * Restore old state
@@ -691,6 +1099,7 @@ uint32_t rerun_init_req(uint8_t *out, ike_statem_session_t *session)
   session->peer_spi_high = peer_spi_high;
   session->peer_spi_low = peer_spi_low;
   session->my_msg_id = my_msg_id;
+  //session->peer_msg_id = peer_msg_id;
   
   return uip_ntohl(((ike_payload_ike_hdr_t *) out)->len);
 }
@@ -721,7 +1130,7 @@ void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, direction_t direction, 
 
 
 /**
-  * Get InitiatorSignedOctets or ResponderSignedOctets (depending on session) as described on p. 48.
+  * Get InitiatorSignedOctets or ResponderSignedOctets (depending on session) as described on p. 47.
   *
   * \param session      Current session
   * \param myauth       Generate my *SignedOctet (use my own RealMessage) if set to one, generate the peer's *SignedOctets (use the peer's stored RealMessage) if set to zero.
@@ -737,16 +1146,29 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
 
   /**
     * There are four types of SignedOctets -strings that can be created:
-    *   0. We are the initiator, and we recreate the peer's ResponderSignedOctets
-    *   1. We are the initiator, and we create our InitiatorSignedOctets
-    *   2. We are the responder, and we recreate the peer's InitiatorSignedOctets
-    *   3. We are the responder, and we create our ResponderSignedOctets
+    *   0. We are the responder, and we recreate the peer's InitiatorSignedOctets
+    *   1. We are the responder, and we create our ResponderSignedOctets
+    *   2. We are the initiator, and we recreate the peer's ResponderSignedOctets
+    *   3. We are the initiator, and we create our InitiatorSignedOctets
     *
     */
-  uint8_t type = 2 * IKE_STATEM_IS_INITIATOR(session) + myauth;
-
+  uint8_t type = 2 * (IKE_STATEM_IS_INITIATOR(session) > 0) + myauth;
+  PRINTF("Type is %hhu is initiator: %hhu\n", type, IKE_STATEM_IS_INITIATOR(session));
+  
   // Pack RealMessage*
   PRINTF("RealMessage1: ");
+  /*
+  if (myauth) {
+    PRINTF("Re-running our first message's transition\n");
+    ptr += rerun_init_msg(ptr, session);    
+
+  }
+  else {
+    PRINTF("Using peer_first_msg, len %u\n", session->ephemeral_info->peer_first_msg_len);
+    memcpy(ptr, session->ephemeral_info->peer_first_msg, session->ephemeral_info->peer_first_msg_len);
+    ptr += session->ephemeral_info->peer_first_msg_len;    
+  }
+*/
   switch (type) {
     case 0:
     PRINTF("Using peer_first_msg, len %u\n", session->ephemeral_info->peer_first_msg_len);
@@ -756,7 +1178,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
     
     case 1:
     PRINTF("Re-running our first message's transition\n");
-    ptr += rerun_init_req(ptr, session);
+    ptr += rerun_init_msg(ptr, 0, session);
     break;
     
     case 2:
@@ -766,13 +1188,13 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
     break;
     
     case 3:
-    // FIX RESPONSE: trans_initreq is probably the wrong method!
     PRINTF("Re-running our first message's transition\n");
-    ptr += rerun_init_req(ptr, session);
+    ptr += rerun_init_msg(ptr, 1, session);
   }
+
+  // Nonce(I/R)Datatop
   
-  // Nonce(I/R)Data
-  if (type % 3) {
+  if (myauth) {
     memcpy(ptr, session->ephemeral_info->peernonce, session->ephemeral_info->peernonce_len);
     ptr += session->ephemeral_info->peernonce_len;    
   }
@@ -791,6 +1213,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
   };
   
   MEMPRINTF("id_payload", id_payload, id_payload_len);
+
   /*
   0:pr
   1:pi
@@ -798,18 +1221,18 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
   3:pr
   */
   if (type % 3) {
-    prf_data.key = session->ephemeral_info->sk_pi;
-    MEMPRINTF("Using key sk_pi", prf_data.key, prf_data.keylen);
-  }
-  else {
     prf_data.key = session->ephemeral_info->sk_pr;
     MEMPRINTF("Using key sk_pr", prf_data.key, prf_data.keylen);
+  }
+  else {
+    prf_data.key = session->ephemeral_info->sk_pi;
+    MEMPRINTF("Using key sk_pi", prf_data.key, prf_data.keylen);
   }
 
   prf(session->sa.prf, &prf_data);
   ptr += SA_PRF_PREFERRED_KEYMATLEN(session);
 
-  //MEMPRINTF("*SignedOctets", out, ptr - out);
+  MEMPRINTF("*SignedOctets", out, ptr - out);
   return ptr - out;
 }
 

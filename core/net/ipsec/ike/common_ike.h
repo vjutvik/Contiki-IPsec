@@ -8,15 +8,37 @@
 #include "payload.h"
 #include "sad.h"
 
+
 /**
-  * State machine states and transitions that are commonly crossreferenced
+  * References states of the responder machine
+  */
+extern state_return_t ike_statem_state_parse_initreq(ike_statem_session_t *session);
+extern transition_return_t ike_statem_trans_initresp(ike_statem_session_t *session);
+extern state_return_t ike_statem_state_parse_authreq(ike_statem_session_t *session);
+extern transition_return_t ike_statem_trans_authresp(ike_statem_session_t *session);
+
+/**
+  * References states of the initiator machine
   */
 extern uint16_t ike_statem_trans_initreq(ike_statem_session_t *session);
 extern uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session);
-extern uint8_t ike_statem_state_parse_initreq(ike_statem_session_t *session);
+
+/**
+  * References states of the established machine
+  */
 extern uint8_t ike_statem_state_established_handler(ike_statem_session_t *session);
 
-// Other
+
+/**
+  * Major functions implementing behaviour that is shared across the machines
+  */
+extern transition_return_t ike_statem_send_sa_init_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, ike_payload_ike_hdr_t *ike_hdr, spd_proposal_tuple_t *offer);
+extern state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session);
+extern state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_payload_ike_hdr_t *ike_hdr, spd_proposal_tuple_t *accepted_offer);
+
+/**
+  * Helper functions that parses and writes payloads, generates keying material etc
+  */
 extern void ike_statem_write_notification(payload_arg_t *payload_arg, 
                                 sa_ipsec_proto_type_t proto_id,
                                 uint32_t spi, 
@@ -27,7 +49,7 @@ extern void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_ty
 extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi);
 extern void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
 extern void ike_statem_get_child_keymat(ike_statem_session_t *session, sa_child_t *incoming, sa_child_t *outgoing);
-extern void ike_statem_transition(ike_statem_session_t *session);
+extern transition_return_t ike_statem_run_transition(ike_statem_session_t *session, uint8_t retransmit);
 extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
                                 ike_payload_generic_hdr_t *sa_payload_hdr, 
                                 uint8_t ke_dh_group,

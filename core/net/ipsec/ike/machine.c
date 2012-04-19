@@ -54,14 +54,24 @@ void ike_statem_timeout_handler(void *session);
 /**
   * To be called in order to enter a _state_ (not execute a transition!)
   */
-#define IKE_STATEM_ENTERSTATE(session)                                \
-  /* Stop retransmission timer (if any has been set) */               \
+#define IKE_STATEM_ENTERSTATE(session)                                        \
+  /* Stop retransmission timer (if any has been set) */                       \
   PRINTF(IPSEC_IKE "Session %p is entering state %p\n", (session), (session)->next_state_fn);  \
-  STOP_RETRANSTIMER((session));                                       \
-  if ((*(session)->next_state_fn)(session) == 0) {                    \
+  STOP_RETRANSTIMER((session));                                               \
+  state_return_t rtvl = (*(session)->next_state_fn)(session);                 \
+  if (rtvl != STATE_SUCCESS) {                                                \
+    /*                                                                                \
+    if (rtvl != STATE_ERR_NO_NOTIFY) {                                                \
+      transition_return_t len = ike_statem_send_single_notify(session, (rtvl);        \
+      session->transition_fn = &ike_statem_trans_authreq;                             \
+      ike_statem_run_transition(ike_statem_session_t *session, 0)                     \
+    }                                                                                 \
+    */                                                                                \
     PRINTF(IPSEC_IKE "Removing IKE session %p due to termination in state %p\n", session, (session)->next_state_fn);  \
-    ike_statem_remove_session(session);                               \
-  }                                                                   \
+    ike_statem_remove_session(session);                                       \
+  }                                                                           \
+  else                                                                        \
+    IKE_STATEM_INCRPEERMSGID(session);                                        \
   return
 
 #define SET_RETRANSTIMER(session) \
@@ -72,20 +82,33 @@ void ike_statem_timeout_handler(void *session);
 
 /**
   * Executes a state transition, moving from one state to another and sends a
-  * an IKE message in the process
+  * an IKE message in the process. The session as referred to by the variable session is removed (and therefore deallocated)
+  * upon transition failure.
+  *
+  * \param session The session concerned
+  * \param retransmit If set to non-zero, the retransmission timer for the transition will be activated. 0 otherwise.
+  *
+  * \return the value returned by the transition
   */
-void ike_statem_transition(ike_statem_session_t *session)
+transition_return_t ike_statem_run_transition(ike_statem_session_t *session, uint8_t retransmit)
 {
-  PRINTF(IPSEC_IKE "Entering transition fn %p of session %p\n", (session)->transition_fn, session);  \
+  PRINTF(IPSEC_IKE "Entering transition fn %p of IKE session %p\n", session->transition_fn, session);  \
 
-  msg_buf = uip_udp_buffer_dataptr(); //(uint8_t *) udp_buf;                                   
-  uint16_t len = (*(session)->transition_fn)((session));           
-  /* send udp pkt here (len = start_ptr - udp_buf) */              
-  PRINTF(IPSEC_IKE "Sending UDP packet of length %u\n", len);      
-  /* MEMPRINTF("SENDING", msg_buf, len); */                        
-  ike_statem_send((session), len);                                 
-  SET_RETRANSTIMER((session));                                     
-  return;
+  transition_return_t len = (*(session)->transition_fn)(session);
+
+  if (len == TRANSITION_FAILURE) {
+    PRINTF(IPSEC_IKE_ERROR "An error occurred while in transition\n");
+    ike_statem_remove_session(session);
+    return len;
+  }
+
+  /* send udp pkt here */
+  PRINTF(IPSEC_IKE "Sending data of length %u\n", len);
+  /* MEMPRINTF("SENDING", msg_buf, len); */
+  ike_statem_send(session, len);
+  if (retransmit)
+    SET_RETRANSTIMER(session);
+  return len;
 }
 
 
@@ -109,6 +132,8 @@ void ike_statem_init()
 
   my_conn->rport = 0;
   uip_create_unspecified(&my_conn->ripaddr);
+
+  msg_buf = uip_udp_buffer_dataptr(); //(uint8_t *) udp_buf;       
 
   PRINTF(IPSEC_IKE "State machine initialized. Listening on UDP port %d.\n", uip_ntohs(my_conn->lport));
   
@@ -150,7 +175,9 @@ ike_statem_session_t *ike_statem_session_init()
   return session;
 }
 
-
+/**
+  * Sets up a new session to handle an incoming request
+  */
 void ike_statem_setup_responder_session()
 {
   ike_statem_session_t *session = ike_statem_session_init();
@@ -162,6 +189,8 @@ void ike_statem_setup_responder_session()
 
   // Transition to state initrespwait
   session->next_state_fn = &ike_statem_state_parse_initreq;
+  session->my_msg_id = 0;
+  session->peer_msg_id = 0;
 
   IKE_STATEM_ENTERSTATE(session);
 }
@@ -190,6 +219,8 @@ void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_e
   session->ephemeral_info->triggering_pkt.addr = &session->peer;
 
   session->ephemeral_info->spd_entry = commanding_entry;
+  session->my_msg_id = 0;
+  session->peer_msg_id = 0;
 
   IKE_STATEM_TRANSITION(session);
 }
@@ -207,7 +238,7 @@ void ike_statem_remove_session(ike_statem_session_t *session)
 void ike_statem_timeout_handler(void *session)  // Void argument since we're called by ctimer
 {
   PRINTF(IPSEC_IKE "Timeout for session %p. Reissuing last transition.\n", session);
-  IKE_STATEM_TRANSITION((ike_statem_session_t *) session);
+  ike_statem_run_transition((ike_statem_session_t *) session, 1);
 }
 
 
@@ -270,7 +301,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     */  
   if (ike_hdr->sa_responder_spi_low == 0 && IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR & ike_hdr->flags) {
     // The purpose of this request is to setup a new IKE session.
-    // Don't write this code right now
+
     PRINTF(IPSEC_IKE "Handling incoming request for a new IKE session\n");
     ike_statem_setup_responder_session();
     return;
@@ -290,7 +321,6 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
   PRINTF(IPSEC_IKE "Handling incoming request concerning local IKE SPI %u\n", my_spi);
 
   ike_statem_session_t *session = NULL;
-  PRINTF("my_spi: %u\n", my_spi);
   for (session = list_head(sessions); 
         session != NULL && !IKE_STATEM_MYSPI_GET_MYSPI(session) == my_spi; 
         session = list_item_next(session))
@@ -300,21 +330,21 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
     // We've found the session struct of the session that the message concerns
       
     // Assert that the message ID is correct
-    if (IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER & ike_hdr->flags) {
+    if (ike_hdr->flags & IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER) {
       // It's response to something we sent. Does it have the right message ID?
       if (uip_ntohl(ike_hdr->message_id) != session->my_msg_id) {
-        PRINTF(IPSEC_IKE_ERROR "Message ID is out of order. Dropping it.\n");
+        PRINTF(IPSEC_IKE_ERROR "Response message ID is out of order. Dropping it. (expected %u)\n", session->my_msg_id);
         return;
       }
     }
     else {  
       // It's a request
       if (uip_ntohl(ike_hdr->message_id) != session->peer_msg_id) {
-        PRINTF(IPSEC_IKE_ERROR "Message ID is out of order. Dropping it.\n");
+        PRINTF(IPSEC_IKE_ERROR "Request message ID is out of order. Dropping it. (expected %u)\n", session->peer_msg_id);
         return;
       }
       
-      ++session->peer_msg_id;
+      //++session->peer_msg_id;
     }
     
     IKE_STATEM_ENTERSTATE(session);
@@ -377,7 +407,7 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len)
   * This data structure encodes the edges of the machine.
   */
 /*
-static const ike_statem_transition_t transitions[] = {
+static const ike_statem_run_transition_t transitions[] = {
   {
     .edge = { .fromto[0] = IKE_MSTATE_START, .fromto[1] = IKE_MSTATE_INIT },
     ._do = &ike_m_initreply_do,

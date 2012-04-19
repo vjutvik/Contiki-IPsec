@@ -66,6 +66,9 @@ typedef enum {
 #define IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR 0x8
 #define IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER 0x2
 
+#define IKE_PAYLOADFIELD_IKEHDR_FLAGS_REQUEST 0x0
+#define IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONSE 0x20
+
 typedef enum {
   IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_SA_INIT = 34,
   IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH,
@@ -81,24 +84,24 @@ typedef enum {
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->version = IKE_PAYLOADFIELD_IKEHDR_VERSION_STRING;   \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->exchange_type = exchtype;                           \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->flags = flags_arg;                                  \
-  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->message_id = uip_htonl((uint32_t) msg_id);           \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->message_id = uip_htonl((uint32_t) msg_id);          \
   (payload_arg)->prior_next_payload = &((ike_payload_ike_hdr_t *) (payload_arg)->start)->next_payload;  \
   (payload_arg)->start += sizeof(ike_payload_ike_hdr_t)
 
 
-#define SET_IKE_HDR_AS_RESPONDER(payload_arg, exchtype) \
+#define SET_IKE_HDR_AS_RESPONDER(payload_arg, exchtype, response_or_request) \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = (payload_arg)->session->peer_spi_high;  \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = (payload_arg)->session->peer_spi_low;    \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = IKE_MSG_ZERO;                           \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = uip_htonl((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session)); \
-  SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOAD_FLAGS_RESPONDER, (payload_arg)->session->peer_msg_id)
+  SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER | response_or_request, (payload_arg)->session->my_msg_id)
 
-#define SET_IKE_HDR_AS_INITIATOR(payload_arg, exchtype) \
+#define SET_IKE_HDR_AS_INITIATOR(payload_arg, exchtype, response_or_request) \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = (payload_arg)->session->peer_spi_high;  \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = (payload_arg)->session->peer_spi_low;    \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = IKE_MSG_ZERO;                           \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = uip_htonl((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session)); \
-  SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR, (payload_arg)->session->my_msg_id)
+  SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR | response_or_request, (payload_arg)->session->my_msg_id)
 
 
 typedef struct {

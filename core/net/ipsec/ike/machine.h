@@ -77,7 +77,7 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_STATEM_FIRSTMSG_MAXLEN 800
 
 // The maximum number of tuples that can be returned in a reply from 
-#define IKE_REPLY_MAX_PROPOSAL_TUPLES 15
+#define IKE_REPLY_MAX_PROPOSAL_TUPLES 10
 
 #define IKE_STATEM_MYSPI_GET_MYSPI(session) ((session)->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
@@ -103,7 +103,16 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_STATEM_GET_8BYTE_SPIr(session)
 */
 
-#define IKE_STATEM_INCRMYMSGID(session) ++session->my_msg_id;
+typedef uint8_t state_return_t;
+typedef uint16_t transition_return_t;
+
+#define STATE_FAILURE        0
+#define STATE_SUCCESS        1
+#define TRANSITION_FAILURE   0
+
+
+#define IKE_STATEM_INCRMYMSGID(session) ++(session)->my_msg_id;
+#define IKE_STATEM_INCRPEERMSGID(session) ++(session)->peer_msg_id;
 #define IKE_STATEM_SESSION_ISREADY(session) (ctimer_expired(&session->retrans_timer))
 
 /**
@@ -112,7 +121,10 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
   *
   * Can either be called from a state or from ike_statem_timeout_handler()
   */
-#define IKE_STATEM_TRANSITION(session) ike_statem_transition(session)
+#define IKE_STATEM_TRANSITION(session)                                  \
+  /* Run transition and increase our message ID if successfull */       \
+  if (ike_statem_run_transition(session, 1) != TRANSITION_FAILURE)         \
+    IKE_STATEM_INCRMYMSGID(session)
 
 
 /**
@@ -124,9 +136,10 @@ typedef struct {
   spd_entry_t *spd_entry;
 
   uint32_t my_child_spi;
+  uint32_t peer_child_spi;
 
   // Used for generating the AUTH payload. Length MUST equal the key size of the negotiated PRF.
-  uint8_t sk_pi[SA_PRF_MAX_PREFERRED_KEYMATLEN];   
+  uint8_t sk_pi[SA_PRF_MAX_PREFERRED_KEYMATLEN];
   uint8_t sk_pr[SA_PRF_MAX_PREFERRED_KEYMATLEN];
 
   /**
@@ -147,7 +160,8 @@ typedef struct {
   uint16_t peer_first_msg_len;
   
   // Internal representation of our reply to a responder's SA offer
-  spd_proposal_tuple_t proposal_reply[IKE_REPLY_MAX_PROPOSAL_TUPLES];
+  spd_proposal_tuple_t ike_proposal_reply[IKE_REPLY_MAX_PROPOSAL_TUPLES];
+  spd_proposal_tuple_t child_proposal_reply[IKE_REPLY_MAX_PROPOSAL_TUPLES];
 
   // My private asymmetric key store in small endian ContikiECC format
   NN_DIGIT my_prv_key[IKE_DH_SCALAR_BUF_LEN];

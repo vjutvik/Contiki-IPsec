@@ -6,65 +6,23 @@
 #include "ecc/ecc.h"
 #include "ecc/ecdh.h"
 
-uint16_t ike_statem_trans_authreq(ike_statem_session_t *session);
-int8_t ike_statem_state_authrespwait(ike_statem_session_t *session);
+transition_return_t ike_statem_trans_authreq(ike_statem_session_t *session);
+state_return_t ike_statem_state_authrespwait(ike_statem_session_t *session);
 
 
 // Transmit the IKE_SA_INIT message: HDR, SAi1, KEi, Ni
 // If cookie_payload in ephemeral_info is non-NULL the first payload in the message will be a COOKIE Notification.
-uint16_t ike_statem_trans_initreq(ike_statem_session_t *session)
+transition_return_t ike_statem_trans_initreq(ike_statem_session_t *session)
 {
   payload_arg_t payload_arg = {
     .start = msg_buf,
     .session = session
   };
-    
-  SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_SA_INIT);
+  
+  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) payload_arg.start;
+  SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_SA_INIT, IKE_PAYLOADFIELD_IKEHDR_FLAGS_REQUEST);
 
-  // Should we include a COOKIE Notification? (see section 2.6)
-  /**
-    * Disabled as for now -Ville
-  IKE_STATEM_ASSERT_COOKIE(&payload_arg);
-    **/
-  
-  // Write the SA payload
-  // From p. 79: 
-  //    "SPI Size (1 octet) - For an initial IKE SA negotiation, this field MUST be zero; 
-  //    the SPI is obtained from the outer header."
-  //
-  // (Note: We're casting to spd_proposal_tuple * in order to get rid of the const type qualifier of CURRENT_IKE_PROPOSAL)
-  ike_statem_write_sa_payload(&payload_arg, (spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL, 0); 
-  
-  // Start KE payload
-  ike_payload_generic_hdr_t *ke_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
-  SET_GENPAYLOADHDR(ke_genpayloadhdr, &payload_arg, IKE_PAYLOAD_KE);
-  
-  ike_payload_ke_t *ke = (ike_payload_ke_t *) payload_arg.start;
-  ke->dh_group_num = uip_htons(SA_IKE_MODP_GROUP);
-  ke->clear = IKE_MSG_ZERO;
-
-  // Write key exchange data (varlen)
-  // (Note: We cast the first arg of ecdh_enc...() in the firm belief that payload_arg.start is at a 4 byte alignment)
-  payload_arg.start = ecdh_encode_public_key((uint32_t *) (payload_arg.start + sizeof(ike_payload_ke_t)), session->ephemeral_info->my_prv_key);
-  ke_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) ke_genpayloadhdr);
-  // End KE payload
-  
-  // Start nonce payload
-  ike_payload_generic_hdr_t *ninr_genpayloadhdr;
-  SET_GENPAYLOADHDR(ninr_genpayloadhdr, &payload_arg, IKE_PAYLOAD_NiNr);
-
-  // Write nonce
-  random_ike(payload_arg.start, IKE_PAYLOAD_MYNONCE_LEN, session->ephemeral_info->my_nonce_seed);
-  MEMPRINTF("My nonce", payload_arg.start, IKE_PAYLOAD_MYNONCE_LEN);
-  payload_arg.start += IKE_PAYLOAD_MYNONCE_LEN;
-  ninr_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) ninr_genpayloadhdr);
-  // End nonce payload
-  
-  // Wrap up the IKE header and exit state
-  ((ike_payload_ike_hdr_t *) msg_buf)->len = uip_htonl(payload_arg.start - msg_buf);
-  SET_NO_NEXT_PAYLOAD(&payload_arg);
-
-  return payload_arg.start - msg_buf;
+  return ike_statem_send_sa_init_msg(session, &payload_arg, ike_hdr, (spd_proposal_tuple_t *) CURRENT_IKE_PROPOSAL);
 }
 
 
@@ -88,7 +46,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
   session->peer_spi_low = ike_hdr->sa_responder_spi_low;
   
   //
-  if (ike_statem_parse_sa_init_msg(session, ike_hdr, session->ephemeral_info->proposal_reply) == 0)
+  if (ike_statem_parse_sa_init_msg(session, ike_hdr, session->ephemeral_info->ike_proposal_reply) == 0)
     return 0;
 
   /*-------------- CUT ------------------- */
@@ -276,7 +234,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
 
   //session->transition_arg = &session_trigger;
 
-  IKE_STATEM_INCRMYMSGID(session);
+  //IKE_STATEM_INCRMYMSGID(session);
   IKE_STATEM_TRANSITION(session);
     
   return 1;
@@ -296,8 +254,10 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   };
   
   // Write the IKE header
-  SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH);
+  SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH, IKE_PAYLOADFIELD_IKEHDR_FLAGS_REQUEST);
 
+  return ike_statem_send_auth_msg(session, &payload_arg, session->ephemeral_info->my_child_spi, session->ephemeral_info->spd_entry->offer);
+  /*
   // Write a template of the SK payload for later encryption
   ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
   ike_statem_prepare_sk(&payload_arg);
@@ -306,16 +266,13 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   ike_payload_generic_hdr_t *id_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
   ike_statem_set_id_payload(&payload_arg, IKE_PAYLOAD_IDi);
   ike_id_payload_t *id_payload = (ike_id_payload_t *) ((uint8_t *) id_genpayloadhdr + sizeof(ike_payload_generic_hdr_t));
-  printf("ike_id: %u\n", sizeof(ike_id));
-  printf("id_genpayload_hdr: %p\n", id_genpayloadhdr);
-  printf("id_genpayload_hdr->len: %u\n", uip_ntohs(id_genpayloadhdr->len));
-  printf("payload_arg.start: %p\n", payload_arg.start);
-  
+  */
   /**
     * Write the AUTH payload (section 2.15)
     *
     * Details depends on the type of AUTH Method specified.
     */
+  /*
   ike_payload_generic_hdr_t *auth_genpayloadhdr;
   SET_GENPAYLOADHDR(auth_genpayloadhdr, &payload_arg, IKE_PAYLOAD_AUTH);
   ike_payload_auth_t *auth_payload = (ike_payload_auth_t *) payload_arg.start;
@@ -324,10 +281,11 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   
   uint8_t *signed_octets = payload_arg.start + SA_PRF_MAX_OUTPUT_LEN;
   uint16_t signed_octets_len = ike_statem_get_authdata(session, 1, signed_octets, id_payload, uip_ntohs(id_genpayloadhdr->len) - sizeof(ike_payload_generic_hdr_t));
-  
+  */
   /**
     * AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
     */
+  /*
   prf_data_t auth_data = {
     .out = payload_arg.start,
     .data = signed_octets,
@@ -336,40 +294,42 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   auth_psk(session->sa.prf, &auth_data);
   payload_arg.start += SA_PRF_OUTPUT_LEN(session);
   auth_genpayloadhdr->len = uip_htons(payload_arg.start - (uint8_t *) auth_genpayloadhdr); // Length of the AUTH payload
-
+*/
   /**
     * Write notification requesting the peer to create transport mode SAs
     */
-  ike_statem_write_notification(&payload_arg, SA_PROTO_IKE, 0, IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE, NULL, 0);
+  //ike_statem_write_notification(&payload_arg, SA_PROTO_IKE, 0, IKE_PAYLOAD_NOTIFY_USE_TRANSPORT_MODE, NULL, 0);
 
   /**
     * Write SAi2 (offer for the child SA)
     */
-  ike_statem_write_sa_payload(&payload_arg, session->ephemeral_info->spd_entry->offer, session->ephemeral_info->my_child_spi);
+  //ike_statem_write_sa_payload(&payload_arg, session->ephemeral_info->spd_entry->offer, session->ephemeral_info->my_child_spi);
 
   /**
     * The TS payload is decided by the triggering packet's header and the policy that applies to it
     *
     * Read more at "2.9.  Traffic Selector Negotiation" p. 40
     */
-  ike_statem_write_tsitsr(&payload_arg);
+  //ike_statem_write_tsitsr(&payload_arg);
 
     
   // Protect the SK payload. Write trailing fields.
-  ike_statem_finalize_sk(&payload_arg, sk_genpayloadhdr, payload_arg.start - (((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t)));
+  //ike_statem_finalize_sk(&payload_arg, sk_genpayloadhdr, payload_arg.start - (((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t)));
 
-  return uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len);  // Return written length
+  //return uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len);  // Return written length
 }
 
 
 /**
   * AUTH response wait state
   */
-int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
+state_return_t ike_statem_state_authrespwait(ike_statem_session_t *session)
 {
   // If everything went well, we should see something like
   // <--  HDR, SK {IDr, [CERT,] AUTH, SAr2, TSi, TSr}
 
+/**/
+/*
   ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
   ike_ts_t *tsi, *tsr;
   ike_id_payload_t *id_data = NULL;
@@ -424,16 +384,17 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       }
       break;
 
-      case IKE_PAYLOAD_SA:
+      case IKE_PAYLOAD_SA:*/
       /**
         * Assert that the responder's child offer is a subset of that of ours
         */
+        /*
       if (ike_statem_parse_sa_payload(session->ephemeral_info->spd_entry->offer, 
                                       (ike_payload_generic_hdr_t *) genpayloadhdr,
                                       0,
                                       NULL,
                                       outgoing_sad_entry,
-                                      session->ephemeral_info->proposal_reply)) { /* We're not using proposal_reply, but the fn. expects it */
+                                      session->ephemeral_info->proposal_reply)) { // We're not using proposal_reply, but the fn. expects it 
         PRINTF(IPSEC_IKE "The peer's offer was unacceptable\n");
         goto fail;
       }
@@ -458,7 +419,7 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       break;
       
       default:
-      /**
+    */  /**
         * Unknown / unexpected payload. Is the critical flag set?
         *
         * From p. 30:
@@ -469,7 +430,7 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
         * include a Notify payload UNSUPPORTED_CRITICAL_PAYLOAD, indicating an
         * unsupported critical payload was included.""
         */
-
+/*
       if (genpayloadhdr->clear) {
         PRINTF(IPSEC_IKE_ERROR "Encountered an unknown critical payload\n");
         goto fail;
@@ -484,21 +445,22 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
   } // End payload loop
 
   if (payload_type != IKE_PAYLOAD_NO_NEXT) {  
-    PRINTF(IPSEC_IKE "Error: Unexpected end of peer message.\n");
+    PRINTF(IPSEC_IKE_ERROR "Unexpected end of peer message.\n");
     goto fail;
   }
-  
+  */
   /**
     * Assert that transport mode was accepted
-    */
   if (transport_mode_not_accepted) {
     PRINTF(IPSEC_IKE_ERROR "Peer did not accept transport mode child SA\n");
     goto fail;
   }
+  */
   
   /**
     * Assert AUTH data
     */
+    /*
   if (id_data == NULL || auth_payload == NULL) {
     PRINTF(IPSEC_IKE_ERROR "IDr or AUTH payload is missing\n");
     goto fail;
@@ -507,10 +469,11 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
     uint8_t responder_signed_octets[session->ephemeral_info->peer_first_msg_len + session->ephemeral_info->peernonce_len + SA_PRF_OUTPUT_LEN(session)];
     uint16_t responder_signed_octets_len = ike_statem_get_authdata(session, 0, responder_signed_octets, id_data, id_datalen);
     uint8_t mac[SA_PRF_OUTPUT_LEN(session)];
-    
+    */
     /**
       * AUTH = prf( prf(Shared Secret, "Key Pad for IKEv2"), <InitiatorSignedOctets>)
       */
+      /*
     prf_data_t auth_data = {
       .out = mac,
       .data = responder_signed_octets,
@@ -523,17 +486,20 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       goto fail;
     }
     PRINTF(IPSEC_IKE "Peer successfully authenticated\n");
-  }
+  }*/
   /**
     * Save traffic descriptors
     */
   // Fn: ts_pair_to_addr_set, addr_set_is_a_subset_of_addr_set, (addr_set_to_ts_pair in the future)
   // FIX: Security: Check that the TSs we receive from the peer are a subset of our offer
+  /*
   outgoing_sad_entry->traffic_desc.peer_addr_from = outgoing_sad_entry->traffic_desc.peer_addr_to = &outgoing_sad_entry->peer;
-  PRINTF("tsi prior to fn: %p\n", tsi);
-  ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, SPD_OUTGOING_TRAFFIC, tsi, tsr);
   incoming_sad_entry->traffic_desc.peer_addr_from = incoming_sad_entry->traffic_desc.peer_addr_to = &incoming_sad_entry->peer;
+  PRINTF("tsi prior to fn: %p\n", tsi);
+  
+  ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, SPD_OUTGOING_TRAFFIC, tsi, tsr);
   ts_pair_to_addr_set(&incoming_sad_entry->traffic_desc, SPD_INCOMING_TRAFFIC, tsi, tsr);
+  */
   
   /**
     * Get Child SA keying material as outlined in section 2.17
@@ -541,7 +507,11 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
     *     KEYMAT = prf+(SK_d, Ni | Nr)
     *
     */
-  ike_statem_get_child_keymat(session, &incoming_sad_entry->sa, &outgoing_sad_entry->sa);
+  /*
+  if (IKE_STATEM_IS_INITIATOR(session))
+    ike_statem_get_child_keymat(session, &incoming_sad_entry->sa, &outgoing_sad_entry->sa);
+  else
+    ike_statem_get_child_keymat(session, &outgoing_sad_entry->sa, &incoming_sad_entry->sa);
   
   PRINTF(IPSEC_IKE "Outgoing SAD entry registered with SPI %u. Incoming SAD entry registered with SPI %u. Encryption type %hhu integrity type %hhu\n",
    outgoing_sad_entry->spi, incoming_sad_entry->spi, incoming_sad_entry->sa.encr, incoming_sad_entry->sa.integ);
@@ -553,24 +523,22 @@ int8_t ike_statem_state_authrespwait(ike_statem_session_t *session)
   
   // Remove stuff that we don't need
   ike_statem_clean_session(session);
+
+  */
+
+  if (ike_statem_parse_auth_msg(session) == STATE_SUCCESS) {
   
-  /**
-    * We've now succesfully negotiated the Child SA. Register it in the SAD and clean up.
-    */
-  // Jump
-  // Transition to state autrespwait
-  session->transition_fn = NULL;
-  session->next_state_fn = &ike_statem_state_established_handler;
+    // Transition to state autrespwait
+    session->transition_fn = NULL;
+    session->next_state_fn = &ike_statem_state_established_handler;
 
-  //session->transition_arg = &session_trigger;
+    //session->transition_arg = &session_trigger;
 
-  IKE_STATEM_INCRMYMSGID(session);
-  return 1;
+    //IKE_STATEM_INCRMYMSGID(session);
+    return STATE_SUCCESS;
+  }
 
-  fail:
-  sad_remove_outgoing_entry(outgoing_sad_entry);
-  sad_remove_incoming_entry(incoming_sad_entry);
-  return 0;
+  return STATE_FAILURE;
 }
   
   /**
