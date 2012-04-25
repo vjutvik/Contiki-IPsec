@@ -27,6 +27,18 @@ void ike_statem_state_common_createchildsa(session, addr_t triggering_pkt, spd_e
 }
 */
 
+#define PRINTTSPAIR(ts_me_ptr, ts_peer_ptr)   \
+  do {                                        \
+    ipsec_addr_set_t addr_set;                \
+    uip_ip6addr_t peer;                       \
+    addr_set.peer_addr_from = &peer;          \
+    addr_set.peer_addr_to = &peer;            \
+    ts_pair_to_addr_set(&addr_set, ts_me_ptr, ts_peer_ptr);   \
+    PRINTADDRSET(&addr_set);                   \
+  } while (0)
+
+
+
 /**
   * Functions common to all state machines
   */
@@ -75,16 +87,15 @@ void ike_statem_write_notification(payload_arg_t *payload_arg,
 }
 
 /**
-  * Writes the initial TSi and TSr payloads
+  * Writes the initial TSi and TSr payloads in the role as the initiator
   */
-void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
+void ike_statem_write_tsitsr(payload_arg_t *payload_arg, ipsec_addr_set_t *ts_addr_set)
 {
   //ipsec_addr_set_t *spd_selector = &payload_arg->session->ephemeral_info->spd_entry->selector;
-  ipsec_addr_t *trigger_addr = &(payload_arg->session->ephemeral_info->triggering_pkt);
-  uint8_t *ptr = payload_arg->start; 
-  PRINTF("packet_tag.addr is: ");
-  PRINT6ADDR(trigger_addr->addr);
-  PRINTF("\n");
+  uint8_t *ptr = payload_arg->start;
+  //PRINTF("packet_tag.addr is: ");
+  //PRINT6ADDR(trigger_addr->addr);
+  //PRINTF("\n");
   
   
   /**
@@ -98,64 +109,77 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg)
 
   // TSi payload
   ike_payload_generic_hdr_t *tsi_genpayloadhdr;
-  uint16_t tsir_size = sizeof(ike_payload_generic_hdr_t) + sizeof(ike_ts_payload_t) + 1 * sizeof(ike_ts_t);
+  uint16_t tsir_size = sizeof(ike_payload_generic_hdr_t) + sizeof(ike_payload_ts_t) + 1 * sizeof(ike_ts_t);
   SET_GENPAYLOADHDR(tsi_genpayloadhdr, payload_arg, IKE_PAYLOAD_TSi);
   tsi_genpayloadhdr->len = uip_htons(tsir_size);
-  ike_ts_payload_t *tsi_payload = (ike_ts_payload_t *) payload_arg->start;
+  ike_payload_ts_t *tsi_payload = (ike_payload_ts_t *) payload_arg->start;
   SET_TSPAYLOAD(tsi_payload, 1);
-  payload_arg->start += sizeof(ike_ts_payload_t);
+  payload_arg->start += sizeof(ike_payload_ts_t);
   
   // Initiator's first traffic selector (triggering packet's params)
   ike_ts_t *tsi1 = (ike_ts_t *) payload_arg->start;
   payload_arg->start += sizeof(ike_ts_t);
+    
+  /*
   SET_TSSELECTOR_INIT(tsi1);
-  SET_TSSAMEADDR(tsi1, my_ip_addr /* Source address */);
-  tsi1->proto = trigger_addr->nextlayer_type;
+  SET_TSSAMEADDR(tsi1, my_ip_addr  Source address );
+  tsi1->proto = trigger_addr->nextlayer_proto;
   tsi1->start_port = trigger_addr->src_port;
   tsi1->end_port = trigger_addr->src_port;
-
+*/
   /*
   // Initiator's second traffic selector (instanciation of the matching SPD entry)
   ike_ts_t *tsi2 = (ike_ts_t *) ptr;
   ptr += sizeof(ike_ts_t);
   SET_TSSELECTOR_INIT(tsi2);
   SET_TSSAMEADDR(tsi2, trigger_addr->srcaddr); // PFP (triggering pkt)
-  tsi2->proto = spd_selector->nextlayer_type; // Not PFP (SPD entry)
+  tsi2->proto = spd_selector->nextlayer_proto; // Not PFP (SPD entry)
   tsi2->start_port = uip_htons(spd_selector->nextlayer_src_port_range_from); // Not PFP (SPD entry)
   tsi2->end_port = uip_htons(spd_selector->nextlayer_src_port_range_to); // Not PFP (SPD entry)
   */
 
-  PRINTF("trigger_addr->addr;\n");
-  PRINT6ADDR(trigger_addr->addr);
-  MEMPRINTF("\ntsi_genpayloadhdr", tsi_genpayloadhdr, uip_ntohs(tsi_genpayloadhdr->len));
 
   // TSr payload
   ike_payload_generic_hdr_t *tsr_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
   SET_GENPAYLOADHDR(tsr_genpayloadhdr, payload_arg, IKE_PAYLOAD_TSr);
   tsr_genpayloadhdr->len = uip_htons(tsir_size);
-  ike_ts_payload_t *tsr_payload = (ike_ts_payload_t *) payload_arg->start;  
+  ike_payload_ts_t *tsr_payload = (ike_payload_ts_t *) payload_arg->start;  
   SET_TSPAYLOAD(tsr_payload, 1);
-  payload_arg->start += sizeof(ike_ts_payload_t);
+  payload_arg->start += sizeof(ike_payload_ts_t);
   
   // Responder's first traffic selector
   ike_ts_t *tsr1 = (ike_ts_t *) payload_arg->start;
   payload_arg->start += sizeof(ike_ts_t);
+
+  if (IKE_STATEM_IS_INITIATOR(payload_arg->session))
+    instanciate_spd_entry(ts_addr_set, &payload_arg->session->peer, tsi1, tsr1);
+  else
+    instanciate_spd_entry(ts_addr_set, &payload_arg->session->peer, tsr1, tsi1);
+    
+  PRINTF("WRITING TRAFFIC SELECTORS:\n");
+  PRINTADDRSET(ts_addr_set);
+  
+  /*
   SET_TSSELECTOR_INIT(tsr1);
-  SET_TSSAMEADDR(tsr1, trigger_addr->addr /* Destination address */);
-  tsr1->proto = trigger_addr->nextlayer_type;
+  SET_TSSAMEADDR(tsr1, trigger_addr->addr // Destination address);
+  tsr1->proto = trigger_addr->nextlayer_proto;
   tsr1->start_port = trigger_addr->dest_port;
   tsr1->end_port = trigger_addr->dest_port;
-  
+  */
   /*
   // Responder's second traffic selector
   ike_ts_t *tsr2 = (ike_ts_t *) ptr;
   ptr += sizeof(ike_ts_t);
   SET_TSSELECTOR_INIT(tsr2);
   SET_TSSAMEADDR(tsr2, trigger_addr->dstaddr); // PFP (triggering pkt)
-  tsr2->proto = spd_selector->nextlayer_type; // Not PFP (SPD entry)
+  tsr2->proto = spd_selector->nextlayer_proto; // Not PFP (SPD entry)
   tsr2->start_port = uip_htons(spd_selector->nextlayer_dest_port_range_from); // Not PFP (SPD entry)
   tsr2->end_port = uip_htons(spd_selector->nextlayer_dest_port_range_to); // Not PFP (SPD entry)
   */
+  // PRINTF("trigger_addr->addr;\n");
+  //   PRINT6ADDR(trigger_addr->addr);
+  MEMPRINTF("\ntsi_genpayloadhdr", tsi_genpayloadhdr, uip_ntohs(tsi_genpayloadhdr->len));
+
   
   MEMPRINTF("tsr_genpayloadhdr", tsr_genpayloadhdr, uip_ntohs(tsr_genpayloadhdr->len));
   PRINTF("len: %u\n", payload_arg->start - ptr);
@@ -267,27 +291,25 @@ transition_return_t ike_statem_send_sa_init_msg(ike_statem_session_t *session, p
 
 state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
 {
-  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
-  ike_ts_t *tsi, *tsr;
+  ike_payload_ike_hdr_t *ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;  
   ike_id_payload_t *id_data = NULL;
   uint8_t id_datalen;
   ike_payload_auth_t *auth_payload = NULL;
   uint8_t transport_mode_not_accepted = 1;
   
+  // Traffic selector
+  ike_ts_t *tsi, *tsr;
+  int16_t ts_count = -1;
+  
+  // Child SAs
   uint32_t time = clock_time();
   sad_entry_t *outgoing_sad_entry = sad_create_outgoing_entry(time);
   sad_entry_t *incoming_sad_entry = sad_create_incoming_entry(time);
-
-  // What is our child SA offer?
-  spd_proposal_tuple_t *offer;
-  if (IKE_STATEM_IS_INITIATOR(session))
-    offer = session->ephemeral_info->spd_entry->offer;
-  else
-    offer = my_ah_esp_proposal; // FIX: Derive the proper offer from the SPD with resepect to the traffic selectors
   
   u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
   u8_t *end = msg_buf + uip_datalen();
-  notify_msg_type_t fail_notify_type= 0;
+  notify_msg_type_t fail_notify_type = 0;
+  ike_payload_generic_hdr_t *sa_payload = NULL;
   ike_payload_type_t payload_type = ike_hdr->next_payload;
   while (ptr < end) { // Payload loop
     const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
@@ -335,35 +357,22 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
       /**
         * Assert that the responder's child offer is a subset of that of ours
         */
-      if (ike_statem_parse_sa_payload(offer, 
-                                      (ike_payload_generic_hdr_t *) genpayloadhdr,
-                                      0,
-                                      NULL,
-                                      outgoing_sad_entry,
-                                      session->ephemeral_info->child_proposal_reply)) {
-        PRINTF(IPSEC_IKE_ERROR "The peer's child SA offer was unacceptable\n");
-        fail_notify_type = IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN;
-        goto fail;
-      }
-      
-      // Set incoming SAD entry
-      session->ephemeral_info->peer_child_spi = outgoing_sad_entry->spi;  // For use in the next response
-      incoming_sad_entry->spi = session->ephemeral_info->my_child_spi;
-      incoming_sad_entry->sa.encr = outgoing_sad_entry->sa.encr;
-      incoming_sad_entry->sa.encr_keylen = outgoing_sad_entry->sa.encr_keylen;
-      incoming_sad_entry->sa.integ = outgoing_sad_entry->sa.integ;
-
-      PRINTF(IPSEC_IKE "The peer's proposal was accepted\n");
+      sa_payload = (ike_payload_generic_hdr_t *) genpayloadhdr;
       break;
       
       case IKE_PAYLOAD_TSi:
-      tsi = (ike_ts_t *) (payload_start + sizeof(ike_payload_generic_hdr_t));
-      PRINTF("tsi set to: %p\n", tsi);
-      break;
-      
       case IKE_PAYLOAD_TSr:
-      tsr = (ike_ts_t *) (payload_start + sizeof(ike_payload_generic_hdr_t));
-      PRINTF("tsr set to: %p\n", tsr);
+      {
+        ike_payload_ts_t *ts_payload = (ike_payload_ts_t *) payload_start;
+        if (payload_type == IKE_PAYLOAD_TSr)
+          tsr = (ike_ts_t *) (payload_start + sizeof(ike_payload_ts_t));
+        else
+          tsi = (ike_ts_t *) (payload_start + sizeof(ike_payload_ts_t));
+                  
+        // ts_count is the fewest number of TS selectors in TSi and TSr
+        if (ts_count == -1 || ts_payload->number_of_ts < ts_count)
+          ts_count = ts_payload->number_of_ts;        
+      }
       break;
       
       default:
@@ -393,8 +402,8 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
     payload_type = genpayloadhdr->next_payload;
   } // End payload loop
 
-  if (payload_type != IKE_PAYLOAD_NO_NEXT) {
-    PRINTF(IPSEC_IKE_ERROR "Unexpected end of peer message.\n");
+  if (payload_type != IKE_PAYLOAD_NO_NEXT || sa_payload == NULL) {
+    PRINTF(IPSEC_IKE_ERROR "Could not parse peer message.\n");
     fail_notify_type = IKE_PAYLOAD_NOTIFY_INVALID_SYNTAX;
     goto fail;
   }
@@ -439,57 +448,119 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
     }
     PRINTF(IPSEC_IKE "Peer successfully authenticated\n");
   }
+  
+  
   /**
-    * Save traffic descriptors
+    * Assert that traffic descriptors are acceptable and find matching SPD entry (responder)
+    */
+  int16_t ts = -1;
+  if (IKE_STATEM_IS_INITIATOR(session)) {
+    // If we're the initiator, the responder's TS offer must be a subset of our original offer derived from the SPD entry
+    if (ts_count == 1 && selector_is_superset_of_tspair(&session->ephemeral_info->spd_entry->selector, &tsi[0], &tsr[0]))
+      ts = 0; // The peer's traffic selector matched our original offer. Continue.
+  }
+  else {
+    // We're the responder. Find the SPD entry that matches the initiator's TS offer
+    for (ts = ts_count - 1; ts >= 0; --ts) {
+      spd_entry_t *spd_entry = spd_get_entry_by_tspair(&tsr[ts] /* me */, &tsi[ts] /* peer */);
+      if (spd_entry != NULL && spd_entry->proc_action == SPD_ACTION_PROTECT) {
+        // Found an SPD entry that requires protection for this traffic
+        session->ephemeral_info->spd_entry = spd_entry;
+        session->ephemeral_info->my_ts_offer_addr_set.peer_addr_from = session->ephemeral_info->my_ts_offer_addr_set.peer_addr_to = &session->peer;
+        ts_pair_to_addr_set(&session->ephemeral_info->my_ts_offer_addr_set, &tsr[ts], &tsi[ts]);
+        break;
+      }
+    }
+  }
+  if (ts < 0) {
+    PRINTF(IPSEC_IKE_ERROR "Peer's Traffic Selectors are unacceptable\n");
+    fail_notify_type = IKE_PAYLOAD_NOTIFY_TS_UNACCEPTABLE;
+    goto fail;
+  }
+
+  /**
+    * Now that we've found the right SPD entry, we know what Child SA offer to use
+    */
+  if (ike_statem_parse_sa_payload(session->ephemeral_info->spd_entry->offer, 
+                                  sa_payload,
+                                  0,
+                                  NULL,
+                                  /* incoming_sad_entry */ outgoing_sad_entry,
+                                  session->ephemeral_info->child_proposal_reply)) {
+    PRINTF(IPSEC_IKE_ERROR "The peer's child SA offer was unacceptable\n");
+    fail_notify_type = IKE_PAYLOAD_NOTIFY_NO_PROPOSAL_CHOSEN;
+    goto fail;
+  }
+  
+  // Set incoming SAD entry
+  
+  /*
+  session->ephemeral_info->peer_child_spi = incoming_sad_entry->spi;  // For use in the response
+  outgoing_sad_entry->spi = session->ephemeral_info->my_child_spi;
+  outgoing_sad_entry->sa.encr = incoming_sad_entry->sa.encr;
+  outgoing_sad_entry->sa.encr_keylen = incoming_sad_entry->sa.encr_keylen;
+  outgoing_sad_entry->sa.integ = incoming_sad_entry->sa.integ;
+  */
+  session->ephemeral_info->peer_child_spi = outgoing_sad_entry->spi;  // For use in the next response
+  incoming_sad_entry->spi = session->ephemeral_info->my_child_spi;
+  incoming_sad_entry->sa.proto = outgoing_sad_entry->sa.proto;
+  incoming_sad_entry->sa.encr = outgoing_sad_entry->sa.encr;
+  incoming_sad_entry->sa.encr_keylen = outgoing_sad_entry->sa.encr_keylen;
+  incoming_sad_entry->sa.integ = outgoing_sad_entry->sa.integ;
+  PRINTF(IPSEC_IKE "The peer's proposal was accepted\n");
+
+  /**
+    * Set traffic descriptors for SAD entries
     */
   // Fn: ts_pair_to_addr_set, addr_set_is_a_subset_of_addr_set, (addr_set_to_ts_pair in the future)
   // FIX: Security: Check that the TSs we receive from the peer are a subset of our offer
   outgoing_sad_entry->traffic_desc.peer_addr_from = outgoing_sad_entry->traffic_desc.peer_addr_to = &outgoing_sad_entry->peer;
   incoming_sad_entry->traffic_desc.peer_addr_from = incoming_sad_entry->traffic_desc.peer_addr_to = &incoming_sad_entry->peer;
-  PRINTF("tsi prior to fn: %p\n", tsi);
   
+  ike_ts_t *ts_me, *ts_peer;
   if (IKE_STATEM_IS_INITIATOR(session)) {
-    ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, SPD_OUTGOING_TRAFFIC, tsi, tsr);
-    ts_pair_to_addr_set(&incoming_sad_entry->traffic_desc, SPD_INCOMING_TRAFFIC, tsi, tsr);
+    ts_me = &tsi[ts];
+    ts_peer = &tsr[ts];
   }
   else {
-    ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, SPD_OUTGOING_TRAFFIC, tsr, tsi);
-    ts_pair_to_addr_set(&incoming_sad_entry->traffic_desc, SPD_INCOMING_TRAFFIC, tsr, tsi);    
+    ts_me = &tsr[ts];
+    ts_peer = &tsi[ts];
   }
   
+  ts_pair_to_addr_set(&outgoing_sad_entry->traffic_desc, ts_me, ts_peer);
+  ts_pair_to_addr_set(&incoming_sad_entry->traffic_desc, ts_me, ts_peer);
+
+  PRINTF("SELECTED TRAFFIC SELECTORS index %hd:\n", ts);
+  PRINTTSPAIR(ts_me, ts_peer);
+
   /**
     * Get Child SA keying material as outlined in section 2.17
     *
     *     KEYMAT = prf+(SK_d, Ni | Nr)
     *
     */
-  if (IKE_STATEM_IS_INITIATOR(session))
+//  if (IKE_STATEM_IS_INITIATOR(session))
     ike_statem_get_child_keymat(session, &incoming_sad_entry->sa, &outgoing_sad_entry->sa);
-  else
-    ike_statem_get_child_keymat(session, &outgoing_sad_entry->sa, &incoming_sad_entry->sa);
+//  else
+//    ike_statem_get_child_keymat(session, &outgoing_sad_entry->sa, &incoming_sad_entry->sa);
   
-  PRINTF(IPSEC_IKE "Outgoing SAD entry registered with SPI %u. Incoming SAD entry registered with SPI %u. Encryption type %hhu integrity type %hhu\n",
-   outgoing_sad_entry->spi, incoming_sad_entry->spi, incoming_sad_entry->sa.encr, incoming_sad_entry->sa.integ);
-  
-  PRINTF("OUTGOING SAD ENTRY\n"); 
+  PRINTF("===== Registered outgoing Child SA =====\n");
   PRINTSADENTRY(outgoing_sad_entry);
-  PRINTF("INCOMING SAD ENTRY\n"); 
+  PRINTF("===== Registered incoming Child SA =====\n");
   PRINTSADENTRY(incoming_sad_entry);
-  
-  // Remove stuff that we don't need
-  ike_statem_clean_session(session);
+  PRINTF("========================================\n");
   
   return STATE_SUCCESS;
   
   fail:
-  ike_statem_send_single_notify(session, fail_notify_type);  
+  ike_statem_send_single_notify(session, fail_notify_type);
   sad_remove_outgoing_entry(outgoing_sad_entry);
   sad_remove_incoming_entry(incoming_sad_entry);
   return STATE_FAILURE;
 }
 
 
-transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, uint32_t child_sa_spi, spd_proposal_tuple_t *sai2_offer)
+transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, uint32_t child_sa_spi, spd_proposal_tuple_t *sai2_offer, ipsec_addr_set_t *ts_instance_addr_set)
 {
   // Write a template of the SK payload for later encryption
   ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
@@ -547,7 +618,8 @@ transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payl
     *
     * Read more at "2.9.  Traffic Selector Negotiation" p. 40
     */
-  ike_statem_write_tsitsr(payload_arg);
+  PRINTF("Peer port 7890: %hu\n", ts_instance_addr_set->peer_port_from);
+  ike_statem_write_tsitsr(payload_arg, ts_instance_addr_set);
 
   // Protect the SK payload. Write trailing fields.
   ike_statem_finalize_sk(payload_arg, sk_genpayloadhdr, payload_arg->start - (((uint8_t *) sk_genpayloadhdr) + sizeof(ike_payload_generic_hdr_t)));
@@ -727,6 +799,7 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
   PRINTF(IPSEC_IKE "Calculating shared Diffie Hellman secret\n");
   ike_statem_get_ike_keymat(session, peer_pub_key);
 
+  // Set our child SPI. To be used during the AUTH exchange.
   session->ephemeral_info->my_child_spi = SAD_GET_NEXT_SAD_LOCAL_SPI;
   
   return 1;
@@ -756,7 +829,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   u8_t n = 0;
   uint8_t proposal_number = 1;
   do {  // Loop over the offer's tuples
-    PRINTF("WRITE_SA_PAYLOAD: Offer type: %hu\n", offer[n].type);
+//    PRINTF("WRITE_SA_PAYLOAD: Offer type: %hu\n", offer[n].type);
     switch(offer[n].type) {
         
       case SA_CTRL_NEW_PROPOSAL:
@@ -891,11 +964,10 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
   uint8_t acc_proposal_ctr;
   uint32_t candidate_spi = 0;
   ike_payload_proposal_t *peerproposal = (ike_payload_proposal_t *) (((uint8_t *) sa_payload_hdr) + sizeof(ike_payload_generic_hdr_t));
-  PRINTF("sa_payload_hdr: %p, peerproposal: %p\n", sa_payload_hdr, peerproposal);
   
   // (#1) Loop over the proposals in the peer's offer
   while((uint8_t *) peerproposal < ((uint8_t *) sa_payload_hdr) + uip_ntohs(sa_payload_hdr->len)) {
-    PRINTF(IPSEC_IKE "#1 Looking at peerproposal %p\n", peerproposal);
+//    PRINTF(IPSEC_IKE "#1 Looking at peerproposal %p\n", peerproposal);
 
     // Assert proposal properties
     if (ike && (peerproposal->proto_id != SA_PROTO_IKE || peerproposal->spi_size != 0)) {
@@ -919,7 +991,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     // (#2) Loop over my proposals and see if any of them is a superset of this peer's current proposal
     while (mytuple->type != SA_CTRL_END_OF_OFFER) {
       // We're now at the beginning of one of our offers.
-      PRINTF("#2 At the beginning of one our offers\n");
+//      PRINTF("#2 At the beginning of one our offers\n");
             
       ++mytuple; // Jump the SA_CTRL_NEW_PROPOSAL
       memset(candidates, 0, sizeof(candidates));
@@ -930,7 +1002,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
       while (mytuple->type != SA_CTRL_END_OF_OFFER && mytuple->type != SA_CTRL_NEW_PROPOSAL) {        
         // Does this transform have an attribute?
 
-        PRINTF(IPSEC_IKE "\n#3 Looking at mytuple->type %u mytuple->value %u\n", mytuple->type, mytuple->value);
+//        PRINTF(IPSEC_IKE "\n#3 Looking at mytuple->type %u mytuple->value %u\n", mytuple->type, mytuple->value);
         uint8_t my_keylen = 0;
         if ((mytuple + 1)->type == SA_CTRL_ATTRIBUTE_KEY_LEN)
           my_keylen = (mytuple + 1)->type;
@@ -940,7 +1012,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
         // (#4) Loop over the peer's proposal and see if this transform of mine can be found
         while((uint8_t *) peertransform < (uint8_t *) peerproposal + uip_ntohs(peerproposal->proposal_len)) {
 //          PRINTF(IPSEC_IKE "#4 peertransform->type %u. mytuple->type (%u), peertransform->id: %u. mytuple->value: %u \n", peertransform->type, mytuple->type, uip_ntohs(peertransform->id), mytuple->type);
-          PRINTF(IPSEC_IKE "#4 peertransform->type %u, peertransform->id: %u\n", peertransform->type, uip_ntohs(peertransform->id));
+//          PRINTF(IPSEC_IKE "#4 peertransform->type %u, peertransform->id: %u\n", peertransform->type, uip_ntohs(peertransform->id));
 
           // Is this is DH group transform; if so, is acceptable with our requirements?
           if (ke_dh_group && 
@@ -986,11 +1058,10 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
                 goto next_peertransform;                
             }
             // We end up here if we've accepted the transform
-            PRINTF(IPSEC_IKE "#4 Is candidate\n");              
+//            PRINTF(IPSEC_IKE "#4 Is candidate\n");              
             
             // Add the transform to the resulting output offer
             ++acc_proposal_ctr;
-            PRINTF("PARSE_SA_PAYLOAD: acc_proposal_ctr %hhu, mytuple.type %hhu\n", acc_proposal_ctr, mytuple->type);
             memcpy(&accepted_transform_subset[acc_proposal_ctr], mytuple, sizeof(spd_proposal_tuple_t));
             if (candidate_keylen && mytuple->type == SA_CTRL_TRANSFORM_TYPE_ENCR) {
               if (acc_proposal_ctr >= IKE_REPLY_MAX_PROPOSAL_TUPLES)
@@ -999,12 +1070,10 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
               accepted_transform_subset[++acc_proposal_ctr].type = SA_CTRL_ATTRIBUTE_KEY_LEN;
               accepted_transform_subset[acc_proposal_ctr].value = candidate_keylen;
             }
-            PRINTF(IPSEC_IKE "#4 acc_proposal_ctr (output offer pointer) increased: %hhu\n", acc_proposal_ctr);
             
             // Set the SA
             candidates[mytuple->type] = mytuple->value;
             ++accepted_transforms;
-            PRINTF(IPSEC_IKE "#4 Accepted transforms is now %hhu\n", accepted_transforms);
             if (accepted_transforms == required_transforms)
               goto found_acceptable_proposal;
           }
@@ -1049,6 +1118,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
   }
   else {
     sad_entry->spi = candidate_spi;
+    sad_entry->sa.proto = SA_PROTO_ESP;
     sad_entry->sa.encr = candidates[SA_CTRL_TRANSFORM_TYPE_ENCR];
     sad_entry->sa.encr_keylen = candidate_keylen;
     sad_entry->sa.integ = candidates[SA_CTRL_TRANSFORM_TYPE_INTEG];
@@ -1105,30 +1175,6 @@ uint32_t rerun_init_msg(uint8_t *out, uint8_t initreq, ike_statem_session_t *ses
 }
 
 
-void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, direction_t direction, ike_ts_t *ts_me, ike_ts_t *ts_peer)
-{
-  ike_ts_t *ts_src, *ts_dest;
-  if (direction == SPD_INCOMING_TRAFFIC) {
-    ts_src = ts_peer;
-    ts_dest = ts_me;
-  }
-  else {
-    ts_src = ts_me;
-    ts_dest = ts_peer;
-  }
-
-  traffic_desc->direction = direction;
-  
-  // peer_addr_from and peer_addr_to should point to the same memory location
-  memcpy(traffic_desc->peer_addr_from, &ts_peer->start_addr, sizeof(uip_ip6addr_t));
-  
-  traffic_desc->src_port_from = ts_src->start_port;
-  traffic_desc->src_port_to = ts_src->end_port;
-  traffic_desc->dest_port_from = ts_dest->start_port;
-  traffic_desc->dest_port_to = ts_dest->end_port;
-}
-
-
 /**
   * Get InitiatorSignedOctets or ResponderSignedOctets (depending on session) as described on p. 47.
   *
@@ -1153,7 +1199,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
     *
     */
   uint8_t type = 2 * (IKE_STATEM_IS_INITIATOR(session) > 0) + myauth;
-  PRINTF("Type is %hhu is initiator: %hhu\n", type, IKE_STATEM_IS_INITIATOR(session));
+  PRINTF("Type is %hhu, initiator: %hhu\n", type, IKE_STATEM_IS_INITIATOR(session));
   
   // Pack RealMessage*
   PRINTF("RealMessage1: ");
@@ -1331,14 +1377,12 @@ void ike_statem_prepare_sk(payload_arg_t *payload_arg)
 {
   ike_payload_generic_hdr_t *sk_genpayloadhdr;
   SET_GENPAYLOADHDR(sk_genpayloadhdr, payload_arg, IKE_PAYLOAD_SK);
-  printf("Writing sk_genpayloadhdr at: %p\n", sk_genpayloadhdr);
 
   // Generate the IV
   uint8_t n;
   for (n = 0; n < SA_ENCR_CURRENT_IVLEN(payload_arg->session); ++n)
     payload_arg->start[n] = rand16();
   payload_arg->start += n;
-  printf("sk_genpayloadhdr ends at: %p IVLEN: %u\n", payload_arg->start, SA_ENCR_CURRENT_IVLEN(payload_arg->session));
 }
 
 
@@ -1851,21 +1895,121 @@ void ike_statem_get_child_keymat(ike_statem_session_t *session, sa_child_t *inco
   prf_plus(&prfplus_data);
 }
 
+
 /**
-  * Clean an IKE session when the SA has been established
+  * Traffic selector management
   */
-void ike_statem_clean_session(ike_statem_session_t *session)
+  
+/**
+  * Copies a traffic selector pair into an ipsec_addr_set_t. Keep in mind that the IP address pointers of the address set must point to free memory.
+  */
+void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, ike_ts_t *ts_me, ike_ts_t *ts_peer)
 {
-  free(session->ephemeral_info);
+  /*
+  ike_ts_t *ts_src, *ts_dest;
+  
+  if (direction == SPD_INCOMING_TRAFFIC) {
+    ts_src = ts_peer;
+    ts_dest = ts_me;
+  }
+  else {
+    ts_src = ts_me;
+    ts_dest = ts_peer;
+  }
+*/
+  // peer_addr_from and peer_addr_to should point to the same memory location
+  memcpy(traffic_desc->peer_addr_from, &ts_peer->start_addr, sizeof(uip_ip6addr_t));
+
+  traffic_desc->nextlayer_proto = ts_me->proto;
+  traffic_desc->my_port_from = uip_ntohs(ts_me->start_port);
+  traffic_desc->my_port_to = uip_ntohs(ts_me->end_port);
+  traffic_desc->peer_port_from = uip_ntohs(ts_peer->start_port);
+  traffic_desc->peer_port_to = uip_ntohs(ts_peer->end_port);
 }
 
-/* Don't use it. */
-/*
-uint8_t ike_statem_write_rnd_data(uint16_t *ptr, uint16_t no_16bit_chunks)
+
+/**
+  * Instanciate an SPD entry to a traffic selector pair in accordance with RFC 4301. PFP flags are hardwired in this function, as elsewhere.
+  */
+void instanciate_spd_entry(ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer)
 {
-  for (int n = 0; n < no_16bit_chunks; ++no_16bit_chunks)
-    ptr[no_16bit_chunks] = rnd16();
-  
-  return ptr - 1;
+  /**
+    * Set common stuff
+    */
+  ts_peer->ts_type = ts_me->ts_type = IKE_PAYLOADFIELD_TS_TYPE;
+  ts_peer->proto = ts_me->proto = selector->nextlayer_proto;
+  ts_peer->selector_len = ts_me->selector_len = IKE_PAYLOADFIELD_TS_SELECTOR_LEN;
+
+  /**
+    * Address and port numbers
+    */
+  memcpy(&ts_peer->start_addr, peer, sizeof(uip_ip6addr_t));
+  memcpy(&ts_peer->end_addr, peer, sizeof(uip_ip6addr_t));
+  memcpy(&ts_me->start_addr, my_ip_addr, sizeof(uip_ip6addr_t));
+  memcpy(&ts_me->end_addr, my_ip_addr, sizeof(uip_ip6addr_t));
+  ts_peer->start_port = uip_htons(selector->peer_port_from);
+  ts_peer->end_port = uip_htons(selector->peer_port_to);
+  ts_me->start_port = uip_htons(selector->my_port_from);
+  ts_me->end_port = uip_htons(selector->my_port_to);
+
+  return;
 }
-*/
+
+/**
+  * Traverse the SPD table from the top to the bottom and return the first protected entry that
+  * is a subset of the traffic selector pair constituted by ts_me and ts_peer
+  *
+  * \return the entry that matched. NULL is returned if no such is found
+  */
+spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer)
+{
+  uint8_t n;
+  for (n = 0; n < SPD_ENTRIES; ++n) {
+    PRINTSPDENTRY(&spd_table[n]);    
+    if (selector_is_superset_of_tspair(&spd_table[n].selector, ts_me, ts_peer)) {
+      PRINTF("This SPD entry is a superset of the TS pair\n");
+      return &spd_table[n];
+    }
+  }
+  return NULL;
+}
+
+
+
+/**
+  * Is an SPD selector a superset of a TS pair?
+  *
+  * \return non-zero if selector is a superset of the TS pair, 0 otherwise
+  */
+uint8_t selector_is_superset_of_tspair(ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer)
+{
+  // PRINTF("superset_of_tspair. SELECTOR:\n");
+  // PRINTADDRSET(selector);
+  // 
+  // PRINTF("TS Pair:\n");
+  // PRINTTSPAIR(ts_me, ts_peer);
+  // Assert peer address range
+  if (! (uip6_addr_a_is_in_closed_interval_bc(&ts_me->start_addr, selector->peer_addr_from, selector->peer_addr_to) &&
+      uip6_addr_a_is_in_closed_interval_bc(&ts_me->end_addr, selector->peer_addr_from, selector->peer_addr_to)))
+    return 0;
+  PRINTF("addr ok\n");
+
+  // Source port range
+  if (! (a_is_in_closed_interval_bc(uip_ntohs(ts_me->start_port), selector->my_port_from, selector->my_port_to) &&
+        a_is_in_closed_interval_bc(uip_ntohs(ts_me->end_port), selector->my_port_from, selector->my_port_to) &&
+        a_is_in_closed_interval_bc(uip_ntohs(ts_peer->start_port), selector->peer_port_from, selector->peer_port_to) &&
+        a_is_in_closed_interval_bc(uip_ntohs(ts_peer->end_port), selector->peer_port_from, selector->peer_port_to)
+        ))
+    return 0;
+  PRINTF("port ok nl: ts_me->proto %hhu  selector->nextlayer_proto %hhu\n", ts_me->proto,  selector->nextlayer_proto);
+  
+  // Protocol (this assumes that ts_mee and ts_peer use the same proto, which they should)
+  if (ts_me->proto != selector->nextlayer_proto &&
+      ts_me->proto != IKE_PAYLOADFIELD_TS_NL_ANY_PROTOCOL &&
+      selector->nextlayer_proto != SPD_SELECTOR_NL_ANY_PROTOCOL)
+    return 0;
+  PRINTF("nl ok\n");
+  
+  // Type (should be IPv6)
+  return ts_me->ts_type == IKE_PAYLOADFIELD_TS_TYPE;
+}

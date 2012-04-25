@@ -205,7 +205,7 @@ void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_e
   ike_statem_session_t *session = ike_statem_session_init();
   
   // Populate the session entry
-  memcpy(&session->peer, triggering_pkt_addr->addr, sizeof(uip_ip6addr_t));
+  memcpy(&session->peer, triggering_pkt_addr->peer_addr, sizeof(uip_ip6addr_t));
   
   // We're the initiator
   IKE_STATEM_MYSPI_SET_I(session->initiator_and_my_spi);
@@ -215,8 +215,9 @@ void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_e
   session->next_state_fn = &ike_statem_state_initrespwait;
   
   // Populate the ephemeral information with connection setup information  
-  memcpy((void *) &session->ephemeral_info->triggering_pkt, (void *) triggering_pkt_addr, sizeof(ipsec_addr_t));
-  session->ephemeral_info->triggering_pkt.addr = &session->peer;
+  //memcpy((void *) &session->ephemeral_info->triggering_pkt, (void *) trigtritrgering_pkt_addr, sizeof(ipsec_addr_t));
+  //session->ephemeral_info->triggering_pkt.addr = &session->peer;
+  memcpy(&session->peer, triggering_pkt_addr->peer_addr, sizeof(uip_ip6addr_t));
 
   session->ephemeral_info->spd_entry = commanding_entry;
   session->my_msg_id = 0;
@@ -229,6 +230,15 @@ void ike_statem_remove_session(ike_statem_session_t *session)
 {
   STOP_RETRANSTIMER(session);   // It might be active, producing accidential transmissions
   list_remove(sessions, session);
+}
+
+
+/**
+  * Clean an IKE session when the SA has been established
+  */
+void ike_statem_clean_session(ike_statem_session_t *session)
+{
+  free(session->ephemeral_info);
 }
 
 

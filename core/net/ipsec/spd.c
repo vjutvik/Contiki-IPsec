@@ -36,7 +36,7 @@ spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr)
     //PRINTSPDENTRY(&spd_table[n]);
     if (ipsec_a_is_member_of_b(addr, (ipsec_addr_set_t *) &spd_table[n].selector)) {
       PRINTF("Found SPD entry:\n");
-      PRINTSPDENTRY(&spd_table[n]);
+      //PRINTSPDENTRY(&spd_table[n]);
       return &spd_table[n];
     }
   }
@@ -44,24 +44,6 @@ spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr)
   return NULL;
 }
 
-
-
-
-/**
-  * As above, but for traffic selectors (sets)
-  */
-/*
-spd_entry_t spd_get_entry_by_ts(src_ts, dst_ts)
-{
-  spd_entry_t *entry;
-  for (entry = list_head(spd); entry != NULL; entry = list_item_next(entry)) {
-    if (ipsec_ts_is_subset_of_addr_set(addr, &entry->selector))
-      return entry;
-  }
-  
-  return NULL;  
-}
-*/
 
 
 /** @} */

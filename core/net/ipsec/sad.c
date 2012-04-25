@@ -46,7 +46,7 @@ uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
   // Get offset to the highest registered sequence number
   // uint32_t offset = entry->seqno - seqno;
 
-  PRINTF("SAD_INC_REPL: seqno %u spi %u\n", entry->seqno, entry->spi);
+  PRINTF("Incoming SA replay protection: seqno %u spi %x\n", entry->seqno, uip_ntohl(entry->spi));
 
   if (seqno > entry->seqno) {
     // Highest sequence number observed. Window shifts to the right.
@@ -58,8 +58,10 @@ uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
     // Sequence number is below the high end of the window
     uint32_t offset = entry->seqno - seqno;
     uint32_t mask = 1U << offset;
-    if (offset > 31 || entry->win & mask)
+    if (offset > 31 || entry->win & mask) {
+      PRINTF(IPSEC "Error: Dropping packet because its sequence number is outside the reception window or it has been seen before (replay)\n");
       return 1; // The sequence number is outside the window or the window position is occupied
+    }
 
     entry->win |= mask;
   }
@@ -163,12 +165,22 @@ void sad_remove_outgoing_entry(sad_entry_t *entry)
 sad_entry_t *sad_get_outgoing_entry(ipsec_addr_t *addr)
 {
   sad_entry_t *entry;
-  //PRINTF(IPSEC "sad_get_outgoing: finding SAD entry\n");
-  //PRINTADDR(addr);
-  for (entry = list_head(sad_outgoing); entry != NULL; entry = list_item_next(entry)) {    
-    //PRINTSADENTRY(entry);    
+  // PRINTF("In SAD_GET_OUTNING_ENtry. List head at %p\n", list_head(sad_outgoing));
+  // PRINTF(IPSEC "sad_get_outgoing: finding SAD entry\nAddr:\n");
+  // PRINTADDR(addr);
+  // PRINTF(IPSEC "SPD-entry for addr===========\n");
+  
+  // FIX: The cross-check with the SPD is ugly. Move it to uip6.c or stop creating SAs that overlap SPD entries of different actions
+  spd_entry_t *spd_entry = spd_get_entry_by_addr(addr);
+  if (spd_entry->proc_action != SPD_ACTION_PROTECT)
+    return NULL;
+  //PRINTSPDENTRY(spd_entry);
+
+  for (entry = list_head(sad_outgoing); entry != NULL; entry = list_item_next(entry)) {
+    PRINTF("==== OUTGOING SAD entry at %p ====\n  SPI no %x\n", entry);
+    PRINTSADENTRY(entry);    
     if (ipsec_a_is_member_of_b(addr, &entry->traffic_desc)) {
-      PRINTF(IPSEC "sad_get_outgoing: found SAD entry with SPI %lx\n", uip_ntohl(entry->spi));
+      PRINTF(IPSEC "sad_get_outgoing: found SAD entry with SPI %x\n", uip_ntohl(entry->spi));
       return entry;
     }
   }
@@ -188,8 +200,8 @@ sad_entry_t *sad_get_incoming_entry(uint32_t spi)
 {
   sad_entry_t *entry;
   for (entry = list_head(sad_incoming); entry != NULL; entry = list_item_next(entry)) {
-    //PRINTF("==== SAD entry at %x ====\n  SPI no %lx\n", entry, uip_ntohl(spi));
-    //PRINTSADENTRY(entry);
+    PRINTF("==== INCOMING SAD entry at %p ====\n  SPI no %x\n", entry, uip_ntohl(spi));
+    PRINTSADENTRY(entry);
     if (entry->spi == spi)
       return entry;
   }

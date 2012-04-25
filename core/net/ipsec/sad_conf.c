@@ -14,6 +14,8 @@ static uip_ip6addr_t molniya;
 
 void sad_conf()
 {
+  return;
+  
   /**
     * This is where you (as the sysadmin) can add manual SAs to the SAD.
     *
@@ -58,14 +60,14 @@ void sad_conf()
   // Source address range
   my_incoming_entry->traffic_desc.peer_addr_from = &molniya;
   my_incoming_entry->traffic_desc.peer_addr_to = &molniya;
-  my_incoming_entry->traffic_desc.nextlayer_type = UIP_PROTO_UDP;
-  my_incoming_entry->traffic_desc.direction = SPD_INCOMING_TRAFFIC;
+  my_incoming_entry->traffic_desc.nextlayer_proto = UIP_PROTO_UDP;
+  //my_incoming_entry->traffic_desc.direction = SPD_INCOMING_TRAFFIC;
   // No HTONS needed here as the maximum and miniumum unsigned ints are represented the same way
   // in network as well as host byte order.
-  my_incoming_entry->traffic_desc.src_port_from = UIP_HTONS(0);
-  my_incoming_entry->traffic_desc.src_port_to = UIP_HTONS(PORT_MAX);
-  my_incoming_entry->traffic_desc.dest_port_from = UIP_HTONS(0);
-  my_incoming_entry->traffic_desc.dest_port_to = UIP_HTONS(PORT_MAX);
+  my_incoming_entry->traffic_desc.my_port_from = 0;
+  my_incoming_entry->traffic_desc.my_port_to = PORT_MAX;
+  my_incoming_entry->traffic_desc.peer_port_from = 0;
+  my_incoming_entry->traffic_desc.peer_port_to = PORT_MAX;
    
   /**
     * Set the parameters of the SA.
@@ -89,8 +91,6 @@ void sad_conf()
   // Important: Keep in mind that the SAD stores the SPIs in network byte order
   my_incoming_entry->spi = UIP_HTONL(1);
   
-  return; // Selectors below ARE BROKEN!!
-  
   /**
     * Create an OUTGOING entry. time_of_creation is set to 0 in order to mark is as manual,
     * thus disabling anti-replay protection.
@@ -105,12 +105,13 @@ void sad_conf()
   // Destination address range
   my_outgoing_entry->traffic_desc.peer_addr_from = &molniya;
   my_outgoing_entry->traffic_desc.peer_addr_to = &molniya;
-  my_outgoing_entry->traffic_desc.nextlayer_type = UIP_PROTO_UDP;
-  my_outgoing_entry->traffic_desc.direction = SPD_OUTGOING_TRAFFIC;
-  // No HTONS needed here as the maximum and miniumum unsigned ints are represented the same way
-  // in network as well as host byte order.
-  my_outgoing_entry->traffic_desc.dest_port_from = UIP_HTONS(0);
-  my_outgoing_entry->traffic_desc.dest_port_to = UIP_HTONS(PORT_MAX);
+  my_outgoing_entry->traffic_desc.nextlayer_proto = UIP_PROTO_UDP;
+
+
+  my_outgoing_entry->traffic_desc.my_port_from = 0;
+  my_outgoing_entry->traffic_desc.my_port_to = PORT_MAX;
+  my_outgoing_entry->traffic_desc.peer_port_from = 0;
+  my_outgoing_entry->traffic_desc.peer_port_to = PORT_MAX;
 
   /**
     * Set the parameters of the SA. We use the same key as that of the incoming because we're lazy.

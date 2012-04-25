@@ -36,7 +36,7 @@ ipsec_addr_set_t *ipsec_addr_to_addr_set(ipsec_addr_set_t *addr_set, ipsec_addr_
   addr_set->ip6addr_src_range_from = addr_set->ip6addr_src_range_to = addr->srcaddr;
   addr_set->ip6addr_dst_range_from = addr_set->ip6addr_dst_range_to = addr->dstaddr;
 
-  addr_set->nextlayer_type = addr->nextlayer_type;
+  addr_set->nextlayer_proto = addr->nextlayer_proto;
   
   addr_set->nextlayer_src_port_range_from = addr_set->nextlayer_src_port_range_to = addr->srcport;
   addr_set->nextlayer_dst_port_range_from = addr_set->nextlayer_dst_port_range_to = addr->dstport;  
@@ -76,12 +76,13 @@ uint8_t uip6_addr_a_is_in_closed_interval_bc(uip_ip6addr_t *a, uip_ip6addr_t *b,
   */
 uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b)
 {
-  return  (a->direction == b->direction || b->direction == SPD_ANY_TRAFFIC) &&
-      uip6_addr_a_is_in_closed_interval_bc(a->addr, b->peer_addr_from, b->peer_addr_to) && 
-      a_is_in_closed_interval_bc(uip_ntohs(a->src_port), uip_ntohs(b->src_port_from), uip_ntohs(b->src_port_to)) && 
-      a_is_in_closed_interval_bc(uip_ntohs(a->dest_port), uip_ntohs(b->dest_port_from), uip_ntohs(b->dest_port_to)) && 
-      (b->nextlayer_type == SPD_SELECTOR_NL_ANY_PROTOCOL || a->nextlayer_type == b->nextlayer_type);
+  return  uip6_addr_a_is_in_closed_interval_bc(a->peer_addr, b->peer_addr_from, b->peer_addr_to) && 
+          a_is_in_closed_interval_bc(a->my_port, b->my_port_from, b->my_port_to) && 
+          a_is_in_closed_interval_bc(a->peer_port, b->peer_port_from, b->peer_port_to) && 
+          (b->nextlayer_proto == SPD_SELECTOR_NL_ANY_PROTOCOL || a->nextlayer_proto == b->nextlayer_proto);
 }
+
+
 
 
 /**
@@ -93,7 +94,7 @@ uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b)
 uint8_t ipsec_ts_is_subset_of_addr_set(ike_ts_t *ts_dst, ike_ts_t *ts_src, ipsec_addr_set_t *selector)
 {
   return
-    (selector->nextlayer_type == SPD_SELECTOR_NL_ANY_PROTOCOL || selector->nextlayer_type == ts->proto) &&
+    (selector->nextlayer_proto == SPD_SELECTOR_NL_ANY_PROTOCOL || selector->nextlayer_proto == ts->proto) &&
      uip6_addr_a_is_in_closed_interval_bc(&ts_src->start_addr, selector->ip6addr_src_range_from, selector->ip6addr_src_range_to) &&
      uip6_addr_a_is_in_closed_interval_bc(&ts_src->end_addr, selector->ip6addr_src_range_from, selector->ip6addr_src_range_to) &&
      uip6_addr_a_is_in_closed_interval_bc(&ts_dst->start_addr, selector->ip6addr_dst_range_from, selector->ip6addr_dst_range_to) &&

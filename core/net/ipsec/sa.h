@@ -109,9 +109,9 @@ typedef enum {                  // RFC4307      Status of this implementation
   */
 typedef enum {                            // RFC4307      RFC4835       Status of this implementation
   SA_INTEG_NONE = 0,                      // N/A          MUST          IMPLEMENTED
-  SA_INTEG_HMAC_MD5_95 = 1,          // MAY          MAY           NOT IMPLEMENTED
-  SA_INTEG_HMAC_SHA1_96 = 2,         // MUST         MUST          IMPLEMENTED
-  SA_INTEG_AES_XCBC_MAC_96 = 5,      // SHOULD+      SHOULD+       FIX: IN PROGRESS
+  SA_INTEG_HMAC_MD5_95 = 1,               // MAY          MAY           NOT IMPLEMENTED
+  SA_INTEG_HMAC_SHA1_96 = 2,              // MUST         MUST          IMPLEMENTED
+  SA_INTEG_AES_XCBC_MAC_96 = 5,           // SHOULD+      SHOULD+       FIX: IN PROGRESS
   SA_INTEG_UNASSIGNED = 255
 } sa_integ_transform_type_t;
 

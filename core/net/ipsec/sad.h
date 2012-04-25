@@ -14,13 +14,16 @@ extern uint32_t next_sad_local_spi;
 #define PRINTSADENTRY(entry)                            \
   do {                                                  \
     PRINTADDRSET(&(entry)->traffic_desc);               \
-    PRINTF("SPI: %lx\n", (entry)->spi);                  \
-    PRINTF("Sequence number: %lu\n", (entry)->seqno);   \
-    PRINTF("Window: %lx\n", (entry)->win);               \
-    PRINTF("Time of creation: %lu\n", (entry)->time_of_creation);    \
-    PRINTF("Bytes transported: %lu\n", (entry)->bytes_transported);  \
-    PRINTF("Encr type: %hu\n", (entry)->sa.encr);         \
-    PRINTF("Integ type: %hu\n", (entry)->sa.integ);         \
+    PRINTF("SPI: %x\n", uip_ntohl((entry)->spi));                  \
+    PRINTF("Sequence number: %u\n", (entry)->seqno);   \
+    PRINTF("Window: 0x%x\n", (entry)->win);               \
+    PRINTF("Time of creation: %u\n", (entry)->time_of_creation);    \
+    PRINTF("Bytes transported: %u\n", (entry)->bytes_transported);  \
+    PRINTF("SA proto: %hhu\n", (entry)->sa.proto);                  \
+    PRINTF("Encr type: %hhu\n", (entry)->sa.encr);         \
+    MEMPRINTF("Encr keymat", (entry)->sa.sk_e,  SA_ENCR_KEYMATLEN_BY_SA((entry)->sa));  \
+    PRINTF("Integ type: %hhu\n", (entry)->sa.integ);         \
+    MEMPRINTF("Integ keymat", (entry)->sa.sk_a,  SA_INTEG_KEYMATLEN_BY_TYPE((entry)->sa.integ)); \
   } while(0)
 
 #define SAD_DYNAMIC_SPI_START 1000
@@ -109,7 +112,7 @@ typedef struct x2 {
     
   // The author can't see any reason as to why we should store the SPIs in host byte order.
   // Therefore the SPI below is stored in network byte order. This saves some memory by eliding the conversion.
-  uint32_t spi; // Suggestion for the future: 16 bits for incoming traffic, 32 bits for outoing
+  uint32_t spi; // Stored in network byte order. Suggestion for the future: 16 bits for incoming traffic, 32 bits for outoing
   
   // Encryption
   sa_child_t sa;

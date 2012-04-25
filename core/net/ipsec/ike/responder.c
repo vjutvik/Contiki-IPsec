@@ -51,8 +51,13 @@ state_return_t ike_statem_state_parse_authreq(ike_statem_session_t *session)
     session->transition_fn = &ike_statem_trans_authresp;
     session->next_state_fn = &ike_statem_state_established_handler;
     
-    IKE_STATEM_TRANSITION(session);    // We're about to send a new message
+    IKE_STATEM_TRANSITION_NO_TIMEOUT(session);    // We're about to send a new message
     //IKE_STATEM_INCRPEERMSGID(session);  // Since we've recognized the peer's message
+    
+    // FIX: We need to cleanup here, but how do we handle retransmissions of the above transition?
+    // Remove stuff that we don't need
+    // ike_statem_clean_session(session);
+    
     return STATE_SUCCESS;
   }
   else
@@ -69,5 +74,5 @@ transition_return_t ike_statem_trans_authresp(ike_statem_session_t *session)
   // Write the IKE header
   SET_IKE_HDR_AS_RESPONDER(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH, IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONSE);
   
-  return ike_statem_send_auth_msg(session, &payload_arg, session->ephemeral_info->peer_child_spi, session->ephemeral_info->child_proposal_reply);
+  return ike_statem_send_auth_msg(session, &payload_arg, session->ephemeral_info->my_child_spi, session->ephemeral_info->child_proposal_reply, &session->ephemeral_info->my_ts_offer_addr_set);
 }

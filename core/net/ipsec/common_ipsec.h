@@ -4,6 +4,7 @@
 #include <limits.h>
 #include "net/uip.h"
 #include "ipsec.h"
+#include "ike/payload.h"
 
 /**
   * Debug stuff
@@ -27,24 +28,22 @@
   PRINTF("\ndirection: %s\n", str[dir])
 
 // Prints the contents of an ipsec_addr_t variable at the given address
-#define PRINTADDR(addr)                                   \
-  do {                                                    \
-    PRINT6ADDR((addr)->addr);                             \
-    PRINTDIR((addr)->direction);                          \
-    PRINTF("nl: %u\n", (addr)->nextlayer_type);           \
-    PRINTF("src_port: %u\n", uip_ntohs((addr)->src_port));          \
-    PRINTF("dest_port: %u\n", uip_ntohs((addr)->dest_port));        \
+#define PRINTADDR(addr)                                             \
+  do {                                                              \
+    PRINT6ADDR((addr)->peer_addr);                                  \
+    PRINTF("\nNextlayer proto: %hhu\n", (addr)->nextlayer_proto);     \
+    PRINTF("My port: %hu\n", (addr)->my_port);                      \
+    PRINTF("Peer port: %hu\n", (addr)->peer_port);                  \
   } while(0)
 
 // Prints the contents of an ipsec_addr_set_t located at the given address
-#define PRINTADDRSET(addr_set)                                    \
-  do {                                                            \
-    PRINT6ADDR((addr_set)->peer_addr_from);                            \
-    PRINT6ADDR((addr_set)->peer_addr_to);                              \
-    PRINTDIR((addr_set)->direction);                              \
-    PRINTF("nl: %u\n", (addr_set)->nextlayer_type);             \
-    PRINTF("Source ports: %u - %u\n", uip_ntohs((addr_set)->src_port_from), uip_ntohs((addr_set)->src_port_to)); \
-    PRINTF("Dest ports: %u - %u\n", uip_ntohs((addr_set)->dest_port_from), uip_ntohs((addr_set)->dest_port_to)); \
+#define PRINTADDRSET(addr_set)                                                                \
+  do {                                                                                        \
+    PRINT6ADDR((addr_set)->peer_addr_from);                                                   \
+    PRINT6ADDR((addr_set)->peer_addr_to);                                                     \
+    PRINTF("\nNextlayer proto: %hhu\n", (addr_set)->nextlayer_proto);                         \
+    PRINTF("My ports: %hu - %hu\n", (addr_set)->my_port_from, (addr_set)->my_port_to);        \
+    PRINTF("Peer ports: %hu - %hu\n", (addr_set)->peer_port_from, (addr_set)->peer_port_to);  \
   } while(0)
 
 #else
@@ -83,14 +82,14 @@ typedef enum {
   * peer_addr_to marks its end. This address range is coupled to a packet's source address if it's incoming traffic,
   * its destination address otherwise.
   * 
-  * dest_port_from represents the beginning of a closed range of ports, dest_port_to its end. This always represents the
+  * peer_port_from represents the beginning of a closed range of ports, peer_port_to its end. This always represents the
   * destination port, irrespective of the traffic being outgoing or incoming.
   *
-  * nextlayer_type is the next layer protocol's type.
+  * nextlayer_proto is the next layer protocol's type.
   *
   * Byte order
   * =====================
-  * Addresses and ports are stored in network byte order.
+  * Addresses are stored in network byte order. Ports are stored in host byte order.
   */
 typedef struct {
   uip_ip6addr_t *peer_addr_from, *peer_addr_to;
@@ -101,12 +100,12 @@ typedef struct {
     *
     * A value of SPD_SELECTOR_NL_ANY_PROTOCOL is magic and should be interpreted as ANY protocol.
     */
-  uint8_t nextlayer_type; // Type of next layer protocol
+  uint8_t nextlayer_proto; // Type of next layer protocol
   
-  direction_t direction;
+//  direction_t direction;
 
-  uint16_t src_port_from, src_port_to; // Next layer destination port range
-  uint16_t dest_port_from, dest_port_to; // Next layer destination port range
+  uint16_t my_port_from, my_port_to;      // Next layer destination port range
+  uint16_t peer_port_from, peer_port_to;  // Next layer destination port range
 } ipsec_addr_set_t;
 
 
@@ -118,14 +117,14 @@ typedef struct {
   *
   * Byte order
   * =====================
-  * Addresses and ports are stored in network byte order.
+  * Addresses are stored in network byte order. Ports are stored in host byte order.
   */
 typedef struct {
-  uip_ip6addr_t *addr;
-  direction_t direction;
-  uint8_t nextlayer_type;
-  uint16_t src_port;
-  uint16_t dest_port;
+  uip_ip6addr_t *peer_addr;
+//  direction_t direction;
+  uint8_t nextlayer_proto;
+  uint16_t my_port;
+  uint16_t peer_port;
 } ipsec_addr_t;
 
 
@@ -134,19 +133,20 @@ typedef struct {
   * to describe the source (SAs for incoming traffic)
   * or destination (SAs for outgoing traffic) of traffic flows.
   */
+/*
 typedef struct {
   uip_ip6addr_t peer_addr;
-  uint8_t nextlayer_type;
+  uint8_t nextlayer_proto;
   uint16_t port_from;
   uint16_t port_to;
 } ipsec_traffic_desc_t;
-
+*/
 
 // Please note that the following next header value can be interpreted as "IPv6 Hop-by-Hop Option".
 // We choose 0 anyway since it's the wildcard value used in the TS selector. Why RFC 5996 specifies
 // that value and not the reserved value of 255 is interesting question.
 // (Ref. IANA "Assigned Internet Protocol Numbers")
-#define SPD_SELECTOR_NL_ANY_PROTOCOL 0
+#define SPD_SELECTOR_NL_ANY_PROTOCOL IKE_PAYLOADFIELD_TS_NL_ANY_PROTOCOL
 
 /**
   * Convenience macros for address comparison
@@ -185,8 +185,9 @@ typedef struct {
 // #define uip6_addr_a_is_leq_than_b(a, b) uip6_addr_a_is_geq_than_b(b, a)
 
 #define a_is_in_closed_interval_bc(a, b, c) \
-  a >= b && a <= c
+  (a) >= (b) && (a) <= (c)
 
-uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b);
+extern uint8_t ipsec_a_is_member_of_b(ipsec_addr_t *a, ipsec_addr_set_t *b);
+extern uint8_t uip6_addr_a_is_in_closed_interval_bc(uip_ip6addr_t *a, uip_ip6addr_t *b, uip_ip6addr_t *c);
 
 #endif

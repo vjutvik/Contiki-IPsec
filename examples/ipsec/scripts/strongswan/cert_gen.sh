@@ -1,0 +1,1 @@
+ipsec pki --gen --type ecdsa --size 256

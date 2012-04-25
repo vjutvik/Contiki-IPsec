@@ -6,7 +6,7 @@
 extern const spd_entry_t spd_table[];
 extern const spd_proposal_tuple_t spdconf_ike_proposal[];
 extern const spd_proposal_tuple_t spdconf_ike_open_proposal[];
-extern const spd_proposal_tuple_t my_ah_esp_proposal[];
+//extern const spd_proposal_tuple_t my_ah_esp_proposal[];
 
 // Section "3.4.  Key Exchange Payload" specifies an interdependence between the IKE proposal's
 // MODP group and the KE payload. The following define states this common property.

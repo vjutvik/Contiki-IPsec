@@ -123,17 +123,24 @@ typedef uint16_t transition_return_t;
   */
 #define IKE_STATEM_TRANSITION(session)                                  \
   /* Run transition and increase our message ID if successfull */       \
-  if (ike_statem_run_transition(session, 1) != TRANSITION_FAILURE)         \
+  if (ike_statem_run_transition(session, 1) != TRANSITION_FAILURE)      \
     IKE_STATEM_INCRMYMSGID(session)
 
+#define IKE_STATEM_TRANSITION_NO_TIMEOUT(session)                         \
+  /* Run transition and increase our message ID if successfull */         \
+  if (ike_statem_run_transition(session, 0) != TRANSITION_FAILURE)        \
+    IKE_STATEM_INCRMYMSGID(session)
 
 /**
   * Storage structure for temporary information used during connection setup.
   */
 typedef struct {
   // Information about the triggering packet (used for IKE SA initiation)
-  ipsec_addr_t triggering_pkt;
+  //ipsec_addr_t triggering_pkt;
   spd_entry_t *spd_entry;
+  
+  // Temporary storage for our TS offer to the peer
+  ipsec_addr_set_t my_ts_offer_addr_set;
 
   uint32_t my_child_spi;
   uint32_t peer_child_spi;
@@ -273,6 +280,8 @@ typedef struct {
 ike_statem_session_t *ike_statem_get_session_by_addr(uip_ip6addr_t *addr);
 void ike_statem_setup_initiator_session(ipsec_addr_t * triggering_pkt_addr, spd_entry_t * commanding_entry);
 void ike_statem_remove_session(ike_statem_session_t *session);
+extern void ike_statem_clean_session(ike_statem_session_t *session);
+extern void ike_statem_send(ike_statem_session_t *session, uint16_t len);
 
 /**
   * Each edge in a mealy machine is associated with an output. Below we declare the data structure for the

@@ -473,9 +473,6 @@ typedef struct {
 
            Figure 19:  Traffic Selectors Payload Format
   */
-// The maximum number of TS payloads that we support.
-// This value can NOT be changed without altering the algorithm for T
-#define IKE_PAYLOADFIELD_MAX_TS_COUNT 2 
 #define SET_TSPAYLOAD(ts_payload, no_of_ts)         \
            *((uint32_t *) (ts_payload)) = 0;              \
            (ts_payload)->number_of_ts = (no_of_ts)
@@ -483,7 +480,7 @@ typedef struct {
   uint8_t number_of_ts;
   uint8_t clear1;
   uint16_t clear2;
-} ike_ts_payload_t;
+} ike_payload_ts_t;
 
 
 /**
@@ -508,9 +505,10 @@ typedef struct {
               Figure 20: Traffic Selector
   */
 // Only IPv6 type selectors are supported
-#define IKE_PAYLOADFIELD_TS_NL_ANY_PROTOCOL SPD_SELECTOR_NL_ANY_PROTOCOL
+#define IKE_PAYLOADFIELD_TS_NL_ANY_PROTOCOL 0
 #define IKE_PAYLOADFIELD_TS_IPV6_ADDR_RANGE 8
 #define IKE_PAYLOADFIELD_TS_TYPE IKE_PAYLOADFIELD_TS_IPV6_ADDR_RANGE
+#define IKE_PAYLOADFIELD_TS_SELECTOR_LEN (sizeof(ike_ts_t))
 #define SET_TSSELECTOR_INIT(ts)                                   \
               (ts)->ts_type = IKE_PAYLOADFIELD_TS_TYPE;           \
               (ts)->selector_len = uip_htons(sizeof(ike_ts_t))
@@ -524,7 +522,7 @@ typedef struct {
               memcpy(&addrset->ip6addr_src_range_to, &ts_src->end_addr, sizeof(uip_ip6addr_t)); \
               memcpy(&addrset->ip6addr_dst_range_from, &ts_dst->start_addr, sizeof(uip_ip6addr_t)); \
               memcpy(&addrset->ip6addr_dst_range_to, &ts_dst->end_addr, sizeof(uip_ip6addr_t)); \
-              addrset->nextlayer_type = ts_src->proto; \
+              addrset->nextlayer_proto = ts_src->proto; \
               addrset->nextlayer_src_port_range_from = ts_src->start_port; \
               addrset->nextlayer_src_port_range_to = ts_src->end_port; \
               addrset->nextlayer_dst_port_range_from = ts_dst->start_port; \
@@ -533,7 +531,7 @@ typedef struct {
 /*
 #define SET_TSSELECTOR_ADDR(ts, addr) \
               ts->ts_type = IKE_PAYLOADFIELD_TS_TYPE; \
-              ts->proto = addr->nextlayer_type; \
+              ts->proto = addr->nextlayer_proto; \
               ts->selector_len = UIP_HTONS(40); \
               ts->start_port = addr->srcport; \
               ts->end_port = addr->srcport; \

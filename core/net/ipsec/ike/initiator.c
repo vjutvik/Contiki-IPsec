@@ -256,7 +256,7 @@ uint16_t ike_statem_trans_authreq(ike_statem_session_t *session) {
   // Write the IKE header
   SET_IKE_HDR_AS_INITIATOR(&payload_arg, IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH, IKE_PAYLOADFIELD_IKEHDR_FLAGS_REQUEST);
 
-  return ike_statem_send_auth_msg(session, &payload_arg, session->ephemeral_info->my_child_spi, session->ephemeral_info->spd_entry->offer);
+  return ike_statem_send_auth_msg(session, &payload_arg, session->ephemeral_info->my_child_spi, session->ephemeral_info->spd_entry->offer, &session->ephemeral_info->spd_entry->selector);
   /*
   // Write a template of the SK payload for later encryption
   ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg.start;
@@ -527,6 +527,9 @@ state_return_t ike_statem_state_authrespwait(ike_statem_session_t *session)
   */
 
   if (ike_statem_parse_auth_msg(session) == STATE_SUCCESS) {
+    
+    // Remove stuff that we don't need
+    ike_statem_clean_session(session);
   
     // Transition to state autrespwait
     session->transition_fn = NULL;
@@ -594,7 +597,7 @@ state_return_t ike_statem_state_authrespwait(ike_statem_session_t *session)
       if (tsarr == NULL)
         tsarr = &tsr;
       
-      ike_ts_payload_t *ts_payload = payload_start;
+      ike_payload_ts_t *ts_payload = payload_start;
 
       int i;
       ptr += sizeof(ts_payload);

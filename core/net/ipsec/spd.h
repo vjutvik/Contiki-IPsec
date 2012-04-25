@@ -34,17 +34,17 @@
   */
 #ifdef DEBUG
 // Prints the SPD entry located at address spd_entry
-#define PRINTSPDENTRY(spd_entry)                        \
-  do {                                                  \
-    PRINTF("Selector: ");                               \
-    PRINTADDRSET(&(spd_entry)->selector);               \
-    uint8_t str[3][8] = {                                  \
-      { "PROTECT" },                                    \
-      { "BYPASS" },                                     \
-      { "DISCARD" }                                     \
-    };                                                  \
-    PRINTF("Action: %s\n", str[(spd_entry)->proc_action]);           \
-    PRINTF("Offer at addr: %x\n", (unsigned int) (spd_entry)->offer);   \
+#define PRINTSPDENTRY(spd_entry)                              \
+  do {                                                        \
+    PRINTF("Selector: ");                                     \
+    /* PRINTADDRSET(&(spd_entry)->selector);   */                  \
+    uint8_t str[3][8] = {                                     \
+      { "PROTECT" },                                          \
+      { "BYPASS" },                                           \
+      { "DISCARD" }                                           \
+    };                                                        \
+    PRINTF("Action: %s\n", str[(spd_entry)->proc_action]);    \
+    PRINTF("Offer at addr: %p\n", (spd_entry)->offer);        \
   } while(0)
 #else
 #define PRINTSPDENTRY

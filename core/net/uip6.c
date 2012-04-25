@@ -1271,7 +1271,7 @@ uip_process(uint8_t flag)
   // packet_desc contains the salient properties of a packet's header.
   // It's used for incoming as well as outgoing traffic.
   ipsec_addr_t packet_desc = {
-    .addr = &UIP_IP_BUF->srcipaddr
+    .peer_addr = &UIP_IP_BUF->srcipaddr
   };
   
   ipsec_addr_t packet_tag;
@@ -1352,7 +1352,7 @@ uip_process(uint8_t flag)
    
         // No network-to-host conversion of the SPI as we store our SPIs in network byte order internally
         //PRINTF("uIP6 SPI %u esp_header %x uip_buf %x UIP_ESP_BUF %x\n", esp_header->spi, esp_header, &uip_buf, UIP_ESP_BUF);
-        PRINTF(IPSEC "ESP: SPI %lx Sequence no %lu\n", uip_ntohl(esp_header->spi), uip_ntohl(esp_header->seqno));
+        PRINTF(IPSEC "ESP: SPI %x Sequence no %u\n", uip_ntohl(esp_header->spi), uip_ntohl(esp_header->seqno));
         if ((sad_entry = sad_get_incoming_entry(esp_header->spi)) == NULL) {
           // Protected packets whose SAD entry we cannot find must be discarded according to the RFC.
           PRINTF(IPSEC "Dropping incoming protected packet because of missing SAD entry\n");
@@ -1422,7 +1422,7 @@ uip_process(uint8_t flag)
         /**
           * Replay protection (dynamic SAs only!)
           */
-        if (SAD_ENTRY_IS_DYNAMIC(sad_entry) && sad_incoming_replay(sad_entry, esp_header->seqno)) {          
+        if (SAD_ENTRY_IS_DYNAMIC(sad_entry) && sad_incoming_replay(sad_entry, uip_ntohl(esp_header->seqno))) {          
           PRINTF(IPSEC "Error: This packet is a replay\n");
           goto drop;
         }
@@ -1448,9 +1448,9 @@ uip_process(uint8_t flag)
         /* TCP, for both IPv4 and IPv6 */
         
   #if WITH_IPSEC
-        packet_desc.nextlayer_type = *uip_next_hdr;
-        packet_desc.src_port = UIP_TCP_BUF->srcport;
-        packet_desc.dest_port = UIP_TCP_BUF->destport;
+        packet_desc.nextlayer_proto = *uip_next_hdr;
+        packet_desc.peer_port = uip_ntohs(UIP_TCP_BUF->srcport);
+        packet_desc.my_port = uip_ntohs(UIP_TCP_BUF->destport);
         if (ipsec_filter(sad_entry, &packet_desc))
           goto drop;
   #endif /* End of WITH_IPSEC */
@@ -1463,9 +1463,9 @@ uip_process(uint8_t flag)
         
   #if WITH_IPSEC
         /* See comment in UIP_PROTO_TCP for clarification */
-        packet_desc.nextlayer_type = *uip_next_hdr;
-        packet_desc.src_port = UIP_UDP_BUF->srcport;
-        packet_desc.dest_port = UIP_UDP_BUF->destport;
+        packet_desc.nextlayer_proto = *uip_next_hdr;
+        packet_desc.peer_port = uip_ntohs(UIP_UDP_BUF->srcport);
+        packet_desc.my_port = uip_ntohs(UIP_UDP_BUF->destport);
         /*
         printf("src + dst:\n");
         memprint(&UIP_IP_BUF->srcipaddr, 30);
@@ -1482,7 +1482,7 @@ uip_process(uint8_t flag)
         /* ICMPv6 */
          /* See comment in UIP_PROTO_TCP for clarification */
  #if WITH_IPSEC
-       packet_desc.nextlayer_type = *uip_next_hdr;
+       packet_desc.nextlayer_proto = *uip_next_hdr;
      
        if (ipsec_filter(sad_entry, &packet_desc))
          goto drop;
@@ -1814,8 +1814,10 @@ uip_process(uint8_t flag)
 #endif /* UIP_UDP_CHECKSUMS */
 
 #if WITH_IPSEC
-  packet_tag.src_port = UIP_UDP_BUF->srcport;
-  packet_tag.dest_port = UIP_UDP_BUF->destport;
+  packet_tag.my_port = uip_ntohs(UIP_UDP_BUF->srcport);
+  packet_tag.peer_port = uip_ntohs(UIP_UDP_BUF->destport);
+  PRINTF("my_port: %hu\n", packet_tag.my_port);
+  PRINTF("peer_port: %hu\n", packet_tag.peer_port);
 #endif
 
   UIP_STAT(++uip_stat.udp.sent);
@@ -2526,8 +2528,8 @@ uip_process(uint8_t flag)
   UIP_STAT(++uip_stat.tcp.sent);
   
 #if WITH_IPSEC
-  packet_tag.src_port = UIP_TCP_BUF->srcport;
-  packet_tag.dest_port = UIP_TCP_BUF->destport;
+  packet_tag.my_port = uip_ntohs(UIP_TCP_BUF->srcport);
+  packet_tag.peer_port = uip_ntohs(UIP_TCP_BUF->destport);
 #endif
 
 #endif /* UIP_TCP */
@@ -2547,13 +2549,13 @@ uip_process(uint8_t flag)
   }
 
   // Fetch applicable SA
-  packet_tag.addr = &UIP_IP_BUF->destipaddr;
-  packet_tag.direction = SPD_OUTGOING_TRAFFIC;
-  packet_tag.nextlayer_type = UIP_IP_BUF->proto;
+  packet_tag.peer_addr = &UIP_IP_BUF->destipaddr;
+  //packet_tag.direction = SPD_OUTGOING_TRAFFIC;
+  packet_tag.nextlayer_proto = UIP_IP_BUF->proto;
  
   // We use the SAD as an SPD-S cache (RFC 4301).
   // Is there an SA entry that matches this traffic?
-  sad_entry = sad_get_outgoing_entry(&packet_tag.addr);
+  sad_entry = sad_get_outgoing_entry(&packet_tag);
 
   // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
   if (sad_entry == NULL) {
@@ -2577,7 +2579,7 @@ uip_process(uint8_t flag)
       
       //#else
       // FIX: Broken #if parsing
-      // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet." \
+      // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet."
       
       /**
         * RFC 4301 grants us the permission to drop the packet triggering an IKE handshake
@@ -2605,9 +2607,6 @@ uip_process(uint8_t flag)
 #endif
 
 #if WITH_IPSEC_ESP
-  uint16_t blah = UIP_IPUDPH_LEN;
-  IPSECDBG_PRINTF("uip_slen: %u, uip_len: %u UIP_IPUDPH_LEN: %u\n", uip_slen, uip_len, blah);
-
   if (sad_entry->sa.proto == SA_PROTO_ESP) {
     struct uip_esp_header* esp_header = UIP_ESP_BUF;
     uint8_t next_header;

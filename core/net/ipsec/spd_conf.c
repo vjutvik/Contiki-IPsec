@@ -106,7 +106,7 @@ const spd_proposal_tuple_t my_ah_esp_proposal[9] =
   .ip6addr_##direction##_from = ip6addr,  \
   .ip6addr_##direction##_to = ip6addr
 
-#define set_any_ip6addr() \
+#define set_any_peer_ip6addr() \
   .peer_addr_from = &spd_conf_ip6addr_min,     \
   .peer_addr_to = &spd_conf_ip6addr_max
 
@@ -121,21 +121,21 @@ const spd_proposal_tuple_t my_ah_esp_proposal[9] =
 */
 
 
-#define set_src_port(port)                         \
-  .src_port_from = UIP_HTONS(port),                \
-  .src_port_to = UIP_HTONS(port)
+#define set_my_port(port)               \
+  .my_port_from = port,                 \
+  .my_port_to = port
 
-#define set_any_src_port()                         \
-  .src_port_from = 0U,                             \
-  .src_port_to = UIP_HTONS(PORT_MAX)
+#define set_any_my_port()               \
+  .my_port_from = 0,                    \
+  .my_port_to = PORT_MAX
 
-#define set_dest_port(port)                         \
-  .dest_port_from = UIP_HTONS(port),                \
-  .dest_port_to = UIP_HTONS(port)
+#define set_peer_port(port)             \
+  .peer_port_from = port,               \
+  .peer_port_to = port
 
-#define set_any_dest_port()                         \
-  .dest_port_from = 0U,                             \
-  .dest_port_to = UIP_HTONS(PORT_MAX)
+#define set_any_peer_port()             \
+  .peer_port_from = 0,                  \
+  .peer_port_to = PORT_MAX
 
   
 /**
@@ -154,77 +154,45 @@ uip_ip6addr_t spd_conf_ip6addr_max;       // Address ffff:ffff:ffff:ffff:ffff:ff
   */
 const spd_entry_t spd_table[SPD_ENTRIES] = 
   {
-    // BYPASS for incoming IKE traffic
+    // BYPASS IKE traffic
     {
       .selector =
       {
-        .direction = SPD_INCOMING_TRAFFIC,       // This concerns incoming and outgoing traffic...
-        set_any_ip6addr(),                  // ...from any host...
-        .nextlayer_type = UIP_PROTO_UDP,    // ...using UDP...
-        set_any_src_port(),                 // ...from any source port
-        set_dest_port(500)                  // ...to destination port 500.
+        //.direction = SPD_INCOMING_TRAFFIC,       // This concerns incoming and outgoing traffic...
+        set_any_peer_ip6addr(),                  // ...from any host...
+        .nextlayer_proto = UIP_PROTO_UDP,    // ...using UDP...
+        set_my_port(500),                  // ...to destination port 500.
+        set_any_peer_port()                 // ...from any source port
       },
       .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
       .offer = NULL                         // N/A
     },
-
-    // BYPASS for outgoing IKE traffic
-    {
-      .selector =
-      {
-        .direction = SPD_OUTGOING_TRAFFIC,    // This concerns incoming and outgoing traffic...
-        set_any_ip6addr(),                    // ...to any host...
-        .nextlayer_type = UIP_PROTO_UDP,      // ...using UDP...
-        set_src_port(500),                    // ...from source port 500.
-        set_any_dest_port()                   // ...to any destination port.
-      },
-      .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
-      .offer = NULL                         // N/A
-    },
-
     
-    // PROTECT incoming UDP traffic on UDP port 1234 (for ipsec-example.sky)
+    // PROTECT all UDP traffic to host aaaa::1
     {
       .selector =
       {
-        .direction = SPD_INCOMING_TRAFFIC,
-        set_any_ip6addr(),
-        .nextlayer_type = UIP_PROTO_UDP,
-        //.nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
-        set_any_src_port(),
-        set_dest_port(1234)
+        set_any_peer_ip6addr(),
+        //.nextlayer_proto = UIP_PROTO_UDP,
+        .nextlayer_proto = SPD_SELECTOR_NL_ANY_PROTOCOL,
+        set_any_my_port(),
+        set_any_peer_port()
       },
-      .proc_action = SPD_ACTION_BYPASS,      // No protection necessary
-      .offer = NULL                           // N/A
+      .proc_action = SPD_ACTION_PROTECT,
+      .offer = my_ah_esp_proposal
     },
-
-    // PROTECT outgoing UDP traffic from UDP port 1234 (for ipsec-example.sky)
-    {
-      .selector =
-      {
-        .direction = SPD_OUTGOING_TRAFFIC,
-        set_any_ip6addr(),
-        .nextlayer_type = UIP_PROTO_UDP,
-        //.nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
-        set_src_port(1234),
-        set_any_dest_port()
-      },
-      .proc_action = SPD_ACTION_PROTECT,      // No protection necessary
-      .offer = my_ah_esp_proposal          
-    },
-    
 
     // BYPASS all ICMP6 traffic
     {
       .selector =
       {
-        .direction = SPD_ANY_TRAFFIC,
-        set_any_ip6addr(),
-        .nextlayer_type = UIP_PROTO_ICMP6,
-        set_any_src_port(),
-        set_any_dest_port()
+        //.direction = SPD_ANY_TRAFFIC,
+        set_any_peer_ip6addr(),
+        .nextlayer_proto = UIP_PROTO_ICMP6,
+        set_any_my_port(),
+        set_any_peer_port()
       },
-      .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
+      .proc_action = SPD_ACTION_PROTECT,     // No protection necessary
       .offer = NULL                         // N/A
     },
     
@@ -233,11 +201,11 @@ const spd_entry_t spd_table[SPD_ENTRIES] =
     {
       .selector =
       {
-        .direction = SPD_ANY_TRAFFIC,       // This concerns incoming as well as outgoing traffic
-        set_any_ip6addr(),                  // Any source (incoming traffic), any destination (outgoing)        
-        .nextlayer_type = SPD_SELECTOR_NL_ANY_PROTOCOL,
-        set_any_src_port(),
-        set_any_dest_port()
+        //.direction = SPD_ANY_TRAFFIC,       // This concerns incoming as well as outgoing traffic
+        set_any_peer_ip6addr(),                  // Any source (incoming traffic), any destination (outgoing)        
+        .nextlayer_proto = SPD_SELECTOR_NL_ANY_PROTOCOL,
+        set_any_my_port(),
+        set_any_peer_port()
       },
       .proc_action = SPD_ACTION_DISCARD,
       .offer = NULL

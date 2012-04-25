@@ -56,7 +56,6 @@ extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
                                 sa_ike_t *ike_sa,
                                 sad_entry_t *sad_entry,
                                 spd_proposal_tuple_t *accepted_transform_subset);
-extern void ike_statem_clean_session(ike_statem_session_t *session);
 extern uint16_t ike_statem_get_authdata(ike_statem_session_t *session,
                                         uint8_t myauth, 
                                         uint8_t *out, 
@@ -68,9 +67,12 @@ extern void ike_statem_finalize_sk(payload_arg_t *payload_arg,
 extern uint8_t ike_statem_handle_notify(ike_payload_notify_t *payload_start);
 extern uint8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
-extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg);
-extern void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, direction_t direction, ike_ts_t *ts_src, ike_ts_t *ts_dest);
+extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg, ipsec_addr_set_t *ts_addr_set);
 
+extern uint8_t selector_is_superset_of_tspair(ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer);
+extern void instanciate_spd_entry(ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer);
+extern spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer);
+extern void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, ike_ts_t *ts_me, ike_ts_t *ts_peer);
 
 #define IPSEC_IKE "IPsec IKEv2: "
 #define IPSEC_IKE_ERROR "IPsec IKEv2: Error: "
