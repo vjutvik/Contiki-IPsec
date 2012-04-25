@@ -45,8 +45,9 @@
 #include <string.h>
 #include "net/uip-ds6.h"
 #include "net/uip-icmp6.h"
+#include "ipsec.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)

@@ -70,10 +70,11 @@ const spd_proposal_tuple_t spdconf_ike_open_proposal[6] =
 };
 
 
-const spd_proposal_tuple_t my_ah_esp_proposal[9] = 
+const spd_proposal_tuple_t my_ah_esp_proposal[10] = 
 { 
   // ESP proposal
   { SA_CTRL_NEW_PROPOSAL, SA_PROTO_ESP}, 
+  { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_NULL },
   { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_AES_CBC },
   { SA_CTRL_ATTRIBUTE_KEY_LEN,  16 },  /* Key len in _bytes_ (128 bits) */
   { SA_CTRL_TRANSFORM_TYPE_ENCR, SA_ENCR_AES_CTR },

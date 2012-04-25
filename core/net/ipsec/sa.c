@@ -43,6 +43,10 @@ const uint8_t sa_encr_keymat_extralen[] =
   *
   * This includes IVs of block as well as stream ciphers. In the former case
   * the IV size is also the same as the transform's block size.
+  *
+  * NOTE REGARDING NULL ENCRYPTION:
+  * The block size of NULL encryption is actually different for IP ESP payloads (length 0) and
+  * IKE SK payloads (length 1). The value below reflects the SK case.
   */
 const uint8_t sa_encr_ivlen[] = 
 { 
@@ -57,7 +61,7 @@ const uint8_t sa_encr_ivlen[] =
   0,
   0,
   0,
-  1,    // NULL (its block size)
+  1,    // NULL (its block size). SEE NOTE above!
   16,   // AES CBC
   8,    // AES CTR. See RFC 3686, section 4
 };

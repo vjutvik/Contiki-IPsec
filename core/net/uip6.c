@@ -93,8 +93,8 @@
 /*---------------------------------------------------------------------------*/
 
 // IPsec stuff start
-#define IPSECDBG_PRINTF(...) //printf(__VA_ARGS__)
-#define MEMPRINT(...) //memprint(__VA_ARGS__)
+#define IPSECDBG_PRINTF(...) printf(__VA_ARGS__)
+#define MEMPRINT(...) memprint(__VA_ARGS__)
 
 // IPsec stuff ends
 
@@ -1385,9 +1385,9 @@ uip_process(uint8_t flag)
         }
 
         // Confidentiality
-        /*
-        printf("Before unpack\n");
-        memprint(esp_header, 100);*/
+        
+        printf("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
+        memprint(esp_header, 100);
         encr_data.type = sad_entry->sa.encr;
         encr_data.keymat = &sad_entry->sa.sk_e;
         encr_data.keylen = sad_entry->sa.encr_keylen;
@@ -1437,9 +1437,12 @@ uip_process(uint8_t flag)
 
         /* Update ext len variables */
         uip_ext_len += sizeof(struct uip_esp_header) + SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr); // ESP header + IV
+        if (sad_entry->sa.encr == SA_ENCR_NULL) // See note in sa.c
+          uip_ext_len -= SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr);
+
         uip_ext_end_len = encr_data.padlen + 2 + IPSEC_ICVLEN;  // padding, padlen and nextheader fields, ICV
       
-        PRINTF(IPSEC "ESP: pl %hu nh %hu uip_ext_len %hu/* uip_ext_end_len %hu*/\n", encr_data.padlen,  *uip_next_hdr, uip_ext_len/*, uip_ext_end_len*/);
+        PRINTF(IPSEC "ESP: padlen %hhu nh %hhu uip_ext_len %hhu uip_ext_end_len %hhu\n", encr_data.padlen, *uip_next_hdr, uip_ext_len, uip_ext_end_len);
         break;
 #endif /* WITH_IPSEC_ESP */
       
@@ -1619,7 +1622,7 @@ uip_process(uint8_t flag)
   
   icmp6_input:
   /* This is IPv6 ICMPv6 processing code. */
-  PRINTF("icmp6_input: length %d type: %d \n", uip_len, UIP_ICMP_BUF->type);
+  PRINTF("icmp6_input: length %d type: %d \n", uip_len - uip_ext_end_len, UIP_ICMP_BUF->type);
 
 #if UIP_CONF_IPV6_CHECKS
   /* Compute and check the ICMP header checksum */
@@ -2610,7 +2613,10 @@ uip_process(uint8_t flag)
   if (sad_entry->sa.proto == SA_PROTO_ESP) {
     struct uip_esp_header* esp_header = UIP_ESP_BUF;
     uint8_t next_header;
-    const uint8_t ivlen = sa_encr_ivlen[sad_entry->sa.encr];
+    uint8_t ivlen = sa_encr_ivlen[sad_entry->sa.encr];
+    if (sad_entry->sa.encr == SA_ENCR_NULL) // See note in sa.c
+      ivlen -= SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr);
+    
     uint16_t data_len = uip_len - UIP_IPH_LEN; // This leaves the data and the next layer headers
     
     /* Backup next header before updating to "ESP" */
