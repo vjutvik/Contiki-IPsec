@@ -11,10 +11,10 @@
 #include "transforms/encr.h"
 //#include "payload.h"
 #include "machine.h"
-#include "spd_conf.h"
-#include "common_ike.h"
 #include "auth.h"
 #include "uip.h"
+#include "spd_conf.h"
+#include "common_ike.h"
 
 
 /**

@@ -10,7 +10,8 @@
   * Debug stuff
   */
 
-#ifdef DEBUG
+#if DEBUG
+#define PRINTF(...) printf(__VA_ARGS__)
 
 #define MEMPRINTF(str, ptr, len) \
   do {                    \
@@ -47,8 +48,8 @@
   } while(0)
 
 #else
-
 #define MEMPRINTF(...)
+#define PRINTF(...)
 #define PRINTADDR(...)
 #define PRINTADDRSET(...)
 

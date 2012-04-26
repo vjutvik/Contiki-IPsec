@@ -6,7 +6,7 @@
 /* Extra uIP logging */
 #undef UIP_CONF_LOGGING
 #define UIP_CONF_LOGGING 1
-  
+
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
 #define WITH_CONF_IPSEC_AH              0
@@ -14,6 +14,12 @@
 
 /* The IKE subsystem is optional if the SAs are manually configured */
 #define WITH_CONF_IPSEC_IKE             1
+
+// Debug override stuff. Don't use this! Use settings in ipsec.h and common_ipsec.h
+// #define DEBUG 0
+// #define PRINTF(...)
+// #define MEMPRINT(...)
+// End debug override
 
 /* Configuring an AES implementation */
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes

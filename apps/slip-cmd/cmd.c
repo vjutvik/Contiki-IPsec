@@ -38,7 +38,7 @@
 #include "cmd.h"
 
 #ifndef CMD_CONF_OUTPUT
-#define CMD_OUTPUT slip_cmd_input
+#define CMD_OUTPUT cmd_input // FIX: Why?? slip_cmd_input orig.
 #else
 #define CMD_OUTPUT CMD_CONF_OUTPUT
 #endif /* CMD_CONF_OUTPUT */
