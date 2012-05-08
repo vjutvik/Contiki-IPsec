@@ -13,8 +13,8 @@ ifdef WERROR
 CFLAGSWERROR=-Werror -pedantic -std=c99 -Werror
 endif
 CFLAGSNO = -Wall -g -O0 -I/usr/local/include $(CFLAGSWERROR)
-CFLAGS  += $(CFLAGSNO) -O
-#CFLAGS  += $(CFLAGSNO) #FIX: Turned of CC opt
+#CFLAGS  += $(CFLAGSNO) -O
+CFLAGS  += $(CFLAGSNO) #FIX: Turned of CC opt
 ifeq ($(HOST_OS),Linux)
   LDFLAGS  = -Wl,-Map=contiki-$(TARGET).map,-export-dynamic
 else

@@ -59,7 +59,6 @@
 #define PRINT6ADDR(addr)
 #endif
 
-
 /**
   * The length (in bytes) of the ICV field in the ESP header and that of IKEv2's SK payload.
   *

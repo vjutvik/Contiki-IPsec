@@ -93,8 +93,8 @@
 /*---------------------------------------------------------------------------*/
 
 // IPsec stuff start
-#define IPSECDBG_PRINTF(...) //printf(__VA_ARGS__)
-#define MEMPRINT(...) //memprint(__VA_ARGS__)
+#define IPSECDBG_PRINTF(...) printf(__VA_ARGS__)
+#define MEMPRINT(...) memprint(__VA_ARGS__)
 
 // IPsec stuff ends
 
@@ -1386,8 +1386,8 @@ uip_process(uint8_t flag)
 
         // Confidentiality
         
-        PRINTF("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
-        MEMPRINT(esp_header, 100);
+        printf("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
+        memprint(esp_header, 100);
         encr_data.type = sad_entry->sa.encr;
         encr_data.keymat = &sad_entry->sa.sk_e;
         encr_data.keylen = sad_entry->sa.encr_keylen;

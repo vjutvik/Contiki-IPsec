@@ -12,10 +12,10 @@ CFLAGS+= -DUIP_CONF_IPV6_RPL
 #linker optimizations
 SMALL=1
 
-#CFLAGS += -DPROJECT_CONF_H=\"ipsec-conf.h\" -DDEBUG="0" -DPRINTF="" -DMEMPRINT=""
-
+CFLAGS += -DPROJECT_CONF_H=\"ipsec-conf.h\"
 PROJECTDIRS += $(CONTIKI)/examples/ipv6/native-border-router
-CONTIKI_SOURCEFILES += border-router-cmds.c tun-bridge.c border-router-rdc.c slip-config.c slip-dev.c border-router.c
+CONTIKI_SOURCEFILES += border-router-cmds.c tun-bridge.c border-router-rdc.c \
+slip-config.c slip-dev.c border-router.c
 
 WITH_WEBSERVER=1
 ifeq ($(WITH_WEBSERVER),1)
