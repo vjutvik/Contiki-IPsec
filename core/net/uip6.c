@@ -93,12 +93,12 @@
 /*---------------------------------------------------------------------------*/
 
 // IPsec stuff start
-#define IPSECDBG_PRINTF(...) printf(__VA_ARGS__)
-#define MEMPRINT(...) memprint(__VA_ARGS__)
+#define IPSECDBG_PRINTF(...) //PRINTF(__VA_ARGS__)
+#define MEMPRINT(...) //MEMPRINT(__VA_ARGS__)
 
 // IPsec stuff ends
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_PRINT //DEBUG_NONE
 #include "net/uip-debug.h"
 
 #if UIP_CONF_IPV6_RPL
@@ -580,10 +580,10 @@ uip_udp_new(const uip_ipaddr_t *ripaddr, uint16_t rport)
       goto again;
     }
   }
-  printf("UIP_UDP_CONNS: %d\n", UIP_UDP_CONNS);
+  PRINTF("UIP_UDP_CONNS: %d\n", UIP_UDP_CONNS);
   conn = 0;
   for(c = 0; c < UIP_UDP_CONNS; ++c) {
-    printf("UDP conn: %u, lport: %u\n", c, uip_ntohs(uip_udp_conns[c].lport));
+    PRINTF("UDP conn: %u, lport: %u\n", c, uip_ntohs(uip_udp_conns[c].lport));
     if(uip_udp_conns[c].lport == 0) {
       conn = &uip_udp_conns[c];
       break;
@@ -603,7 +603,7 @@ uip_udp_new(const uip_ipaddr_t *ripaddr, uint16_t rport)
   }
   conn->ttl = uip_ds6_if.cur_hop_limit;
   
-  printf("returning %p, lport %u\n", conn, uip_ntohs(conn->lport));
+  PRINTF("returning %p, lport %u\n", conn, uip_ntohs(conn->lport));
   
   return conn;
 }
@@ -1367,7 +1367,7 @@ uip_process(uint8_t flag)
    
         // auth_data_len = Packet buffer - (lower layers + IP Header length) - length of extension headers - ICV size
         uint16_t auth_data_len = uip_len - UIP_LLIPH_LEN - uip_ext_len - icvlen; 
-        //printf("auth data len: %u uip_ext_len: %u\n", auth_data_len, uip_ext_len);
+        //PRINTF("auth data len: %u uip_ext_len: %u\n", auth_data_len, uip_ext_len);
         
         // Prepare encryption data
         encr_data_t encr_data;
@@ -1386,8 +1386,8 @@ uip_process(uint8_t flag)
 
         // Confidentiality
         
-        printf("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
-        memprint(esp_header, 100);
+        PRINTF("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
+        MEMPRINT(esp_header, 100);
         encr_data.type = sad_entry->sa.encr;
         encr_data.keymat = &sad_entry->sa.sk_e;
         encr_data.keylen = sad_entry->sa.encr_keylen;
@@ -1406,11 +1406,11 @@ uip_process(uint8_t flag)
           * Verify ICV
           */
           /*
-        printf("ICV: Computed\n");
-        memprint(&encr_data.icv, sizeof(encr_data.icv));
-        printf("ICV: From ESP header\n");
-        memprint((uint8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
-        printf("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
+        PRINTF("ICV: Computed\n");
+        MEMPRINT(&encr_data.icv, sizeof(encr_data.icv));
+        PRINTF("ICV: From ESP header\n");
+        MEMPRINT((uint8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
+        PRINTF("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
         */
 
         // FIX: Removed due to size constraints
@@ -1470,10 +1470,10 @@ uip_process(uint8_t flag)
         packet_desc.peer_port = uip_ntohs(UIP_UDP_BUF->srcport);
         packet_desc.my_port = uip_ntohs(UIP_UDP_BUF->destport);
         /*
-        printf("src + dst:\n");
-        memprint(&UIP_IP_BUF->srcipaddr, 30);
-        printf("packet_desc:\n");
-        memprint(packet_desc.addr, 40);*/
+        PRINTF("src + dst:\n");
+        MEMPRINT(&UIP_IP_BUF->srcipaddr, 30);
+        PRINTF("packet_desc:\n");
+        MEMPRINT(packet_desc.addr, 40);*/
         if (ipsec_filter(sad_entry, &packet_desc))
           goto drop;
   #endif /* End of WITH_IPSEC */

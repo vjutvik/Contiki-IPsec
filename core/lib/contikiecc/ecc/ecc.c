@@ -687,7 +687,6 @@ ecc_get_base_p()
   */
 void ecc_gen_private_key(NN_DIGIT *PrivateKey)
 {
-  printf("Generating private ECC key\n");
   NN_UINT order_digit_len, order_bit_len;
   bool done = FALSE;
   uint8_t ri;
@@ -695,10 +694,6 @@ void ecc_gen_private_key(NN_DIGIT *PrivateKey)
   
   order_bit_len = NN_Bits(param.r, NUMWORDS);
   order_digit_len = NN_Digits(param.r, NUMWORDS);
-    
-  printf("param.r: %24s\n", &param.r);
-  printf("order_bit_len: %u\n", order_bit_len);
-  printf("order_digit_len: %u\n", order_digit_len);
   
   while(!done) {
     //PrivateKey[] = { 323FA316 9D8E9C65 93F59476 BC142000 AB5BE0E2 49C43426 };

@@ -170,9 +170,14 @@ ike_statem_session_t *ike_statem_session_init()
     * We're not interested in reusing the DH exponentials across sessions ("2.12.  Reuse of Diffie-Hellman Exponentials")
     * as the author finds the cost of storing them in memory exceeding the cost of the computation.
     */
+  PRINTF("Generating private ECC key\n");
   ecc_gen_private_key(session->ephemeral_info->my_prv_key);
 
   return session;
+}
+
+void testar(int c) {
+  return;
 }
 
 /**

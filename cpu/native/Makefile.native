@@ -12,14 +12,22 @@ STRIP    = strip
 ifdef WERROR
 CFLAGSWERROR=-Werror -pedantic -std=c99 -Werror
 endif
-CFLAGSNO = -Wall -g -O0 -I/usr/local/include $(CFLAGSWERROR)
-#CFLAGS  += $(CFLAGSNO) -O
-CFLAGS  += $(CFLAGSNO) #FIX: Turned of CC opt
+CFLAGSNO = -Wall -I/usr/local/include $(CFLAGSWERROR)
+CFLAGS  += $(CFLAGSNO) -Os #FIX: -Os instead of O
+#CFLAGS  += $(CFLAGSNO) -g #FIX: Turned off CC opt and turned on debug information
 ifeq ($(HOST_OS),Linux)
   LDFLAGS  = -Wl,-Map=contiki-$(TARGET).map,-export-dynamic
 else
   LDFLAGS  = -Wl
 endif
+
+### These flags can reduce the code size and RAM usage with up to 10%
+#ifeq ($(SMALL),1)
+CFLAGS += -ffunction-sections
+CFLAGS += -fdata-sections
+LDFLAGS += -Wl,--gc-sections,--undefined=_reset_vector__,--undefined=InterruptVectors,--undefined=_copy_data_init__,--undefined=_clear_bss_init__,--undefined=_end_of_init__
+#endif # SMALL
+
 
 ### Compilation rules
 

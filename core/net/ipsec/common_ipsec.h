@@ -10,7 +10,7 @@
   * Debug stuff
   */
 
-#ifdef DEBUG
+#if DEBUG
 
 #define MEMPRINTF(str, ptr, len) \
   do {                    \

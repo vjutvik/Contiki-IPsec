@@ -16,19 +16,19 @@
 // #include "ipsec/common_ipsec.h"
 // #include "aes-moo.h"
 
-#ifdef WITH_CONF_IPSEC_AH
+#if WITH_CONF_IPSEC_AH
 #define WITH_IPSEC_AH     WITH_CONF_IPSEC_AH
 #else
 #define WITH_IPSEC_AH     0
 #endif
 
-#ifdef WITH_CONF_IPSEC_ESP
+#if WITH_CONF_IPSEC_ESP
 #define WITH_IPSEC_ESP     WITH_CONF_IPSEC_ESP
 #else
 #define WITH_IPSEC_ESP     0
 #endif
 
-#ifdef WITH_CONF_IPSEC_IKE
+#if WITH_CONF_IPSEC_IKE
 #define WITH_IPSEC_IKE  1
 #else
 #define WITH_IPSEC_IKE  0
