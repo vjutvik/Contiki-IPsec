@@ -59,8 +59,8 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
   // We process the payloads one by one
   uint8_t *peer_pub_key;
   uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA's IKE registry
-  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
-  u8_t *end = msg_buf + uip_datalen();
+  uint8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  uint8_t *end = msg_buf + uip_datalen();
   ike_payload_type_t payload_type = ike_hdr->next_payload;
   while (ptr < end) { // Payload loop
     const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
@@ -342,8 +342,8 @@ state_return_t ike_statem_state_authrespwait(ike_statem_session_t *session)
   sad_entry_t *incoming_sad_entry = sad_create_incoming_entry(time);
 
   
-  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
-  u8_t *end = msg_buf + uip_datalen();
+  uint8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  uint8_t *end = msg_buf + uip_datalen();
   ike_payload_type_t payload_type = ike_hdr->next_payload;
   while (ptr < end) { // Payload loop
     const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;

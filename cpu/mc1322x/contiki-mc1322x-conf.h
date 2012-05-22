@@ -48,7 +48,7 @@ typedef int32_t s32_t;
 #define MMEM_CONF_SIZE 256
 
 /* These names are deprecated, use C99 names. */
-typedef unsigned char u8_t;
+typedef unsigned char uint8_t;
 typedef unsigned short u16_t;
 typedef unsigned long u32_t;
 typedef unsigned short uip_stats_t;

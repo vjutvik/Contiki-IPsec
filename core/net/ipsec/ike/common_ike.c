@@ -306,8 +306,8 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   sad_entry_t *outgoing_sad_entry = sad_create_outgoing_entry(time);
   sad_entry_t *incoming_sad_entry = sad_create_incoming_entry(time);
   
-  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
-  u8_t *end = msg_buf + uip_datalen();
+  uint8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  uint8_t *end = msg_buf + uip_datalen();
   notify_msg_type_t fail_notify_type = 0;
   ike_payload_generic_hdr_t *sa_payload = NULL;
   ike_payload_type_t payload_type = ike_hdr->next_payload;
@@ -642,8 +642,8 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
   // We process the payloads one by one
   uint8_t *peer_pub_key;
   uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA's IKE registry
-  u8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
-  u8_t *end = msg_buf + uip_datalen();
+  uint8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
+  uint8_t *end = msg_buf + uip_datalen();
   ike_payload_type_t payload_type = ike_hdr->next_payload;
   while (ptr < end) { // Payload loop
     const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
@@ -826,7 +826,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   
   ike_payload_transform_t *transform = NULL;
   ike_payload_proposal_t *proposal = NULL;
-  u8_t n = 0;
+  uint8_t n = 0;
   uint8_t proposal_number = 1;
   do {  // Loop over the offer's tuples
 //    PRINTF("WRITE_SA_PAYLOAD: Offer type: %hu\n", offer[n].type);
@@ -906,7 +906,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
 
       // Loop over any attributes associated with this transform
       // Value type: Key length of encryption algorithm
-      u8_t j = n + 1;
+      uint8_t j = n + 1;
       while (offer[j].type == SA_CTRL_ATTRIBUTE_KEY_LEN) {
         // The only attribute defined in RFC 5996 is Key Length (p. 84)
         ike_payload_attribute_t *attrib = (ike_payload_attribute_t *) ptr;
@@ -1292,7 +1292,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
   *
   * \return 0 if the integrity check fails. If successfull, the number of trailing bytes is returned
   */
-u8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr)
+uint8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr)
 {
   uint16_t integ_datalen = uip_ntohl(((ike_payload_ike_hdr_t *) msg_buf)->len) - IPSEC_ICVLEN;
   uint8_t trailing_bytes = 0;
@@ -1595,7 +1595,7 @@ void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t pa
   *
   * \return 1 if the notify message implies that the peer has hung up, 0 otherwise.
   */
-u8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
+uint8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
 {
   notify_msg_type_t type = uip_ntohs(notify_payload->notify_msg_type);
   

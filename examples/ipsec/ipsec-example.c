@@ -47,24 +47,26 @@
 
 // test start
 
-#include "border-router.h"
+//#include "border-router.h"
 #include "net/uip-ds6.h"
 #include "net/uip.h"
 
 PROCESS(ipsec_example_process, "IPsec Example");
 //AUTOSTART_PROCESSES(&ipsec_example_process);
 
-PROCESS_NAME(border_router_process);
-PROCESS_NAME(border_router_cmd_process);
-PROCESS_NAME(webserver_nogui_process);
+// PROCESS_NAME(border_router_process);
+// PROCESS_NAME(border_router_cmd_process);
+// PROCESS_NAME(webserver_nogui_process);
 
 #if WEBSERVER==0
 /* No webserver */
-AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process, &ipsec_example_process);
+//AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process, &ipsec_example_process);
 #else
-AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
-		    &webserver_nogui_process, &ipsec_example_process);
+//AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
+//		    &webserver_nogui_process, &ipsec_example_process);
 #endif
+
+AUTOSTART_PROCESSES(&ipsec_example_process);
 
 // test end
 
@@ -72,7 +74,7 @@ AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
-#define PRINT6ADDR(addr) PRINTF(" %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x ", ((u8_t *)addr)[0], ((u8_t *)addr)[1], ((u8_t *)addr)[2], ((u8_t *)addr)[3], ((u8_t *)addr)[4], ((u8_t *)addr)[5], ((u8_t *)addr)[6], ((u8_t *)addr)[7], ((u8_t *)addr)[8], ((u8_t *)addr)[9], ((u8_t *)addr)[10], ((u8_t *)addr)[11], ((u8_t *)addr)[12], ((u8_t *)addr)[13], ((u8_t *)addr)[14], ((u8_t *)addr)[15])
+#define PRINT6ADDR(addr) PRINTF(" %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x ", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
 #define PRINTLLADDR(lladdr) PRINTF(" %02x:%02x:%02x:%02x:%02x:%02x ",(lladdr)->addr[0], (lladdr)->addr[1], (lladdr)->addr[2], (lladdr)->addr[3],(lladdr)->addr[4], (lladdr)->addr[5])
 #else
 #define PRINTF(...)
@@ -139,7 +141,7 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  border_router_set_mac((uint8_t *) &uip_lladdr.addr);
+//  border_router_set_mac((uint8_t *) &uip_lladdr.addr);
 
   /* new connection with remote host */
   printf("ipsec-example: calling udp_new\n");
