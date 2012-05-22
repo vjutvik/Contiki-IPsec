@@ -89,7 +89,7 @@ static void
 tcpip_handler(void)
 {
   char* data = uip_appdata; //+uip_ext_len;
-  u16_t datalen = uip_datalen();// - uip_ext_len - uip_ext_end_len;
+  uint16_t datalen = uip_datalen();// - uip_ext_len - uip_ext_end_len;
 
   if(uip_newdata()) {
     int i=0;

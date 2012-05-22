@@ -645,7 +645,7 @@ void uip_log(char *msg);
 
  struct httpd_state {
  u8_t state;
- u16_t count;
+ uint16_t count;
  char *dataptr;
  char *script;
  };
