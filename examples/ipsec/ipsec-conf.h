@@ -1,11 +1,11 @@
 #ifndef __IPSEC_PROJECT_H__
 #define __IPSEC_PROJECT_H__
 
-#include "project-conf.h"
+//#include "project-conf.h"
 
 /* Extra uIP logging */
 #undef UIP_CONF_LOGGING
-#define UIP_CONF_LOGGING 1
+#define UIP_CONF_LOGGING 0
   
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
