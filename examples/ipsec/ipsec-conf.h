@@ -5,7 +5,10 @@
 
 /* Extra uIP logging */
 #undef UIP_CONF_LOGGING
-#define UIP_CONF_LOGGING 0
+#define UIP_CONF_LOGGING 		0
+
+#define WITH_IPV6 					1
+#define UIP_CONF_IPV6 			1
   
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
