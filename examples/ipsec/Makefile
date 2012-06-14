@@ -5,6 +5,9 @@ UIP_CONF_IPV6=1
 CFLAGS += -DPROJECT_CONF_H=\"ipsec-conf.h\"
 CONTIKI = ../..
 
+# For msp430 and stm32l, among others
+SMALL=1
+
 include $(CONTIKI)/Makefile.include
 
 connect-router:	$(CONTIKI_PROJECT).native
