@@ -226,8 +226,15 @@ ecc_init()
  /* get parameters */
  get_curve_param(&param);
 
- /* precompute array for base point */
- ecc_win_precompute(&(param.G), pBaseArray);
+ /**
+	 * Window method disabled as for now since it will cause pBaseArray to be 
+	 * garbage collected by the compiler and thus save memory (albeit at a
+	 * cost of CPU).
+	 * IMPORTANT: This must be re-enabled if you want to use the ECDSA functions.
+
+ 	// precompute array for base point
+	ecc_win_precompute(&(param.G), pBaseArray);
+	*/
 }
 /*---------------------------------------------------------------------------*/
 void 

@@ -13,10 +13,10 @@
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
 #define WITH_CONF_IPSEC_AH              0
-#define WITH_CONF_IPSEC_ESP             1
+#define WITH_CONF_IPSEC_ESP             0
 
 /* The IKE subsystem is optional if the SAs are manually configured */
-#define WITH_CONF_IPSEC_IKE             1
+#define WITH_CONF_IPSEC_IKE             0
 
 /* Configuring an AES implementation */
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes
