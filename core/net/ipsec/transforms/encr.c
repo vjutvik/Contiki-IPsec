@@ -108,7 +108,7 @@ void espsk_pack(encr_data_t *data)
     // Iterate over the 128 bit blocks
     uint16_t n;
     for (n = 1; n < blocks; ++n)
-      CRYPTO_AES.encrypt(data->encr_data[n << 4]);
+      CRYPTO_AES.encrypt((uint8_t *) data->encr_data[n << 4]);
       
     /*
     // AES encryption using MIRACLE start
