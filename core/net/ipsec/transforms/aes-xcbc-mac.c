@@ -72,7 +72,7 @@ void aes_xcbc(integ_data_t *data)
     uint8_t j;
     for (j = 0; j < XCBC_BLOCKLEN; ++j) key[i][j] = pattern;
     
-    CRYPTO_AES.encrypt(&key[i]);
+    CRYPTO_AES.encrypt((uint8_t *) &key[i]);
     //printf("AES-XCBC: Key %u\n", i);
     //memprint(&key[i], 16);
   }
