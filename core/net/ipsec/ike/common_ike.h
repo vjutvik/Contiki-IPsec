@@ -71,7 +71,7 @@ extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg, ipsec_addr_set_t
 
 extern uint8_t selector_is_superset_of_tspair(ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer);
 extern void instanciate_spd_entry(ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer);
-extern spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer);
+extern const spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer);
 extern void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, ike_ts_t *ts_me, ike_ts_t *ts_peer);
 
 #define IPSEC_IKE "IPsec IKEv2: "
