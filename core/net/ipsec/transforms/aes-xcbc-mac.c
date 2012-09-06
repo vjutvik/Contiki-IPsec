@@ -26,9 +26,9 @@ aes_xcbc_mac_init(uint8_t *prev, const uint8_t *key)
 }
 /*---------------------------------------------------------------------------*/
 static void
-aes_xcbc_mac_step(uint8_t *prev, unsigned char *buff)
+aes_xcbc_mac_step(uint8_t *prev, uint8_t *buff)
 {
-  int i;
+  uint16_t i;
   /* prev ^= buff */
   for(i = 0; i < XCBC_BLOCKLEN; i++) {
     prev[i] ^= buff[i];
@@ -38,10 +38,10 @@ aes_xcbc_mac_step(uint8_t *prev, unsigned char *buff)
 }
 /*---------------------------------------------------------------------------*/
 static void
-aes_xcbc_mac_final_step(uint8_t *prev, uint8_t *buff, int len,
+aes_xcbc_mac_final_step(uint8_t *prev, uint8_t *buff, uint16_t len,
     const uint8_t *key2, const uint8_t *key3)
 {
-  int i;
+  uint16_t i;
   uint8_t tmp[XCBC_BLOCKLEN];
   /* the key is not the same if the last block isn't full */
   const uint8_t *key = (len == XCBC_BLOCKLEN) ? key2 : key3;
@@ -84,7 +84,7 @@ void aes_xcbc(integ_data_t *data)
     aes_xcbc_mac_step(prev, data->data + i * XCBC_BLOCKLEN);
   
   // Step 4-5
-  int len = data->datalen % XCBC_BLOCKLEN;
+  uint16_t len = data->datalen % XCBC_BLOCKLEN;
   aes_xcbc_mac_final_step(prev, data->data + i * XCBC_BLOCKLEN,
            len == 0 ? XCBC_BLOCKLEN : len, key[1], key[2]);
   memcpy(data->out, prev, IPSEC_ICVLEN);
