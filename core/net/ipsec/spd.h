@@ -182,7 +182,7 @@ typedef struct {
   // If the process action of this entry is SPD_ACTION_PROTECT the IKE subsystem will be invoked to perform
   // a cryptoograhic handshake with the remote host. The address below points to an array of configuration
   // proposals to be offered to the remote host. This value is ignored for other process actions.
-  spd_proposal_tuple_t *offer;
+  const spd_proposal_tuple_t *offer;
   
   //spd_action_protect_details_t *action_protect_details;
 } spd_entry_t;
