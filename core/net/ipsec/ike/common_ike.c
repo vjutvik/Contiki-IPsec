@@ -1966,7 +1966,7 @@ const spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer)
   uint8_t n;
   for (n = 0; n < SPD_ENTRIES; ++n) {
     PRINTSPDENTRY(&spd_table[n]);    
-    if (selector_is_superset_of_tspair((ipsec_addr_set_t *) &spd_table[n].selector, ts_me, ts_peer)) {
+    if (selector_is_superset_of_tspair(&spd_table[n].selector, ts_me, ts_peer)) {
       PRINTF("This SPD entry is a superset of the TS pair\n");
       return &spd_table[n];
     }
