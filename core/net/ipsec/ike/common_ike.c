@@ -481,7 +481,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   /**
     * Now that we've found the right SPD entry, we know what Child SA offer to use
     */
-  if (ike_statem_parse_sa_payload((spd_proposal_tuple_t *) session->ephemeral_info->spd_entry->offer, 
+  if (ike_statem_parse_sa_payload((spd_entry_t *) session->ephemeral_info->spd_entry->offer, 
                                   sa_payload,
                                   0,
                                   NULL,
