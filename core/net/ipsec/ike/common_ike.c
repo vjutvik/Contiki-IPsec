@@ -462,7 +462,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   else {
     // We're the responder. Find the SPD entry that matches the initiator's TS offer
     for (ts = ts_count - 1; ts >= 0; --ts) {
-      const spd_entry_t *spd_entry = spd_get_entry_by_tspair(&tsr[ts] /* me */, &tsi[ts] /* peer */);
+      spd_entry_t *spd_entry = spd_get_entry_by_tspair(&tsr[ts] /* me */, &tsi[ts] /* peer */);
       if (spd_entry != NULL && spd_entry->proc_action == SPD_ACTION_PROTECT) {
         // Found an SPD entry that requires protection for this traffic
         session->ephemeral_info->spd_entry = spd_entry;
@@ -1961,7 +1961,7 @@ void instanciate_spd_entry(ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_
   *
   * \return the entry that matched. NULL is returned if no such is found
   */
-const spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer)
+spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer)
 {
   uint8_t n;
   for (n = 0; n < SPD_ENTRIES; ++n) {
