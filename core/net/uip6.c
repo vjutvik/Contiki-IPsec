@@ -2564,7 +2564,7 @@ uip_process(uint8_t flag)
   if (sad_entry == NULL) {
     // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
 
-    const spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
+    spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
     
     switch (spd_entry->proc_action) {
       case SPD_ACTION_PROTECT:

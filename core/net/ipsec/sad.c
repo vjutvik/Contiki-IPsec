@@ -171,7 +171,7 @@ sad_entry_t *sad_get_outgoing_entry(ipsec_addr_t *addr)
   // PRINTF(IPSEC "SPD-entry for addr===========\n");
   
   // FIX: The cross-check with the SPD is ugly. Move it to uip6.c or stop creating SAs that overlap SPD entries of different actions
-  const spd_entry_t *spd_entry = spd_get_entry_by_addr(addr);
+  spd_entry_t *spd_entry = spd_get_entry_by_addr(addr);
   if (spd_entry->proc_action != SPD_ACTION_PROTECT)
     return NULL;
   //PRINTSPDENTRY(spd_entry);

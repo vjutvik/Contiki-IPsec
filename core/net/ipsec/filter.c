@@ -45,7 +45,7 @@ uint8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *addr)
      * This packet was unprotected. We fetch the SPD entry so that we can verify that this is in accordance
      * with our policy.
      */
-    const spd_entry_t *spd_entry = spd_get_entry_by_addr(addr);
+    spd_entry_t *spd_entry = spd_get_entry_by_addr(addr);
     
     switch (spd_entry->proc_action) {
       case SPD_ACTION_BYPASS:
