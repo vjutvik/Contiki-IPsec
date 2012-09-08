@@ -79,7 +79,7 @@ void aes_xcbc(integ_data_t *data)
   
   // Step 2-3
   uint8_t prev[XCBC_BLOCKLEN];
-  aes_xcbc_mac_init(prev, (const uint8_t *) &key[0]); 
+  aes_xcbc_mac_init(prev, &key[0]); 
   for(i = 0; i < (data->datalen - 1) / XCBC_BLOCKLEN; i++)
     aes_xcbc_mac_step(prev, data->data + i * XCBC_BLOCKLEN);
   
