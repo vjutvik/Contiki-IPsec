@@ -465,7 +465,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
       const spd_entry_t *spd_entry = spd_get_entry_by_tspair(&tsr[ts] /* me */, &tsi[ts] /* peer */);
       if (spd_entry != NULL && spd_entry->proc_action == SPD_ACTION_PROTECT) {
         // Found an SPD entry that requires protection for this traffic
-        session->ephemeral_info->spd_entry = (spd_entry_t *) spd_entry;
+        session->ephemeral_info->spd_entry = spd_entry;
         session->ephemeral_info->my_ts_offer_addr_set.peer_addr_from = session->ephemeral_info->my_ts_offer_addr_set.peer_addr_to = &session->peer;
         ts_pair_to_addr_set(&session->ephemeral_info->my_ts_offer_addr_set, &tsr[ts], &tsi[ts]);
         break;
