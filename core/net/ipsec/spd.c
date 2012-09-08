@@ -26,7 +26,7 @@
   * (shouldn't happen because there *should* be a catch-all entry at the SPD's end).
   * 
   */
-const spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr)
+spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr)
 {
   uint8_t n;
   PRINTF("SPD lookup for traffic:\n");

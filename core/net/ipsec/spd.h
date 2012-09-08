@@ -207,8 +207,8 @@ typedef struct {
   * \return the security policy entry that applies to the pattern formed by \c pkt_hdr
   *
   */
-const spd_entry_t *spd_get_entry(ipsec_addr_t *);
-const spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr);
+spd_entry_t *spd_get_entry(ipsec_addr_t *);
+spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr);
 void spd_conf_init(void);
 
 /**
