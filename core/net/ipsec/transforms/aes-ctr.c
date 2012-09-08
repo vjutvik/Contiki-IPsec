@@ -42,7 +42,7 @@ aes_ctr_init(uint8_t *ctr_blk, const uint8_t *key,
 /*---------------------------------------------------------------------------*/
 
 static void
-aes_ctr_step(uint8_t *ctr_blk, uint8_t *data, uint16_t ctr, uint16_t len)
+aes_ctr_step(uint8_t *ctr_blk, uint8_t *data, uint16_t ctr, int len)
 {
   // Set the counter in ctr_blk
   ctr = uip_htons(ctr);
