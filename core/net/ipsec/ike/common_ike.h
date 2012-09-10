@@ -46,11 +46,12 @@ extern void ike_statem_write_notification(payload_arg_t *payload_arg,
                                 uint8_t *notify_payload, 
                                 uint8_t notify_payload_len);
 extern void ike_statem_set_id_payload(payload_arg_t *payload_arg, ike_payload_type_t payload_type);
-extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi);
+extern void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_tuple_t *offer, uint32_t spi);
 extern void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key);
 extern void ike_statem_get_child_keymat(ike_statem_session_t *session, sa_child_t *incoming, sa_child_t *outgoing);
 extern transition_return_t ike_statem_run_transition(ike_statem_session_t *session, uint8_t retransmit);
-extern int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
+extern transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, uint32_t child_sa_spi, const spd_proposal_tuple_t *sai2_offer, const ipsec_addr_set_t *ts_instance_addr_set);
+extern int8_t ike_statem_parse_sa_payload(const spd_proposal_tuple_t *my_offer, 
                                 ike_payload_generic_hdr_t *sa_payload_hdr, 
                                 uint8_t ke_dh_group,
                                 sa_ike_t *ike_sa,
@@ -67,10 +68,10 @@ extern void ike_statem_finalize_sk(payload_arg_t *payload_arg,
 extern uint8_t ike_statem_handle_notify(ike_payload_notify_t *payload_start);
 extern uint8_t ike_statem_unpack_sk(ike_statem_session_t *session, ike_payload_generic_hdr_t *sk_genpayloadhdr);
 extern void ike_statem_prepare_sk(payload_arg_t *payload_arg);
-extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg, ipsec_addr_set_t *ts_addr_set);
+extern void ike_statem_write_tsitsr(payload_arg_t *payload_arg, const ipsec_addr_set_t *ts_addr_set);
 
-extern uint8_t selector_is_superset_of_tspair(ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer);
-extern void instanciate_spd_entry(ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer);
+extern uint8_t selector_is_superset_of_tspair(const ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer);
+extern void instanciate_spd_entry(const ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer);
 extern spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer);
 extern void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, ike_ts_t *ts_me, ike_ts_t *ts_peer);
 

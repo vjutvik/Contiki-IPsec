@@ -17,7 +17,7 @@
 
 /*---------------------------------------------------------------------------*/
 static void
-aes_xcbc_mac_init(uint8_t *prev, const uint8_t *key)
+aes_xcbc_mac_init(uint8_t *prev, const uint8_t key[XCBC_BLOCKLEN])
 {
   /* Set key */
   CRYPTO_AES.init(key);
@@ -26,13 +26,13 @@ aes_xcbc_mac_init(uint8_t *prev, const uint8_t *key)
 }
 /*---------------------------------------------------------------------------*/
 static void
-aes_xcbc_mac_step(uint8_t *prev, unsigned char *buff)
+aes_xcbc_mac_step(uint8_t *prev, uint8_t buff[XCBC_BLOCKLEN])
 {
   int i;
   /* prev ^= buff */
-  for(i = 0; i < XCBC_BLOCKLEN; i++) {
+  for(i = 0; i < XCBC_BLOCKLEN; i++)
     prev[i] ^= buff[i];
-  }
+
   /* AES encrypt prev */
   CRYPTO_AES.encrypt(prev);
 }
@@ -72,14 +72,14 @@ void aes_xcbc(integ_data_t *data)
     uint8_t j;
     for (j = 0; j < XCBC_BLOCKLEN; ++j) key[i][j] = pattern;
     
-    CRYPTO_AES.encrypt(&key[i]);
+    CRYPTO_AES.encrypt((uint8_t *) &key[i]);
     //printf("AES-XCBC: Key %u\n", i);
     //memprint(&key[i], 16);
   }
   
   // Step 2-3
   uint8_t prev[XCBC_BLOCKLEN];
-  aes_xcbc_mac_init(prev, &key[0]); 
+  aes_xcbc_mac_init(prev, key[0]);
   for(i = 0; i < (data->datalen - 1) / XCBC_BLOCKLEN; i++)
     aes_xcbc_mac_step(prev, data->data + i * XCBC_BLOCKLEN);
   

@@ -153,7 +153,7 @@ uip_ip6addr_t spd_conf_ip6addr_max;       // Address ffff:ffff:ffff:ffff:ffff:ff
   *
   * Adjust SPD_ENTRIES (in spd.h) according to need.
   */
-const spd_entry_t spd_table[SPD_ENTRIES] = 
+spd_entry_t spd_table[SPD_ENTRIES] = 
   {
     // BYPASS IKE traffic
     {

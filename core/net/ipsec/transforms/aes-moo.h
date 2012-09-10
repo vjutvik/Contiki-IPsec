@@ -29,18 +29,18 @@
 #endif
 
 struct aes_implem {
-  void (*init)(const unsigned char *key);
-  void (*encrypt)(unsigned char *buff);
-  void (*decrypt)(unsigned char *buff);
+  void (*init)(const uint8_t *key);
+  void (*encrypt)(uint8_t *buff);
+  void (*decrypt)(uint8_t *buff);
 };
 
 struct ipsec_encrypt_implem {
-  void (*encrypt)(unsigned char *buff, int bufflen, const unsigned char *iv);
-  void (*decrypt)(unsigned char *buff, int bufflen, const unsigned char *iv);
+  void (*encrypt)(uint8_t *buff, uint16_t bufflen, const uint8_t *iv);
+  void (*decrypt)(uint8_t *buff, uint16_t bufflen, const uint8_t *iv);
 };
 
 struct ipsec_mac_implem {
-  void (*auth)(unsigned char *out, unsigned char *buff, int bufflen);
+  void (*auth)(uint8_t *out, uint8_t *buff, uint16_t bufflen);
 };
 
 extern struct aes_implem CRYPTO_AES;

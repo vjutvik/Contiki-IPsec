@@ -177,7 +177,7 @@ sad_entry_t *sad_get_outgoing_entry(ipsec_addr_t *addr)
   //PRINTSPDENTRY(spd_entry);
 
   for (entry = list_head(sad_outgoing); entry != NULL; entry = list_item_next(entry)) {
-    PRINTF("==== OUTGOING SAD entry at %p ====\n  SPI no %x\n", entry);
+    PRINTF("==== OUTGOING SAD entry at %p ====\n  SPI no %x\n", entry, uip_ntohl(entry->spi));
     PRINTSADENTRY(entry);    
     if (ipsec_a_is_member_of_b(addr, &entry->traffic_desc)) {
       PRINTF(IPSEC "sad_get_outgoing: found SAD entry with SPI %x\n", uip_ntohl(entry->spi));

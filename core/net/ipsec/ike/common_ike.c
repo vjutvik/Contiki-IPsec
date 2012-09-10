@@ -89,7 +89,7 @@ void ike_statem_write_notification(payload_arg_t *payload_arg,
 /**
   * Writes the initial TSi and TSr payloads in the role as the initiator
   */
-void ike_statem_write_tsitsr(payload_arg_t *payload_arg, ipsec_addr_set_t *ts_addr_set)
+void ike_statem_write_tsitsr(payload_arg_t *payload_arg, const ipsec_addr_set_t *ts_addr_set)
 {
   //ipsec_addr_set_t *spd_selector = &payload_arg->session->ephemeral_info->spd_entry->selector;
   uint8_t *ptr = payload_arg->start;
@@ -298,7 +298,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   uint8_t transport_mode_not_accepted = 1;
   
   // Traffic selector
-  ike_ts_t *tsi, *tsr;
+  ike_ts_t *tsi = NULL, *tsr = NULL;
   int16_t ts_count = -1;
   
   // Child SAs
@@ -560,7 +560,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
 }
 
 
-transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, uint32_t child_sa_spi, spd_proposal_tuple_t *sai2_offer, ipsec_addr_set_t *ts_instance_addr_set)
+transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payload_arg_t *payload_arg, uint32_t child_sa_spi, const spd_proposal_tuple_t *sai2_offer, const ipsec_addr_set_t *ts_instance_addr_set)
 {
   // Write a template of the SK payload for later encryption
   ike_payload_generic_hdr_t *sk_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
@@ -640,7 +640,7 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
   COPY_FIRST_MSG(session, ike_hdr);
   
   // We process the payloads one by one
-  uint8_t *peer_pub_key;
+  uint8_t *peer_pub_key = NULL;
   uint16_t ke_dh_group = 0;  // 0 is NONE according to IANA's IKE registry
   uint8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
   uint8_t *end = msg_buf + uip_datalen();
@@ -814,7 +814,7 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
   * \parameter offer The offer chain. Probably one from spd_conf.c.
   * \parameter spi The SPI of the offer's proposals (We only support one SPI per offer. Nothing tells us that this is illegal.)
   */
-void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_t *offer, uint32_t spi)
+void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_tuple_t *offer, uint32_t spi)
 {
   // Write the SA payload
   ike_payload_generic_hdr_t *sa_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
@@ -943,7 +943,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, spd_proposal_tuple_
   * responder SA(1) -> initiator offer (n): set transforms in SA, return subset
   * initiator SA(n) -> responder offer (n): set transforms in SA, return subset
   */
-int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer, 
+int8_t ike_statem_parse_sa_payload(const spd_proposal_tuple_t *my_offer, 
                                 ike_payload_generic_hdr_t *sa_payload_hdr, 
                                 uint8_t ke_dh_group,
                                 sa_ike_t *ike_sa,
@@ -981,7 +981,7 @@ int8_t ike_statem_parse_sa_payload(spd_proposal_tuple_t *my_offer,
     
     candidate_spi = *((uint32_t *) (((uint8_t *) peerproposal) + sizeof(ike_payload_proposal_t)));
     
-    spd_proposal_tuple_t *mytuple = my_offer;
+    const spd_proposal_tuple_t *mytuple = my_offer;
     accepted_transform_subset[0].type = SA_CTRL_NEW_PROPOSAL;
     if (ike)
       accepted_transform_subset[0].value = SA_PROTO_IKE;
@@ -1931,7 +1931,7 @@ void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, ike_ts_t *ts_me, ike_ts
 /**
   * Instanciate an SPD entry to a traffic selector pair in accordance with RFC 4301. PFP flags are hardwired in this function, as elsewhere.
   */
-void instanciate_spd_entry(ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer)
+void instanciate_spd_entry(const ipsec_addr_set_t *selector, uip_ip6addr_t *peer, ike_ts_t *ts_me, ike_ts_t *ts_peer)
 {
   /**
     * Set common stuff
@@ -1981,7 +1981,7 @@ spd_entry_t *spd_get_entry_by_tspair(ike_ts_t *ts_me, ike_ts_t *ts_peer)
   *
   * \return non-zero if selector is a superset of the TS pair, 0 otherwise
   */
-uint8_t selector_is_superset_of_tspair(ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer)
+uint8_t selector_is_superset_of_tspair(const ipsec_addr_set_t *selector, ike_ts_t *ts_me, ike_ts_t *ts_peer)
 {
   // PRINTF("superset_of_tspair. SELECTOR:\n");
   // PRINTADDRSET(selector);

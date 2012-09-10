@@ -175,27 +175,18 @@ typedef struct {
   *   don't implement tunnel mode.)
   *
   */
-typedef struct {
+typedef const struct {
   ipsec_addr_set_t selector;        // The selector identifying targeted traffic
   spd_proc_action_t proc_action;    // The process action for the traffic
 
   // If the process action of this entry is SPD_ACTION_PROTECT the IKE subsystem will be invoked to perform
   // a cryptoograhic handshake with the remote host. The address below points to an array of configuration
   // proposals to be offered to the remote host. This value is ignored for other process actions.
-  spd_proposal_tuple_t *offer;
+  const spd_proposal_tuple_t *offer;
   
   //spd_action_protect_details_t *action_protect_details;
 } spd_entry_t;
 
-
-
-/*
-  * The SPD table is implemented as a linked list consisting of spd_entry_t variables.
-typedef struct {
-  uint8_t len;
-  spd_entry_t table[];
-} spd_table_t;
-*/
 
 
 /**

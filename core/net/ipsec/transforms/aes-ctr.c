@@ -10,6 +10,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "sa.h"
 #include "net/uip.h"
 #include "encr.h"
