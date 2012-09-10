@@ -12,6 +12,7 @@
  *
  */
 
+#include <stdio.h>
 #include <stdbool.h>
 #include "contikiecc/ecc/ecc.h"
 

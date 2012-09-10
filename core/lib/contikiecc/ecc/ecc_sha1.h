@@ -67,6 +67,6 @@ typedef struct SHA1Context
 int sha1_reset(SHA1Context *context);
 int sha1_digest(SHA1Context *context, uint8_t Message_Digest[SHA1HashSize]);
 int sha1_update(SHA1Context *context, const uint8_t *message_array, uint32_t length);
-
+void contikiecc_sha1(uint8_t *msg, uint16_t len, uint8_t *hash);
 #endif
 

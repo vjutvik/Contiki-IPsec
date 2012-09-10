@@ -39,6 +39,8 @@
  *         Simon Duquennoy <simonduq@sics.se>
  */
 
+#include <string.h>
+#include "uip-udp-packet.h"
 #include "contiki.h"
 #include "uip.h"
 #include "ipsec.h"

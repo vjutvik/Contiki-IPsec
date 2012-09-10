@@ -198,7 +198,7 @@ void PRINT_BUF(const char* name,unsigned char* buf, unsigned int size)
 void hmac_sha1( hmac_data_t *hmac_data )
 {
   uint8_t * out=hmac_data->out;
-  uint8_t * key=hmac_data->key;
+  uint8_t * key= (uint8_t *) hmac_data->key;
   uint8_t keylen=hmac_data->keylen;
   uint8_t * data=hmac_data->data;
   uint16_t datalen=hmac_data->datalen;

@@ -223,7 +223,7 @@ typedef struct {
 mr_unsign32 fkey[60];
 } aes;
 
-extern BOOL miracl_aes_init(aes* a,char *key);
+extern BOOL miracl_aes_init(aes* a, const unsigned char *key);
 extern void miracl_aes_ecb_encrypt(aes *a,MR_BYTE *buff);
 
 #define MR_WORD mr_unsign32
@@ -464,7 +464,7 @@ static MR_WORD InvMixCol(MR_WORD x)
     return y;
 }
 
-BOOL miracl_aes_init(aes* a,char *key)
+BOOL miracl_aes_init(aes* a, const unsigned char *key)
 { /* Key=nk bytes */
   /* currently NB,nk = 16, 24 or 32          */
   /* Key Scheduler. Create expanded encryption key */

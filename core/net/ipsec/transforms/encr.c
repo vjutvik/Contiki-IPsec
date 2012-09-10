@@ -1,4 +1,5 @@
 #include "encr.h"
+#include "prf.h"
 #include "aes-moo.h"
 
 extern void aes_ctr(encr_data_t *encr_data);
@@ -91,7 +92,7 @@ void espsk_pack(encr_data_t *data)
     // Confidentiality only
 
     espsk_pad(data, 16);  // CBC has a block size of 16 bytes
-    random_ike(data->encr_data, 16, NULL); // CBC prefers a random IV FIX: Assert that MR doesn't write the IV
+    random_ike(data->encr_data, 16, 0); // CBC prefers a random IV FIX: Assert that MR doesn't write the IV
 
     // Calculate the number of blocks to encrypt.
     // (data->datalen / 16) - 1 (for the IV whose length is part of datalen) + 1 (one extra block since integer division rounds downwards)
@@ -108,7 +109,7 @@ void espsk_pack(encr_data_t *data)
     // Iterate over the 128 bit blocks
     uint16_t n;
     for (n = 1; n < blocks; ++n)
-      CRYPTO_AES.encrypt(data->encr_data[n << 4]);
+      CRYPTO_AES.encrypt(&data->encr_data[n << 4]);
       
     /*
     // AES encryption using MIRACLE start
