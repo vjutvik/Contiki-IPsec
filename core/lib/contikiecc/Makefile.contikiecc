@@ -24,11 +24,9 @@ ifeq ($(TARGET),wismote)
 #  CPU_ARCH = THIRTYTWO_BIT_PROCESSOR
 
 	CPU_ARCH = EIGHT_BIT_PROCESSOR
-	CPU = x86
+	CPU = msp430
 
 #  CPU_ARCH = SIXTEEN_BIT_PROCESSOR
-	# FIX: This should be set to the 430X arch once compiling
-#  CPU = msp430
 endif
 
 
