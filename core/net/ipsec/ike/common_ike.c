@@ -805,7 +805,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_
       
       proposal = (ike_payload_proposal_t *) ptr;
       proposal->last_more = IKE_PAYLOADFIELD_PROPOSAL_MORE;
-      proposal->clear = IKE_MSG_ZERO;
+      proposal->clear = 0U;
 
       proposal->proposal_number = proposal_number;
       proposal->proto_id = offer[n].value;
@@ -818,14 +818,14 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_
       if (proposal->proto_id == SA_PROTO_IKE) {
         if (spi) {
           proposal->spi_size = 8;
-          *((uint32_t *) ptr) = IKE_MSG_ZERO;
+          *((uint32_t *) ptr) = 0U;
           *((uint32_t *) ptr + 4) = spi;
           ptr += 8;
         }
         else {
           // This case will occur whenever we negotiate the first IKE
           // p.79: "For an initial IKE SA negotiation, this field MUST be zero"
-          proposal->spi_size = IKE_MSG_ZERO;
+          proposal->spi_size = 0U;
         }
         numtransforms = 0;
       }
@@ -838,7 +838,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_
         transform = (ike_payload_transform_t *) ptr;
         transform->last_more = IKE_PAYLOADFIELD_TRANSFORM_MORE;
         transform->type = SA_CTRL_TRANSFORM_TYPE_ESN;
-        transform->clear1 = transform->clear2 = IKE_MSG_ZERO;
+        transform->clear1 = transform->clear2 = 0U;
         transform->len = uip_htons(sizeof(ike_payload_transform_t));
         transform->id = uip_htons(SA_ESN_NO);
         ptr += sizeof(ike_payload_transform_t);
@@ -853,7 +853,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_
       transform = (ike_payload_transform_t *) ptr;
       transform->last_more = IKE_PAYLOADFIELD_TRANSFORM_MORE;
       transform->type = offer[n].type;
-      transform->clear1 = transform->clear2 = IKE_MSG_ZERO;
+      transform->clear1 = transform->clear2 = 0U;
       transform->id = uip_htons(offer[n].value);
       ptr += sizeof(ike_payload_transform_t);
 

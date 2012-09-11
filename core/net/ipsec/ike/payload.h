@@ -14,7 +14,6 @@
 
 #include "ike/prf.h"
 #include "uip.h"
-#define IKE_MSG_ZERO 0U
 
 /**
   * Payload types as described on p. 74 *
@@ -92,14 +91,14 @@ typedef enum {
 #define SET_IKE_HDR_AS_RESPONDER(payload_arg, exchtype, response_or_request) \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = (payload_arg)->session->peer_spi_high;  \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = (payload_arg)->session->peer_spi_low;    \
-  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = IKE_MSG_ZERO;                           \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = 0U;                           \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = uip_htonl((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session)); \
   SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_RESPONDER | response_or_request, (payload_arg)->session->my_msg_id)
 
 #define SET_IKE_HDR_AS_INITIATOR(payload_arg, exchtype, response_or_request) \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_high = (payload_arg)->session->peer_spi_high;  \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_responder_spi_low = (payload_arg)->session->peer_spi_low;    \
-  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = IKE_MSG_ZERO;                           \
+  ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_high = 0U;                           \
   ((ike_payload_ike_hdr_t *) (payload_arg)->start)->sa_initiator_spi_low = uip_htonl((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI((payload_arg)->session)); \
   SET_IKE_HDR((payload_arg), exchtype, IKE_PAYLOADFIELD_IKEHDR_FLAGS_INITIATOR | response_or_request, (payload_arg)->session->my_msg_id)
 
@@ -140,7 +139,7 @@ typedef struct {
                      genpayloadhdr = (ike_payload_generic_hdr_t *) (payload_arg)->start;  \
                      *(payload_arg)->prior_next_payload = payload_id;                     \
                      (payload_arg)->prior_next_payload = &genpayloadhdr->next_payload;    \
-                     genpayloadhdr->clear = IKE_MSG_ZERO;                                 \
+                     genpayloadhdr->clear = 0U;                                 \
                      (payload_arg)->start += sizeof(ike_payload_generic_hdr_t)
 
 #define SET_NO_NEXT_PAYLOAD(payload_arg) \

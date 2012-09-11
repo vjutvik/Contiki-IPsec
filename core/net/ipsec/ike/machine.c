@@ -145,8 +145,8 @@ ike_statem_session_t *ike_statem_session_init()
   list_push(sessions, session);
 
   // Set the SPIs.
-  session->peer_spi_high = IKE_MSG_ZERO;
-  session->peer_spi_low = IKE_MSG_ZERO;
+  session->peer_spi_high = 0U;
+  session->peer_spi_low = 0U;
   IKE_STATEM_MYSPI_SET_NEXT(session->initiator_and_my_spi);
 
   session->my_msg_id = session->peer_msg_id = 0;

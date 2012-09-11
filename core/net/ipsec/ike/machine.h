@@ -80,7 +80,7 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_REPLY_MAX_PROPOSAL_TUPLES 10
 
 #define IKE_STATEM_MYSPI_GET_MYSPI(session) ((session)->initiator_and_my_spi & ~IKE_STATEM_MYSPI_I_MASK)
-#define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) IKE_MSG_ZERO
+#define IKE_STATEM_MYSPI_GET_MYSPI_HIGH(session) 0U
 #define IKE_STATEM_MYSPI_GET_MYSPI_LOW(session) (uip_htonl(((uint32_t) IKE_STATEM_MYSPI_GET_MYSPI(session))))
 #define IKE_STATEM_MYSPI_GET_I(var) (var & IKE_STATEM_MYSPI_I_MASK)
 #define IKE_STATEM_IS_INITIATOR(session) (IKE_STATEM_MYSPI_GET_I(session->initiator_and_my_spi))
