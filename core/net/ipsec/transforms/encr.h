@@ -46,45 +46,4 @@ typedef struct {
 void espsk_unpack(encr_data_t *data);
 void espsk_pack(encr_data_t *data);
 
-/*
-========================
-
-PACK:
-icv[max_icvlen]
-write ESP header
-write iv
-write encr. prot. data
-
-uint8_t icv[max_icvlen]
-uint8_t icvlen
-uint16_t encr_data_len
-
-// Encrypt payload, pad, write pad length field and next_hdr. Will pad according to algo. and IPv6 constraints
-// Will write ICV
-encr(integ_data, integ_data_len, encr_data, encr_data_len, encr_type, encr_key, encr_keylen, next_hdr (0 if none),
-  // To be filled
-  &written_len (return))
-
-if (integ) {
-  // This will compute and write
-  integ(integ_data, integ_data_len, integ_type, integ_key, data->end, &icvlen)
-}
-packet_len += icvlen
-
-UNPACK:
-if (integ) {
-  uint8_t icv[max_icvlen]
-  uint8_t icvlen
-  
-  integ(integ_data, integ_data_len, integ_type, integ_key, &icv, &icvlen)
-  if(memcmp(&icv, data_last - icvlen, icvlen))
-    // Drop
-}
-
-decr(integ_data, integ_data_len, encr_data, encr_data_len, encr_type, encr_key, encr_keylen,
-  // To be filled
-  &encr_len (return))
-
-*/
-
 #endif

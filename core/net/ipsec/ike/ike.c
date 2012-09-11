@@ -31,7 +31,10 @@ static void ike_negotiate_sa(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *com
     *
     */
 
-  /*
+	/**
+		* Code for identifying and using an existing session still to be implemented
+		*/
+  /**
   ike_statem_session_t *session;
   if((session = ike_statem_get_session_by_addr(triggering_pkt_addr->addr)) != NULL) {
     // Command this session to create a new child SA

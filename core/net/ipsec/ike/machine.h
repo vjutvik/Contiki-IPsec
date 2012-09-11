@@ -89,20 +89,6 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 #define IKE_STATEM_MYSPI_SET_NEXT(var) (var = (var | (rand16() & ~IKE_STATEM_MYSPI_I_MASK))) /* (next_my_spi++ & ~IKE_STATEM_MYSPI_I_MASK)*/  // (Note: This will overflow into the Initiator bit after 2^15 - 1 calls)
 #define IKE_STATEM_MYSPI_CLEAR_I(var) (var = var & ~IKE_STATEM_MYSPI_I_MASK)
 
-/*
-// Disused code for IKE SPI overrun check
-#define IKE_STATEM_MYSPI_INCR(var_addr)         \
-  do {                                          \
-    if (next_my_spi > IKE_STATEM_MYSPI_MAX)     \
-    *var_addr = next_my_spi++;                  \
-  } while (false)
-*/
-
-/*
-#define IKE_STATEM_GET_8BYTE_SPIi(session)
-#define IKE_STATEM_GET_8BYTE_SPIr(session)
-*/
-
 typedef uint8_t state_return_t;
 typedef uint16_t transition_return_t;
 
@@ -136,7 +122,6 @@ typedef uint16_t transition_return_t;
   */
 typedef struct {
   // Information about the triggering packet (used for IKE SA initiation)
-  //ipsec_addr_t triggering_pkt;
   spd_entry_t *spd_entry;
   
   // Temporary storage for our TS offer to the peer
@@ -260,14 +245,6 @@ typedef struct ike_statem_session {
 #define IKE_STATEM_GET_MY_SK_E(session) (IKE_STATEM_IS_INITIATOR(session) ? session->sa.sk_ei : session->sa.sk_er)
 #define IKE_STATEM_GET_PEER_SK_E(session) (IKE_STATEM_IS_INITIATOR(session) ? session->sa.sk_er : session->sa.sk_ei)
 
-// Arguments used for session initiation
-/*
-typedef struct {
-  ipsec_addr_t triggering_pkt;
-  spd_entry_t *spd_entry;
-} ike_statem_session_init_triggerdata_t;
-*/
-
 /**
   * Common argument for payload writing functions
   */
@@ -283,30 +260,6 @@ void ike_statem_remove_session(ike_statem_session_t *session);
 extern void ike_statem_clean_session(ike_statem_session_t *session);
 extern void ike_statem_send(ike_statem_session_t *session, uint16_t len);
 
-/**
-  * Each edge in a mealy machine is associated with an output. Below we declare the data structure for the
-  * edges and stuff related to the output function.
-  */
-// An edge in the machine graph
-/*
-typedef union {
-  ike_state_t fromto[2];
-  uint16_t fromto_big; // Store for two states. Assumes that ike_state_t is one byte long.
-} ike_statem_edge_t;
-*/
-/*
-typedef uint16_t *ike_statem_edgefn_ret_t;
-typedef (void *) *ike_statem_edgefn_args_t;
-*/
-
-// Directional transition of the machine's graph
-/*
-typedef struct {
-  ike_statem_edge_t edge;
-  ike_statem_edgefn_ret_t (*_do)(ike_statem_session_t *);  // Do side effects, compose and transmit message
-  ike_statem_edgefn_ret_t (*undo)(ike_statem_session_t *); // Undo side effects
-} ike_statem_transition_t;
-*/
 
 void ike_statem_init();
 void ike_statem_incoming_data_handler();

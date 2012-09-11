@@ -233,34 +233,6 @@ typedef struct {
 // Macro that returns true if the sa_child_t at child_sa_ptr is for the AH protocol, false if it's ESP.
 #define IKE_CHILD_SA_IS_AH(child_sa_ptr) (child_sa->encr_keylen > 0)
 
-/*
-typedef struct {
-   {SK_d | SK_ai | SK_ar | SK_ei | SK_er | SK_pi | SK_pr }
-  
-  sk_d; // For deriving child key material
-  sk_ai; // IKE SA integr
-  sk_ar;
-  sk_ei;// IKE SA encr
-  sk_er;
-  sk_pi; // IKE SA auth
-  sk_pr; // IKE SA auth
-
-  n_r;
-  n_i;
-  
-  
-} sa_tng_t;
-*/
-/**
-  * This union has been created to facilitate storing / retreiving SA properties
-  */
-/*
-typedef union {
-  sa_t strct;
-  uint8_t arr[4];
-  uint32_t val;
-} sa_t;
-*/
 
 /**
   * Macro for setting the algorithm specifications of an SA to "unassigned".

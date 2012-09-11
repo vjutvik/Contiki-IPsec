@@ -128,20 +128,6 @@ typedef struct {
 } ipsec_addr_t;
 
 
-/**
-  * Traffic descriptors are used in SAD entries
-  * to describe the source (SAs for incoming traffic)
-  * or destination (SAs for outgoing traffic) of traffic flows.
-  */
-/*
-typedef struct {
-  uip_ip6addr_t peer_addr;
-  uint8_t nextlayer_proto;
-  uint16_t port_from;
-  uint16_t port_to;
-} ipsec_traffic_desc_t;
-*/
-
 // Please note that the following next header value can be interpreted as "IPv6 Hop-by-Hop Option".
 // We choose 0 anyway since it's the wildcard value used in the TS selector. Why RFC 5996 specifies
 // that value and not the reserved value of 255 is interesting question.
@@ -149,41 +135,8 @@ typedef struct {
 #define SPD_SELECTOR_NL_ANY_PROTOCOL IKE_PAYLOADFIELD_TS_NL_ANY_PROTOCOL
 
 /**
-  * Convenience macros for address comparison
+  * Convenience functions and macros for address comparison
   */
-/*
-#define uip6_addr_a_is_geq_than_b(a, b) \
-  a->u16[0] >= b->u16[0] && \
-  a->u16[1] >= b->u16[1] && \
-  a->u16[2] >= b->u16[2] && \
-  a->u16[3] >= b->u16[3] && \
-  a->u16[4] >= b->u16[4] && \
-  a->u16[5] >= b->u16[5] && \
-  a->u16[6] >= b->u16[6] && \
-  a->u16[7] >= b->u16[7]
-*/
-/*
-#define uip6_addr_a_is_geq_than_b(a, b) \
-  (a->u8[0] >= b->u8[0] && \
-  a->u8[1] >= b->u8[1] && \
-  a->u8[2] >= b->u8[2] && \
-  a->u8[3] >= b->u8[3] && \
-  a->u8[4] >= b->u8[4] && \
-  a->u8[5] >= b->u8[5] && \
-  a->u8[6] >= b->u8[6] && \
-  a->u8[7] >= b->u8[7] && \
-  a->u8[8] >= b->u8[8] && \
-  a->u8[9] >= b->u8[9] && \
-  a->u8[10] >= b->u8[10] && \
-  a->u8[11] >= b->u8[11] && \
-  a->u8[12] >= b->u8[12] && \
-  a->u8[13] >= b->u8[13] && \
-  a->u8[14] >= b->u8[14] && \
-  a->u8[15] >= b->u8[15])*/
-
-
-// #define uip6_addr_a_is_leq_than_b(a, b) uip6_addr_a_is_geq_than_b(b, a)
-
 #define a_is_in_closed_interval_bc(a, b, c) \
   (a) >= (b) && (a) <= (c)
 

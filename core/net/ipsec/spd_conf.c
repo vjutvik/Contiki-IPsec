@@ -15,11 +15,6 @@
 #include "uip.h"
 #include "spd_conf.h"
 
-//#define SPD_CONF_POLICY_ENTRIES_LEN 2
-
-//#define uip_ip6addr_set_min(addr) memset(addr, 0, 16)
-//#define uip_ip6addr_set_max(addr) memset(addr, 0xff, 16)
-
 
 #define uip_ip6addr_set_val16(ip6addr, val) \
     ip6addr.u16[0] = val, \
@@ -31,12 +26,6 @@
     ip6addr.u16[6] = val, \
     ip6addr.u16[7] = val
 
-/*
-#define uip_ip6addr_set_min(ip6addr) uip_ip6addr_set_val16(ip6addr, 0x0000)
-#define uip_ip6addr_set_max(ip6addr) uip_ip6addr_set_val16(ip6addr, 0xffff)
-*/
-
-//const spd_table_t spd_table[SPD_CONF_POLICY_ENTRIES_LEN];
 
 /**
   * IKEv2 proposals as described in RFC 5996 with the following exceptions:
@@ -88,15 +77,6 @@ const spd_proposal_tuple_t my_ah_esp_proposal[10] =
   // Terminate the offer
   { SA_CTRL_END_OF_OFFER, 0}
 };
-/*
-#define set_any_src_ip6addr \
-  uip_ip6addr_set_min(.ip6addr_src_range_from), \
-  uip_ip6addr_set_max(.ip6addr_src_range_to)
-
-#define set_any_dst_ip6addr \
-  uip_ip6addr_set_min(.ip6addr_dst_range_from), \
-  uip_ip6addr_set_max(.ip6addr_dst_range_to)
-*/
 
 
 /**
@@ -111,15 +91,6 @@ const spd_proposal_tuple_t my_ah_esp_proposal[10] =
   .peer_addr_from = &spd_conf_ip6addr_min,     \
   .peer_addr_to = &spd_conf_ip6addr_max
 
-/*
-#define set_localhost_src_ip6addr \
-  .ip6addr_src_range_from = &spd_conf_ip6addr_localhost,  \
-  .ip6addr_src_range_to = &spd_conf_ip6addr_localhost
-
-#define set_localhost_dst_ip6addr \
-  .ip6addr_dst_range_from = &spd_conf_ip6addr_localhost,  \
-  .ip6addr_dst_range_to = &spd_conf_ip6addr_localhost
-*/
 
 
 #define set_my_port(port)               \

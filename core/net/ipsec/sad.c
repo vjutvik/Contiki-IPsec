@@ -44,8 +44,6 @@ void sad_init()
 uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
 {
   // Get offset to the highest registered sequence number
-  // uint32_t offset = entry->seqno - seqno;
-
   PRINTF("Incoming SA replay protection: seqno %u spi %x\n", entry->seqno, uip_ntohl(entry->spi));
 
   if (seqno > entry->seqno) {
@@ -69,29 +67,6 @@ uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
   return 0;
 }
 
-/**
-  * Anti-replay: Get the sequence number for the next outgoing packet of this SA.
-  */
-/*
-Not needed
-uint32_t sad_get_seqno(sad_entry *entry)
-{
-  return ++entry->seqno;
-}
-*/
-
-/*
-sad_spds_key sad_hdr_to_spds_key(struct uip_ip_hdr *hdr) {
-  sad_spds_key key;
-  
-  key.ip6_lsb_addr 
-  key.layer4_src_port
-  key.layer4_dst_port
-  key.layer4_type
-};
-*/
-//sad_spds_key sad_hdr_to_spds_key(struct uip_ip_hdr *hdr) {
-//}
 
 
 /**
@@ -139,19 +114,6 @@ sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation)
   return newentry;
 }
 
-
-/**
-  * Removes an entry from the SAD.
-  *
-  * \param entry Pointer to the entry
-  */
-/*
-void sad_remove_outgoing_entry(sad_entry_t *entry)
-{
-  list_remove(sad, entry);
-  free(entry);
-}
-*/
 
 /**
   * SAD lookup by address for outgoing traffic.
@@ -224,8 +186,3 @@ void sad_remove_incoming_entry(sad_entry_t *sad_entry)
 {
   list_remove(sad_incoming, sad_entry);
 }
-
-/**
-  * Asserts that the address tag is a subset of the traffic pattern determined by sad_entry.
-uint8_t sad_entry_fits_tag(ipsec_addr_t *tag, sad_entry_t *sad_entry);
-*/

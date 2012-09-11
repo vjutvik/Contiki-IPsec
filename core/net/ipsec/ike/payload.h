@@ -528,17 +528,6 @@ typedef struct {
               addrset->nextlayer_dst_port_range_from = ts_dst->start_port; \
               addrset->nextlayer_dst_port_range_to = ts_dst->end_port
 
-/*
-#define SET_TSSELECTOR_ADDR(ts, addr) \
-              ts->ts_type = IKE_PAYLOADFIELD_TS_TYPE; \
-              ts->proto = addr->nextlayer_proto; \
-              ts->selector_len = UIP_HTONS(40); \
-              ts->start_port = addr->srcport; \
-              ts->end_port = addr->srcport; \
-              memcpy(&ts->start_addr, addr->srcaddr, sizeof(addr->srcaddr)); \
-              memcpy(&ts->end_addr, addr->dstaddr, sizeof(addr->dstaddr))
-*/
-
 #define IKE_PAYLOADFIELD_TS_PROTO_ANY 0
 typedef struct {
   uint8_t ts_type;

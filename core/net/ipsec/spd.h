@@ -50,26 +50,6 @@
 #define PRINTSPDENTRY
 #endif
 
-/**
- * Below follows several blocks of definitions that all are part of the set of symbols that make up
- * the SPD's policy selectors as described in section 4.4.1. Every block is named SELECTOR for convenience.
- */
-
-
-/**
-  * This enum represents the values of the policy selectors as described
-  * in RFC 4301, section 3.
-  *
-  * \hideinitializer
-
-enum ipsec_addr_set_type {
-  SEL_SRC_IPV6ADDR_RANGE,
-  SEL_DST_IPV6ADDR_RANGE,
-  SEL_SRC_PORT_RANGE,
-  SEL_DST_PORT_RANGE,
-  SEL_NEXTLAYER_PROTO
-};
-*/
 
 /**
   * This enum represents the values of the policy process actions as described
@@ -140,23 +120,6 @@ typedef struct {
 } spd_proposal_tuple_t;
 
 
-/**
-  * Details for the PROTECT action.
-  *
-  * This is 
-  * 
-  */
-  /*
-typedef struct {
-  ipsec_proto_t ipsec_proto; // IPSec protocol type: AH or ESP
-  sa_proto_encr[4]
-  sa_proto_ident[4]
-  sa_proto_[4]
-  
-  //ipsec_algorithm_type algo[];  // Desired algorithm used by the above protocol. Ordered by decreasing priority.
-} spd_action_protect_details_t;
-*/
-
 
 /**
   * The following struct represents the policy entry as described in RFC 4301, sections 4.4.1.1-2.
@@ -201,17 +164,6 @@ typedef const struct {
 spd_entry_t *spd_get_entry(ipsec_addr_t *);
 spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr);
 void spd_conf_init(void);
-
-/**
-  * \return A selector populated with values from the packet header at \c pkt_hdr and those at \c selector.
-  * See section 4.4.2 p. 38 for more information about the method Populate From Packet (PFP).
-  */
-//ipsec_addr_set_t spd_ip_hdr_to_selectors(struct uip_ip_hdr *pkt_hdr);
-
-//ipsec_addr_set_t spd_pfp(struct uip_ip_hdr *pkt_hdr, ipsec_addr_set_t *selector);
-
-
-//bool spd_a_is_subset_of_b(struct spd_selector *a, struct spd_selector *b);
 
 
 #endif

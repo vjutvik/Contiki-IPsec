@@ -125,18 +125,3 @@ const uint8_t sa_integ_keymatlen[] =
   16  // AES_XCBC_MAC_96
 };
 
-/**
-  * Initialize an SA to default values
-  */
-/*
-void sa_init_sa(sa_t *sa) {
-  
-}
-
-// Constructor. Initializes sa_proposal_t.
-void sa_proposal_new(sa_proposal_t *proposal) {
-  LIST_STRUCT_INIT(proposal, transforms);
-  list_init(proposal->transforms);
-}
-*/
-

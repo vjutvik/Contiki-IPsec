@@ -119,26 +119,7 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg, const ipsec_addr_set_t 
   // Initiator's first traffic selector (triggering packet's params)
   ike_ts_t *tsi1 = (ike_ts_t *) payload_arg->start;
   payload_arg->start += sizeof(ike_ts_t);
-    
-  /*
-  SET_TSSELECTOR_INIT(tsi1);
-  SET_TSSAMEADDR(tsi1, my_ip_addr  Source address );
-  tsi1->proto = trigger_addr->nextlayer_proto;
-  tsi1->start_port = trigger_addr->src_port;
-  tsi1->end_port = trigger_addr->src_port;
-*/
-  /*
-  // Initiator's second traffic selector (instanciation of the matching SPD entry)
-  ike_ts_t *tsi2 = (ike_ts_t *) ptr;
-  ptr += sizeof(ike_ts_t);
-  SET_TSSELECTOR_INIT(tsi2);
-  SET_TSSAMEADDR(tsi2, trigger_addr->srcaddr); // PFP (triggering pkt)
-  tsi2->proto = spd_selector->nextlayer_proto; // Not PFP (SPD entry)
-  tsi2->start_port = uip_htons(spd_selector->nextlayer_src_port_range_from); // Not PFP (SPD entry)
-  tsi2->end_port = uip_htons(spd_selector->nextlayer_src_port_range_to); // Not PFP (SPD entry)
-  */
-
-
+ 
   // TSr payload
   ike_payload_generic_hdr_t *tsr_genpayloadhdr = (ike_payload_generic_hdr_t *) payload_arg->start;
   SET_GENPAYLOADHDR(tsr_genpayloadhdr, payload_arg, IKE_PAYLOAD_TSr);
@@ -159,23 +140,6 @@ void ike_statem_write_tsitsr(payload_arg_t *payload_arg, const ipsec_addr_set_t 
   PRINTF("WRITING TRAFFIC SELECTORS:\n");
   PRINTADDRSET(ts_addr_set);
   
-  /*
-  SET_TSSELECTOR_INIT(tsr1);
-  SET_TSSAMEADDR(tsr1, trigger_addr->addr // Destination address);
-  tsr1->proto = trigger_addr->nextlayer_proto;
-  tsr1->start_port = trigger_addr->dest_port;
-  tsr1->end_port = trigger_addr->dest_port;
-  */
-  /*
-  // Responder's second traffic selector
-  ike_ts_t *tsr2 = (ike_ts_t *) ptr;
-  ptr += sizeof(ike_ts_t);
-  SET_TSSELECTOR_INIT(tsr2);
-  SET_TSSAMEADDR(tsr2, trigger_addr->dstaddr); // PFP (triggering pkt)
-  tsr2->proto = spd_selector->nextlayer_proto; // Not PFP (SPD entry)
-  tsr2->start_port = uip_htons(spd_selector->nextlayer_dest_port_range_from); // Not PFP (SPD entry)
-  tsr2->end_port = uip_htons(spd_selector->nextlayer_dest_port_range_to); // Not PFP (SPD entry)
-  */
   // PRINTF("trigger_addr->addr;\n");
   //   PRINT6ADDR(trigger_addr->addr);
   MEMPRINTF("\ntsi_genpayloadhdr", tsi_genpayloadhdr, uip_ntohs(tsi_genpayloadhdr->len));
@@ -493,14 +457,6 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   }
   
   // Set incoming SAD entry
-  
-  /*
-  session->ephemeral_info->peer_child_spi = incoming_sad_entry->spi;  // For use in the response
-  outgoing_sad_entry->spi = session->ephemeral_info->my_child_spi;
-  outgoing_sad_entry->sa.encr = incoming_sad_entry->sa.encr;
-  outgoing_sad_entry->sa.encr_keylen = incoming_sad_entry->sa.encr_keylen;
-  outgoing_sad_entry->sa.integ = incoming_sad_entry->sa.integ;
-  */
   session->ephemeral_info->peer_child_spi = outgoing_sad_entry->spi;  // For use in the next response
   incoming_sad_entry->spi = session->ephemeral_info->my_child_spi;
   incoming_sad_entry->sa.proto = outgoing_sad_entry->sa.proto;
@@ -539,10 +495,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
     *     KEYMAT = prf+(SK_d, Ni | Nr)
     *
     */
-//  if (IKE_STATEM_IS_INITIATOR(session))
-    ike_statem_get_child_keymat(session, &incoming_sad_entry->sa, &outgoing_sad_entry->sa);
-//  else
-//    ike_statem_get_child_keymat(session, &outgoing_sad_entry->sa, &incoming_sad_entry->sa);
+  ike_statem_get_child_keymat(session, &incoming_sad_entry->sa, &outgoing_sad_entry->sa);
   
   PRINTF("===== Registered outgoing Child SA =====\n");
   PRINTSADENTRY(outgoing_sad_entry);
@@ -1147,12 +1100,8 @@ uint32_t rerun_init_msg(uint8_t *out, uint8_t initreq, ike_statem_session_t *ses
   
   // Stash my msg ID
   uint32_t my_msg_id = session->my_msg_id;
-//  uint32_t peer_msg_id = session->peer_msg_id;
 
-  //if (initreq)
-    session->my_msg_id = 0;
-  //else
-  //  session->peer_msg_id = 0;
+  session->my_msg_id = 0;
   
   // Buffers
   uint8_t *msg_buf_save = msg_buf;  // ike_statem_trans_initreq() writes to the address of msg_buf
@@ -1169,7 +1118,6 @@ uint32_t rerun_init_msg(uint8_t *out, uint8_t initreq, ike_statem_session_t *ses
   session->peer_spi_high = peer_spi_high;
   session->peer_spi_low = peer_spi_low;
   session->my_msg_id = my_msg_id;
-  //session->peer_msg_id = peer_msg_id;
   
   return uip_ntohl(((ike_payload_ike_hdr_t *) out)->len);
 }
@@ -1203,18 +1151,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
   
   // Pack RealMessage*
   PRINTF("RealMessage1: ");
-  /*
-  if (myauth) {
-    PRINTF("Re-running our first message's transition\n");
-    ptr += rerun_init_msg(ptr, session);    
 
-  }
-  else {
-    PRINTF("Using peer_first_msg, len %u\n", session->ephemeral_info->peer_first_msg_len);
-    memcpy(ptr, session->ephemeral_info->peer_first_msg, session->ephemeral_info->peer_first_msg_len);
-    ptr += session->ephemeral_info->peer_first_msg_len;    
-  }
-*/
   switch (type) {
     case 0:
     PRINTF("Using peer_first_msg, len %u\n", session->ephemeral_info->peer_first_msg_len);
@@ -1905,18 +1842,6 @@ void ike_statem_get_child_keymat(ike_statem_session_t *session, sa_child_t *inco
   */
 void ts_pair_to_addr_set(ipsec_addr_set_t *traffic_desc, ike_ts_t *ts_me, ike_ts_t *ts_peer)
 {
-  /*
-  ike_ts_t *ts_src, *ts_dest;
-  
-  if (direction == SPD_INCOMING_TRAFFIC) {
-    ts_src = ts_peer;
-    ts_dest = ts_me;
-  }
-  else {
-    ts_src = ts_me;
-    ts_dest = ts_peer;
-  }
-*/
   // peer_addr_from and peer_addr_to should point to the same memory location
   memcpy(traffic_desc->peer_addr_from, &ts_peer->start_addr, sizeof(uip_ip6addr_t));
 

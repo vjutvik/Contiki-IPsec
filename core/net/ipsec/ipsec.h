@@ -79,8 +79,7 @@ struct uip_esp_header {
   uint32_t          seqno;
   /**
     * IV and the data will now follow. These are both of variable length.
-  */  
-  /*
+
   unsigned char     iv[IPSEC_IVSIZE];
   unsigned char     data[0];
   */

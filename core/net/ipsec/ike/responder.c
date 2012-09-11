@@ -19,12 +19,9 @@ state_return_t ike_statem_state_parse_initreq(ike_statem_session_t *session)
   if (ike_statem_parse_sa_init_msg(session, ike_hdr, session->ephemeral_info->ike_proposal_reply) == 0)
     return STATE_FAILURE;
   
-  session->transition_fn = &ike_statem_trans_initresp; //&ike_statem_trans_authreq;
-  session->next_state_fn = &ike_statem_state_parse_authreq;//&ike_statem_state_authrespwait;
+  session->transition_fn = &ike_statem_trans_initresp; 
+  session->next_state_fn = &ike_statem_state_parse_authreq;
 
-  //session->transition_arg = &session_trigger;
-
-  //IKE_STATEM_INCRPEERMSGID(session);
   IKE_STATEM_TRANSITION(session);
     
   return STATE_SUCCESS;

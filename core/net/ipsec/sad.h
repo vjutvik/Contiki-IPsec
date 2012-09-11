@@ -47,24 +47,6 @@ extern uint32_t next_sad_local_spi;
   entry->bytes_transported = 0;                       \
   entry->win = 0
 
-// SPD-S cache key
-//
-// Key for outbound SA:s. Invariant: > 0
-// Colation of the following: 
-// Last byte of the dst IP address |
-// last byte of the destination port | 
-// last byte of the source port
-// last next header type identifier
-//
-/*
-typedef struct {
-  uint8_t ip6_lsb_addr
-  uint8_t layer4_lsb_src_port
-  uint8_t layer4_lsb_dst_port
-  uint8_t layer4_type
-} sad_spds_key_t;
-*/
-
 
 /**
   * Implementation of the SAD.

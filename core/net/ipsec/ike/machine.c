@@ -135,14 +135,7 @@ void ike_statem_init()
 
   msg_buf = uip_udp_buffer_dataptr(); //(uint8_t *) udp_buf;       
 
-  PRINTF(IPSEC_IKE "State machine initialized. Listening on UDP port %d.\n", uip_ntohs(my_conn->lport));
-  
-
-  /*
-  // Set up the UDP port for outgoing traffic
-  tmit_conn = udp_new(remote, UIP_HTONS(IKE_UDP_PORT), NULL);
-  udp_bind(tmit_conn, UIP_HTONS(3001));
-  */
+  PRINTF(IPSEC_IKE "State machine initialized. Listening on UDP port %d.\n", uip_ntohs(my_conn->lport));  
 }
 
 ike_statem_session_t *ike_statem_session_init()
@@ -220,8 +213,6 @@ void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_e
   session->next_state_fn = &ike_statem_state_initrespwait;
   
   // Populate the ephemeral information with connection setup information  
-  //memcpy((void *) &session->ephemeral_info->triggering_pkt, (void *) trigtritrgering_pkt_addr, sizeof(ipsec_addr_t));
-  //session->ephemeral_info->triggering_pkt.addr = &session->peer;
   memcpy(&session->peer, triggering_pkt_addr->peer_addr, sizeof(uip_ip6addr_t));
 
   session->ephemeral_info->spd_entry = commanding_entry;
@@ -300,8 +291,6 @@ ike_statem_session_t *ike_statem_find_session(uint32_t initiator_spi) {
   * Handler for incoming UDP traffic. Matches the data with the correct session (state machine)
   * using the IKE header.
   */
-  
-
 void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
 {
   // Get the IKEv2 header
@@ -358,8 +347,6 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
         PRINTF(IPSEC_IKE_ERROR "Request message ID is out of order. Dropping it. (expected %u)\n", session->peer_msg_id);
         return;
       }
-      
-      //++session->peer_msg_id;
     }
     
     IKE_STATEM_ENTERSTATE(session);
@@ -380,64 +367,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
   */
 void ike_statem_send(ike_statem_session_t *session, uint16_t len)
 {
-  /*
-  uip_ipaddr_copy(&my_conn->ripaddr, &session->peer);
-  my_conn->rport = UIP_HTONS(IKE_UDP_PORT);
-  */
-  
   uip_udp_buffer_set_datalen(len);
   uip_udp_buffer_sendto(my_conn, &session->peer, uip_htons(IKE_UDP_PORT));
-  
-  //udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT)); // This will set lport to IKE_UDP_PORT
-  
-  /**
-    * By not using uip_udp_packet_send() and reimplementing the send code ourselves
-    * The following code copies the behaviour of uip_udp_packet_send(),
-    * with the exception of the memcpy() operation.
-    */
-/*  uip_udp_conn = my_conn;
-  uip_slen = len;
-  uip_process(UIP_UDP_SEND_CONN);
-  tcpip_ipv6_output();
-*/
-  // Reset everything so that we can listen to new packets
-  //uip_slen = 0;
-  //udp_bind(my_conn, UIP_HTONS(IKE_UDP_PORT));
-
-  //my_conn->rport = 0;
-  //uip_create_unspecified(&my_conn->ripaddr);
 }
-
-/**
-  * This array maps state functions to state identifiers
-  *
-  */
-/*static const ike_statem_statefn_args_t statefns[] = 
-{
-  
-};
-*/
-
-/**
-  * This data structure encodes the edges of the machine.
-  */
-/*
-static const ike_statem_run_transition_t transitions[] = {
-  {
-    .edge = { .fromto[0] = IKE_MSTATE_START, .fromto[1] = IKE_MSTATE_INIT },
-    ._do = &ike_m_initreply_do,
-    .undo = &ike_m_initreply_undo
-  },
-  {
-    
-  }
-};
-*/
-
-
-/**
-  * States (nodes) for the session initiater machine
-  */
-  
-
 

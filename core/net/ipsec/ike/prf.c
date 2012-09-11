@@ -35,24 +35,6 @@ void ike_auth_presharedkey_hash(ike_statem_session_t *session, uint8_t *in, uint
 }
 */
 
-/**
-  * Calculate our nonce
-  */
-/**
-  * Write a (sort of) random nonce
-  */
-/*
-uint8_t *mynonce(uint8_t *start, ike_statem_ephemeral_info_t *ephemeral_info)
-{
-  random_init(ephemeral_info->my_nonce_seed);
-
-  uint16_t ptr = (uint16_t *) start;
-  uint16_t end = ptr + IKE_PAYLOAD_MYNONCE_2OCTET_LEN  
-  for (; ptr < end; ++ptr)
-    ptr = rnd16();
-  return ptr; 
-}
-*/
 
 /**
   * Get a random string. Any given output will be reproduced for the same seed and len.
@@ -137,8 +119,6 @@ void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
   
   *
   */
-
-
 void prf_plus(prfplus_data_t *plus_data)
 {
   const uint8_t prf_outputlen = sa_prf_output_len[plus_data->prf];
@@ -225,6 +205,5 @@ void prf_plus(prfplus_data_t *plus_data)
     // PRINTF("NEXT CHUNK!\n");
     // if (outbuf_len == 4)
     //   PRINTF("#############################\n");
-    
   }
 }

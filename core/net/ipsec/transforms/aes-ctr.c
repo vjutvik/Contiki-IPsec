@@ -34,11 +34,6 @@ aes_ctr_init(uint8_t *ctr_blk, const uint8_t *key,
   
   // Null counter
   memset(ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE, 0, 4);
-  //*((uint32_t *) ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE) = UIP_HTONL(1);
-
-/*
-  printf("ctr_init blk:\n");
-  memprint(ctr_blk, 15);*/
 }
 /*---------------------------------------------------------------------------*/
 
@@ -49,10 +44,7 @@ aes_ctr_step(uint8_t *ctr_blk, uint8_t *data, uint16_t ctr, int len)
   ctr = uip_htons(ctr);
   memcpy(ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE + 2, &ctr, sizeof(ctr));
 
-/*
-  printf("ctr_step blk:\n");
-  memprint(ctr_blk, 15);
-  */
+
   // tmp = ctr_blk 
   uint8_t tmp[AESCTR_BLOCKSIZE];
   memcpy(tmp, ctr_blk, AESCTR_BLOCKSIZE);
@@ -64,18 +56,7 @@ aes_ctr_step(uint8_t *ctr_blk, uint8_t *data, uint16_t ctr, int len)
   int i;
   for (i = 0; i < len; i++)
     data[i] ^= tmp[i];
-  
-  // counter++
-  /*
-  count = UIP_HTONL(*((uint32_t*)(counter + AESCTR_NONCESIZE + IPSEC_IVSIZE)));
-  *((uint32_t*)(counter + AESCTR_NONCESIZE + IPSEC_IVSIZE)) = UIP_HTONL(count + 1);
-  */
-  // FIX: Is this 32 bit casting violating byte boundaries?
 
-  /*
-  uint32_t counter = uip_ntohl(*((uint32_t *) (ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE)));
-  *((uint32_t *) (ctr_blk + AESCTR_NONCESIZE + AESCTR_IVSIZE)) = uip_htonl(counter + 1);
-  */
 }
 
 /*---------------------------------------------------------------------------*/
