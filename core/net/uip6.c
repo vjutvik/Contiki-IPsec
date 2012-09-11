@@ -2563,7 +2563,6 @@ uip_process(uint8_t flag)
   // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
   if (sad_entry == NULL) {
     // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
-
     spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
     
     switch (spd_entry->proc_action) {
