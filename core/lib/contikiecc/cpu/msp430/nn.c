@@ -459,13 +459,13 @@ NN_ModMultOpt(NN_DIGIT * a, NN_DIGIT * b, NN_DIGIT * c, NN_DIGIT * d, NN_DIGIT *
 void 
 NN_ModDivOpt(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *c, NN_DIGIT *d, NN_UINT digits)
 {
-  NN_DIGIT A[MAX_NN_DIGITS], B[MAX_NN_DIGITS], U[MAX_NN_DIGITS], V[MAX_NN_DIGITS];
+  NN_DIGIT A[MAX_NN_DIGITS], B[MAX_NN_DIGITS], U[MAX_NN_DIGITS], V_[MAX_NN_DIGITS];
   int tmp_even;
 
   NN_Assign(A, c, digits);
   NN_Assign(B, d, digits);
   NN_Assign(U, b, digits);
-  NN_AssignZero(V, digits);
+  NN_AssignZero(V_, digits);
     
   while((tmp_even = NN_Cmp(A, B, digits)) != 0) {
     if(NN_EVEN(A, digits)) {
@@ -478,19 +478,19 @@ NN_ModDivOpt(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *c, NN_DIGIT *d, NN_UINT digits)
       }
     } else if(NN_EVEN(B, digits)) {
       NN_RShift(B, B, 1, digits);
-      if(NN_EVEN(V, digits)) {
-        NN_RShift(V, V, 1, digits);
+      if(NN_EVEN(V_, digits)) {
+        NN_RShift(V_, V_, 1, digits);
       } else {
-        NN_Add(V, V, d, digits);
-        NN_RShift(V, V, 1, digits);
+        NN_Add(V_, V_, d, digits);
+        NN_RShift(V_, V_, 1, digits);
       }
     } else if(tmp_even > 0) {
       NN_Sub(A, A, B, digits);
       NN_RShift(A, A, 1, digits);
-      if(NN_Cmp(U, V, digits) < 0) {
+      if(NN_Cmp(U, V_, digits) < 0) {
         NN_Add(U, U, d, digits);
       }
-      NN_Sub(U, U, V, digits);
+      NN_Sub(U, U, V_, digits);
       if(NN_EVEN(U, digits)) {
         NN_RShift(U, U, 1, digits);
       } else {
@@ -500,15 +500,15 @@ NN_ModDivOpt(NN_DIGIT *a, NN_DIGIT *b, NN_DIGIT *c, NN_DIGIT *d, NN_UINT digits)
     } else {
       NN_Sub(B, B, A, digits);
       NN_RShift(B, B, 1, digits);
-      if(NN_Cmp(V, U, digits) < 0) {
-        NN_Add(V, V, d, digits);
+      if(NN_Cmp(V_, U, digits) < 0) {
+        NN_Add(V_, V_, d, digits);
       }
-      NN_Sub(V, V, U, digits);
-      if(NN_EVEN(V, digits)) {
-        NN_RShift(V, V, 1, digits);
+      NN_Sub(V_, V_, U, digits);
+      if(NN_EVEN(V_, digits)) {
+        NN_RShift(V_, V_, 1, digits);
       } else {
-        NN_Add(V, V, d, digits);
-        NN_RShift(V, V, 1, digits);
+        NN_Add(V_, V_, d, digits);
+        NN_RShift(V_, V_, 1, digits);
       }
     }
   }

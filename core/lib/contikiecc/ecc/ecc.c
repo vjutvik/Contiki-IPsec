@@ -44,7 +44,7 @@ static NN_DIGIT mask[NUM_MASKS];
 /*
  * Pseudorandom functions. Not beautiful.
  */
-uint32_t rand32()
+static uint32_t rand32()
 {
   // This should be independent of host byte order
   uint32_t rtvl;
@@ -54,7 +54,11 @@ uint32_t rand32()
   return rtvl;
 }
 
-uint16_t rand16()
+/**
+	* This function exists in ipsec_random.c as well, but we declare it here as well
+	* in order to facilitate the stand-alone usage of ContikiECC
+	*/
+static uint16_t rand16()
 {
   return random_rand();
 }
