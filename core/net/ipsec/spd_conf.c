@@ -145,8 +145,8 @@ spd_entry_t spd_table[SPD_ENTRIES] =
       .selector =
       {
         set_any_peer_ip6addr(),
-        //.nextlayer_proto = UIP_PROTO_UDP,
-        .nextlayer_proto = SPD_SELECTOR_NL_ANY_PROTOCOL,
+        .nextlayer_proto = UIP_PROTO_UDP,
+        //.nextlayer_proto = SPD_SELECTOR_NL_ANY_PROTOCOL,
         set_any_my_port(),
         set_any_peer_port()
       },
@@ -158,13 +158,12 @@ spd_entry_t spd_table[SPD_ENTRIES] =
     {
       .selector =
       {
-        //.direction = SPD_ANY_TRAFFIC,
         set_any_peer_ip6addr(),
         .nextlayer_proto = UIP_PROTO_ICMP6,
         set_any_my_port(),
         set_any_peer_port()
       },
-      .proc_action = SPD_ACTION_PROTECT,     // No protection necessary
+      .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
       .offer = NULL                         // N/A
     },
     
@@ -173,7 +172,6 @@ spd_entry_t spd_table[SPD_ENTRIES] =
     {
       .selector =
       {
-        //.direction = SPD_ANY_TRAFFIC,       // This concerns incoming as well as outgoing traffic
         set_any_peer_ip6addr(),                  // Any source (incoming traffic), any destination (outgoing)        
         .nextlayer_proto = SPD_SELECTOR_NL_ANY_PROTOCOL,
         set_any_my_port(),
