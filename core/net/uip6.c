@@ -94,7 +94,7 @@
 
 // IPsec stuff start
 #define IPSECDBG_PRINTF(...) //PRINTF(__VA_ARGS__)
-#define MEMPRINT(...) //MEMPRINT(__VA_ARGS__)
+//#define MEMPRINT(...) //MEMPRINT(__VA_ARGS__)
 
 // IPsec stuff ends
 
@@ -2555,6 +2555,8 @@ uip_process(uint8_t flag)
   	  PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
   	  goto bypass;
   	}
+		//PRINTF("Outgoing packet dump:\n");
+		//MEMPRINT((uint8_t *) UIP_IP_BUF, 200);
   	
   	// Fetch applicable SA
   	packet_tag.peer_addr = &UIP_IP_BUF->destipaddr;

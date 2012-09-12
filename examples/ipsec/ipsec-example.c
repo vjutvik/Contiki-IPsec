@@ -54,7 +54,7 @@
 #include "net/uip.h"
 
 PROCESS(ipsec_example_process, "IPsec Example");
-//AUTOSTART_PROCESSES(&ipsec_example_process);
+AUTOSTART_PROCESSES(&ipsec_example_process);
 
 // PROCESS_NAME(border_router_process);
 // PROCESS_NAME(border_router_cmd_process);
@@ -68,7 +68,7 @@ PROCESS(ipsec_example_process, "IPsec Example");
 //		    &webserver_nogui_process, &ipsec_example_process);
 #endif
 
-AUTOSTART_PROCESSES(&ipsec_example_process);
+//AUTOSTART_PROCESSES(&ipsec_example_process);
 
 // test end
 
