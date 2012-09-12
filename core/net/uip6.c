@@ -2558,9 +2558,10 @@ uip_process(uint8_t flag)
   	
   	// Fetch applicable SA
   	packet_tag.peer_addr = &UIP_IP_BUF->destipaddr;
-  	//packet_tag.direction = SPD_OUTGOING_TRAFFIC;
   	packet_tag.nextlayer_proto = UIP_IP_BUF->proto;
-  	
+
+		SPDLOOKUPADDR(&packet_tag);
+
   	// We use the SAD as an SPD-S cache (RFC 4301).
   	// Is there an SA entry that matches this traffic?
   	sad_entry_t *sad_entry = sad_get_outgoing_entry(&packet_tag);

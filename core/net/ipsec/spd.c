@@ -36,7 +36,7 @@ spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr)
     //PRINTSPDENTRY(&spd_table[n]);
     if (ipsec_a_is_member_of_b(addr, (ipsec_addr_set_t *) &spd_table[n].selector)) {
       PRINTF("Found SPD entry:\n");
-      //PRINTSPDENTRY(&spd_table[n]);
+      PRINTSPDENTRY(&spd_table[n]);
       return &spd_table[n];
     }
   }

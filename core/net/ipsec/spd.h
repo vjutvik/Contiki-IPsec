@@ -46,7 +46,14 @@
     PRINTF("Action: %s\n", str[(spd_entry)->proc_action]);    \
     PRINTF("Offer at addr: %p\n", (spd_entry)->offer);        \
   } while(0)
+
+#define SPDLOOKUPADDR(addr)																		\
+	do {																												\
+		PRINTF("SPD lookup for traffic:\n");											\
+		PRINTADDR(addr);																					\
+	} while(0)
 #else
+#define SDPLOOKUPADDR
 #define PRINTSPDENTRY
 #endif
 
