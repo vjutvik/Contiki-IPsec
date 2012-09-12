@@ -47,12 +47,20 @@
     PRINTF("Offer at addr: %p\n", (spd_entry)->offer);        \
   } while(0)
 
-#define SPDLOOKUPADDR(addr)																		\
+#define PRINTSPDLOOKUPADDR(addr)																		\
 	do {																												\
 		PRINTF("SPD lookup for traffic:\n");											\
 		PRINTADDR(addr);																					\
 	} while(0)
+
+#define PRINTFOUNDSPDENTRY(spd_entry)                          \
+	do {                                                         \
+  	PRINTF("Found SPD entry:\n");                              \
+  	PRINTSPDENTRY(spd_entry);                                  \
+	} while(0)                                                   \
+
 #else
+#define PRINTFOUNDSPDENTRY
 #define SDPLOOKUPADDR
 #define PRINTSPDENTRY
 #endif

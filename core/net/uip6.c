@@ -2560,7 +2560,7 @@ uip_process(uint8_t flag)
   	packet_tag.peer_addr = &UIP_IP_BUF->destipaddr;
   	packet_tag.nextlayer_proto = UIP_IP_BUF->proto;
 
-		SPDLOOKUPADDR(&packet_tag);
+		PRINTSPDLOOKUPADDR(&packet_tag);	// Prints nice debug information
 
   	// We use the SAD as an SPD-S cache (RFC 4301).
   	// Is there an SA entry that matches this traffic?
@@ -2570,7 +2570,9 @@ uip_process(uint8_t flag)
   	if (sad_entry == NULL) {
   	  // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
   	  spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
-  	  
+
+			PRINTFOUNDSPDENTRY(spd_entry);
+
   	  switch (spd_entry->proc_action) {
   	    case SPD_ACTION_PROTECT:
   	    // Traffic of this type must be protected, but no SA for this traffic have been established yet.
