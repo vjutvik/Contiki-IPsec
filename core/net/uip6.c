@@ -94,7 +94,7 @@
 
 // IPsec stuff start
 #define IPSECDBG_PRINTF(...) //PRINTF(__VA_ARGS__)
-//#define MEMPRINT(...) //MEMPRINT(__VA_ARGS__)
+#define MEMPRINT(...) //MEMPRINT(__VA_ARGS__)
 
 // IPsec stuff ends
 
