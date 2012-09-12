@@ -14,8 +14,6 @@ static uip_ip6addr_t molniya;
 
 void sad_conf()
 {
-  return;
-  
   /**
     * This is where you (as the sysadmin) can add manual SAs to the SAD.
     *
@@ -26,9 +24,9 @@ void sad_conf()
     * Please keep in mind that: 
     *   -> The SAD is unordered and its contents may change during runtime.
     *   -> Any predefined SAD entry must be defined in such a way that
-    *     its memory is persistent during the runtime of the IPSec subsystem.
-    *     i.e. use the storage class static or declare the sad_entry_t -variables at the top level.
-    *   -> The SPI must be a value in > 0 and < SAD_DYNAMIC_SPI_START.
+    *     its memory is persistent during the runtime of the IPsec subsystem.
+    *     i.e. use the storage class static or declare the sad_entry_t -variables in the global scope.
+    *   -> The SPI must be a value in the range > 0 and < SAD_DYNAMIC_SPI_START.
     */
 
   /**
@@ -42,7 +40,7 @@ void sad_conf()
     */
   uip_ip6addr(&peer, 0xfe80, 0x0219, 0xe3ff, 0xfe47, 0x49aa, 0xfe47, 0x49aa, 0xfe47); // An example address
   uip_ip6addr(&molniya, 0xaaaa, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1);
-  uip_ip6addr(&cooja1, 0xaaaa, 0x0, 0x0, 0x0, 0x212, 0x7401, 0x1, 0x101);
+  uip_ip6addr(&cooja1, 0xaaaa, 0x0, 0x0, 0x0, 0x200, 0x0, 0x0, 0x2);
   uip_ip6addr(&cooja2, 0xaaaa, 0x0, 0x0, 0x0, 0x212, 0x7402, 0x2, 0x202);
   
   
