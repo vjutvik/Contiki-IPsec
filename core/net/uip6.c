@@ -1274,7 +1274,6 @@ uip_process(uint8_t flag)
 	    .peer_addr = &UIP_IP_BUF->srcipaddr
 	  };
 	  
-	  ipsec_addr_t packet_tag;
 	#endif /* End of WITH_IPSEC */
 	
 	  while(1) {
@@ -1820,6 +1819,8 @@ uip_process(uint8_t flag)
 #endif /* UIP_UDP_CHECKSUMS */
 
 #if WITH_IPSEC
+  ipsec_addr_t packet_tag;
+
   packet_tag.my_port = uip_ntohs(UIP_UDP_BUF->srcport);
   packet_tag.peer_port = uip_ntohs(UIP_UDP_BUF->destport);
   PRINTF("my_port: %hu\n", packet_tag.my_port);
@@ -2561,7 +2562,7 @@ uip_process(uint8_t flag)
  
   // We use the SAD as an SPD-S cache (RFC 4301).
   // Is there an SA entry that matches this traffic?
-  sad_entry = sad_get_outgoing_entry(&packet_tag);
+  sad_entry_t *sad_entry = sad_get_outgoing_entry(&packet_tag);
 
   // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
   if (sad_entry == NULL) {

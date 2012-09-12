@@ -220,8 +220,8 @@ void espsk_unpack(encr_data_t *data)
       aes_decrypt(&a, data->data[n << 4]);
 
     aes_end(&a);
-    */
     break;
+    */
     
     case SA_ENCR_AES_CTR:         // SHOULD
     // Confidentiality only
