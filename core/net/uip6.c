@@ -2548,156 +2548,162 @@ uip_process(uint8_t flag)
   UIP_IP_BUF->flow = 0x00;
  send:
  
+	{
 #if WITH_IPSEC
-  // Protect packets that are sourced from us, not ones routed on the behalf of others
-  if(! uip_ds6_is_my_addr(&UIP_IP_BUF->srcipaddr)) {
-    PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
-    goto bypass;
-  }
-
-  // Fetch applicable SA
-  packet_tag.peer_addr = &UIP_IP_BUF->destipaddr;
-  //packet_tag.direction = SPD_OUTGOING_TRAFFIC;
-  packet_tag.nextlayer_proto = UIP_IP_BUF->proto;
- 
-  // We use the SAD as an SPD-S cache (RFC 4301).
-  // Is there an SA entry that matches this traffic?
-  sad_entry_t *sad_entry = sad_get_outgoing_entry(&packet_tag);
-
-  // If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
-  if (sad_entry == NULL) {
-    // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
-    spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
-    
-    switch (spd_entry->proc_action) {
-      case SPD_ACTION_PROTECT:
-      // Traffic of this type must be protected, but no SA for this traffic have been established yet.
-      // Try to negotiate one and drop the triggering packet in the meantime (in accordance with RFC 4301)
-      //#if WITH_IPSEC_IKE
-      PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
-        " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
-
-      ike_arg_packet_tag = packet_tag;
-
-      //void *argv[2] = { &packet_tag, spd_entry };
-      // This asynchronous call will be processed after uip_process() has finished
-      process_post(&ike2_service, ike_negotiate_event, (void *) spd_entry);
-      
-      //#else
-      // FIX: Broken #if parsing
-      // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet."
-      
-      /**
-        * RFC 4301 grants us the permission to drop the packet triggering an IKE handshake
-        * 
-        * from p. 53 part 3b:
-        * "If the SPD entry calls for PROTECT, i.e., creation of an SA, the key management mechanism (e.g., IKEv2) 
-        * is invoked to create the SA. If SA creation succeeds, a new outbound (SPD-S) cache entry is created, 
-        * along with outbound and inbound SAD entries, otherwise the packet is discarded. 
-        * (A packet that triggers an SPD lookup MAY be discarded by the implementation, or it MAY be processed 
-        * against the newly created cache entry, if one is created.)"
-        *
-        */
-      goto drop;
-      
-      case SPD_ACTION_BYPASS:
-      PRINTF(IPSEC "SPD: Outgoing packet targeted for BYPASS\n");
-      goto bypass;
-
-      case SPD_ACTION_DISCARD:
-      PRINTF(IPSEC "SPD: Outgoing packet targeted for DISCARD\n");
-      goto drop;
-    }
-  }
-  // We will now proceed to protect this packet with the SA in sad_entry
+  	// Protect packets that are sourced from us, not ones routed on the behalf of others
+  	if(! uip_ds6_is_my_addr(&UIP_IP_BUF->srcipaddr)) {
+  	  PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
+  	  goto bypass;
+  	}
+  	
+  	// Fetch applicable SA
+  	packet_tag.peer_addr = &UIP_IP_BUF->destipaddr;
+  	//packet_tag.direction = SPD_OUTGOING_TRAFFIC;
+  	packet_tag.nextlayer_proto = UIP_IP_BUF->proto;
+  	
+  	// We use the SAD as an SPD-S cache (RFC 4301).
+  	// Is there an SA entry that matches this traffic?
+  	sad_entry_t *sad_entry = sad_get_outgoing_entry(&packet_tag);
+  	
+  	// If not, assert that it's in accordance with the policy of this traffic. (RFC 4301, p. 53, part 3b.)
+  	if (sad_entry == NULL) {
+  	  // This variable belongs to first switch case, but declaring it there gives a syntax error because of no apparent reason.
+  	  spd_entry_t *spd_entry = spd_get_entry_by_addr(&packet_tag);
+  	  
+  	  switch (spd_entry->proc_action) {
+  	    case SPD_ACTION_PROTECT:
+  	    // Traffic of this type must be protected, but no SA for this traffic have been established yet.
+  	    // Try to negotiate one and drop the triggering packet in the meantime (in accordance with RFC 4301)
+  	    //#if WITH_IPSEC_IKE
+  	    PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
+  	      " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
+  	
+  	    ike_arg_packet_tag = packet_tag;
+  	
+  	    //void *argv[2] = { &packet_tag, spd_entry };
+  	    // This asynchronous call will be processed after uip_process() has finished
+  	    process_post(&ike2_service, ike_negotiate_event, (void *) spd_entry);
+  	    
+  	    //#else
+  	    // FIX: Broken #if parsing
+  	    // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet."
+  	    
+  	    /**
+  	      * RFC 4301 grants us the permission to drop the packet triggering an IKE handshake
+  	      * 
+  	      * from p. 53 part 3b:
+  	      * "If the SPD entry calls for PROTECT, i.e., creation of an SA, the key management mechanism (e.g., IKEv2) 
+  	      * is invoked to create the SA. If SA creation succeeds, a new outbound (SPD-S) cache entry is created, 
+  	      * along with outbound and inbound SAD entries, otherwise the packet is discarded. 
+  	      * (A packet that triggers an SPD lookup MAY be discarded by the implementation, or it MAY be processed 
+  	      * against the newly created cache entry, if one is created.)"
+  	      *
+  	      */
+  	    goto drop;
+  	    
+  	    case SPD_ACTION_BYPASS:
+  	    PRINTF(IPSEC "SPD: Outgoing packet targeted for BYPASS\n");
+  	    goto bypass;
+  	
+  	    case SPD_ACTION_DISCARD:
+  	    PRINTF(IPSEC "SPD: Outgoing packet targeted for DISCARD\n");
+  	    goto drop;
+  	  }
+  	}
+  	// We will now proceed to protect this packet with the SA in sad_entry
 #endif
 
 #if WITH_IPSEC_ESP
-  if (sad_entry->sa.proto == SA_PROTO_ESP) {
-    struct uip_esp_header* esp_header = UIP_ESP_BUF;
-    uint8_t next_header;
-    uint8_t ivlen = sa_encr_ivlen[sad_entry->sa.encr];
-    if (sad_entry->sa.encr == SA_ENCR_NULL) // See note in sa.c
-      ivlen -= SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr);
-    
-    uint16_t data_len = uip_len - UIP_IPH_LEN; // This leaves the data and the next layer headers
-    
-    /* Backup next header before updating to "ESP" */
-    next_header = UIP_IP_BUF->proto;
-    UIP_IP_BUF->proto = UIP_PROTO_ESP;
-    
-    /* Move IP payload, leaving space to ESP header */
-    memmove(((uint8_t *) UIP_ESP_BUF) + sizeof(struct uip_esp_header) + ivlen, UIP_ESP_BUF, data_len);
-
-    /* Set ESP header */
-    esp_header->spi = sad_entry->spi;
-    esp_header->seqno = uip_htonl(++sad_entry->seqno);
-    
-    if (!esp_header->seqno) {
-      IPSECDBG_PRINTF(IPSEC "Error: Sequence number overflow. Removing SAD entry.\n");
-      sad_remove_outgoing_entry(sad_entry);
-      goto drop;
-    }
-    
-    IPSECDBG_PRINTF("Outgoing before pack:\n");
-    MEMPRINT((uint8_t *) esp_header, data_len + 30);
-    encr_data_t encr_data = {
-      .type = sad_entry->sa.encr,
-      .keymat = sad_entry->sa.sk_e,
-      .keylen = sad_entry->sa.encr_keylen,
-      .integ_data = (uint8_t *) esp_header,
-      .encr_data = (uint8_t *) esp_header + sizeof(struct uip_esp_header),
-      .encr_datalen = data_len + ivlen,
-      .ops = sad_entry->seqno,
-      .ip_next_hdr = &next_header
-    };
-    espsk_pack(&encr_data);
-    IPSECDBG_PRINTF("Outgoing after pack:\n");
-    MEMPRINT((uint8_t *) esp_header, data_len + 30);
-    
-    /**
-      * Extend IP length
-      *
-      * At this point data_len accounts for everything above IP (UDP/TCP + data).
-      * In addition to that we have: ESP header + IV + Padding + Padding length field + Next header field
-      */
-    data_len += sizeof(struct uip_esp_header) + ivlen + encr_data.padlen + 2;
-    IPSECDBG_PRINTF("encr_data.padlen: %hu data_len: %u\n", encr_data.padlen, data_len);
-    
-    /**
-      * Integrity
-      */
-    if (sad_entry->sa.integ) {
-      IPSECDBG_PRINTF("data_len: %u\n", data_len);
-      IPSECDBG_PRINTF("Before integ:\n");
-      MEMPRINT((uint8_t *) esp_header, data_len + 30);
-      integ_data_t integ_data = {
-        .type = sad_entry->sa.integ,
-        .data = (uint8_t *) esp_header,                      // The start of the data
-        .datalen = data_len,                               // the length of the data
-        .keymat = sad_entry->sa.sk_a,                     // The start of the KEYMAT
-        .out = (uint8_t *) esp_header + data_len              // Where the output will be written. Always IPSEC_ICVLEN bytes.
-      };
-      integ(&integ_data);
-      IPSECDBG_PRINTF("After integ:\n");
-      MEMPRINT((uint8_t *) esp_header, data_len + 30);
-
-      /**
-        * Extend IP length to accomodate the ICV
-        */
-      data_len += IPSEC_ICVLEN;
-    }
-    uip_len = data_len + UIP_IPH_LEN;
-
-    // Update IP header length after ESP processing
-    UIP_IP_BUF->len[0] = ((uip_len - UIP_IPH_LEN) >> 8);
-    UIP_IP_BUF->len[1] = ((uip_len - UIP_IPH_LEN) & 0xff);
-  }
-  // Fix: Move above IP hdr len setting here. Remove it from TCP and UDP processing.
-  bypass:
+  	if (sad_entry->sa.proto == SA_PROTO_ESP) {
+  	  struct uip_esp_header* esp_header = UIP_ESP_BUF;
+  	  uint8_t next_header;
+  	  uint8_t ivlen = sa_encr_ivlen[sad_entry->sa.encr];
+  	  if (sad_entry->sa.encr == SA_ENCR_NULL) // See note in sa.c
+  	    ivlen -= SA_ENCR_IVLEN_BY_TYPE(sad_entry->sa.encr);
+  	  
+  	  uint16_t data_len = uip_len - UIP_IPH_LEN; // This leaves the data and the next layer headers
+  	  
+  	  /* Backup next header before updating to "ESP" */
+  	  next_header = UIP_IP_BUF->proto;
+  	  UIP_IP_BUF->proto = UIP_PROTO_ESP;
+  	  
+  	  /* Move IP payload, leaving space to ESP header */
+  	  memmove(((uint8_t *) UIP_ESP_BUF) + sizeof(struct uip_esp_header) + ivlen, UIP_ESP_BUF, data_len);
+  	
+  	  /* Set ESP header */
+  	  esp_header->spi = sad_entry->spi;
+  	  esp_header->seqno = uip_htonl(++sad_entry->seqno);
+  	  
+  	  if (!esp_header->seqno) {
+  	    IPSECDBG_PRINTF(IPSEC "Error: Sequence number overflow. Removing SAD entry.\n");
+  	    sad_remove_outgoing_entry(sad_entry);
+  	    goto drop;
+  	  }
+  	  
+  	  IPSECDBG_PRINTF("Outgoing before pack:\n");
+  	  MEMPRINT((uint8_t *) esp_header, data_len + 30);
+  	  encr_data_t encr_data = {
+  	    .type = sad_entry->sa.encr,
+  	    .keymat = sad_entry->sa.sk_e,
+  	    .keylen = sad_entry->sa.encr_keylen,
+  	    .integ_data = (uint8_t *) esp_header,
+  	    .encr_data = (uint8_t *) esp_header + sizeof(struct uip_esp_header),
+  	    .encr_datalen = data_len + ivlen,
+  	    .ops = sad_entry->seqno,
+  	    .ip_next_hdr = &next_header
+  	  };
+  	  espsk_pack(&encr_data);
+  	  IPSECDBG_PRINTF("Outgoing after pack:\n");
+  	  MEMPRINT((uint8_t *) esp_header, data_len + 30);
+  	  
+  	  /**
+  	    * Extend IP length
+  	    *
+  	    * At this point data_len accounts for everything above IP (UDP/TCP + data).
+  	    * In addition to that we have: ESP header + IV + Padding + Padding length field + Next header field
+  	    */
+  	  data_len += sizeof(struct uip_esp_header) + ivlen + encr_data.padlen + 2;
+  	  IPSECDBG_PRINTF("encr_data.padlen: %hu data_len: %u\n", encr_data.padlen, data_len);
+  	  
+  	  /**
+  	    * Integrity
+  	    */
+  	  if (sad_entry->sa.integ) {
+  	    IPSECDBG_PRINTF("data_len: %u\n", data_len);
+  	    IPSECDBG_PRINTF("Before integ:\n");
+  	    MEMPRINT((uint8_t *) esp_header, data_len + 30);
+  	    integ_data_t integ_data = {
+  	      .type = sad_entry->sa.integ,
+  	      .data = (uint8_t *) esp_header,                      // The start of the data
+  	      .datalen = data_len,                               // the length of the data
+  	      .keymat = sad_entry->sa.sk_a,                     // The start of the KEYMAT
+  	      .out = (uint8_t *) esp_header + data_len              // Where the output will be written. Always IPSEC_ICVLEN bytes.
+  	    };
+  	    integ(&integ_data);
+  	    IPSECDBG_PRINTF("After integ:\n");
+  	    MEMPRINT((uint8_t *) esp_header, data_len + 30);
+  	
+  	    /**
+  	      * Extend IP length to accomodate the ICV
+  	      */
+  	    data_len += IPSEC_ICVLEN;
+  	  }
+  	  uip_len = data_len + UIP_IPH_LEN;
+  	
+  	  // Update IP header length after ESP processing
+  	  UIP_IP_BUF->len[0] = ((uip_len - UIP_IPH_LEN) >> 8);
+  	  UIP_IP_BUF->len[1] = ((uip_len - UIP_IPH_LEN) & 0xff);
+  	}
+  	// Fix: Move above IP hdr len setting here. Remove it from TCP and UDP processing.
 #endif /* WITH_IPSEC_ESP */
- 
-  PRINTF("Sending packet with length %d (%d)\n", uip_len,
+	}
+	
+#if WITH_IPSEC
+	bypass:
+#endif
+
+  
+	PRINTF("Sending packet with length %d (%d)\n", uip_len,
          (UIP_IP_BUF->len[0] << 8) | UIP_IP_BUF->len[1]);
   
   UIP_STAT(++uip_stat.ip.sent);
