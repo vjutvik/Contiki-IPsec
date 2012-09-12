@@ -1284,6 +1284,7 @@ uip_process(uint8_t flag)
      
 #if WITH_IPSEC_ESP
       case UIP_PROTO_ESP:
+				{
         /**
           * ESP parsing. From RFC 4303 (IP Encapsulating Security Payload (ESP)):
           *
@@ -1443,6 +1444,7 @@ uip_process(uint8_t flag)
         uip_ext_end_len = encr_data.padlen + 2 + IPSEC_ICVLEN;  // padding, padlen and nextheader fields, ICV
       
         PRINTF(IPSEC "ESP: padlen %hhu nh %hhu uip_ext_len %hhu uip_ext_end_len %hhu\n", encr_data.padlen, *uip_next_hdr, uip_ext_len, uip_ext_end_len);
+				}
         break;
 #endif /* WITH_IPSEC_ESP */
       
