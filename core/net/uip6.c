@@ -1378,7 +1378,7 @@ uip_process(uint8_t flag)
           integ_data.type = sad_entry->sa.integ;
           integ_data.data = (uint8_t *) esp_header;
           integ_data.datalen = auth_data_len;
-          integ_data.keymat = &sad_entry->sa.sk_a;
+          integ_data.keymat = &sad_entry->sa.sk_a[0];
           //integ_data.keylen = SA_INTEG_KEYMATLEN_BY_TYPE(sad_entry->sa.integ);
           integ_data.out = (uint8_t *) &encr_data.icv;          
           integ(&integ_data);
@@ -1389,7 +1389,7 @@ uip_process(uint8_t flag)
         PRINTF("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
         MEMPRINT(esp_header, 100);
         encr_data.type = sad_entry->sa.encr;
-        encr_data.keymat = &sad_entry->sa.sk_e;
+        encr_data.keymat = &sad_entry->sa.sk_e[0];
         encr_data.keylen = sad_entry->sa.encr_keylen;
         encr_data.integ_data = (uint8_t *) esp_header;
         encr_data.encr_data = iv;
