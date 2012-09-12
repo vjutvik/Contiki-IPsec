@@ -1278,9 +1278,9 @@ uip_process(uint8_t flag)
 #endif /* End of WITH_IPSEC */
 
   while(1) {
+    PRINTF("Proc hdr %hu\n", *uip_next_hdr);
+   
     switch(*uip_next_hdr){
-     
-      PRINTF("Proc hdr %hu\n", *uip_next_hdr);
      
 #if WITH_IPSEC_ESP
       case UIP_PROTO_ESP:
@@ -2579,7 +2579,7 @@ uip_process(uint8_t flag)
 
       //void *argv[2] = { &packet_tag, spd_entry };
       // This asynchronous call will be processed after uip_process() has finished
-      process_post(&ike2_service, ike_negotiate_event, spd_entry);
+      process_post(&ike2_service, ike_negotiate_event, (void *) spd_entry);
       
       //#else
       // FIX: Broken #if parsing
