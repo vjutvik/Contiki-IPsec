@@ -28,9 +28,9 @@ uint8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *addr)
       * might enjoy confidentiality protection and hence we must decrypt it first to
       * get the port numbers from the next layer protocol.
       */
-      PRINTF("TRAFFIC DESC:\n");
+    PRINTF("TRAFFIC DESC:\n");
     PRINTADDRSET(&sad_entry->traffic_desc);
-      PRINTF("ADDR:\n");
+    PRINTF("ADDR:\n");
     PRINTADDR(addr);
     if (ipsec_a_is_member_of_b(addr, &sad_entry->traffic_desc)) {
       // FIX: Update SA statistics    
@@ -47,6 +47,8 @@ uint8_t ipsec_filter(sad_entry_t *sad_entry, ipsec_addr_t *addr)
      */
     spd_entry_t *spd_entry = spd_get_entry_by_addr(addr);
     
+		PRINTF("Applicable packet policy:\n");
+		PRINTSPDENTRY(spd_entry);
     switch (spd_entry->proc_action) {
       case SPD_ACTION_BYPASS:
       return 0;

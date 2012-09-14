@@ -12,7 +12,6 @@
   
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
-#define WITH_CONF_IPSEC_AH              0
 #define WITH_CONF_IPSEC_ESP             1
 
 /* The IKE subsystem is optional if the SAs are manually configured */

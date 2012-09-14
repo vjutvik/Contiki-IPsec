@@ -54,15 +54,15 @@
 #include "net/uip.h"
 
 PROCESS(ipsec_example_process, "IPsec Example");
-AUTOSTART_PROCESSES(&ipsec_example_process);
+//AUTOSTART_PROCESSES(&ipsec_example_process);
 
-// PROCESS_NAME(border_router_process);
-// PROCESS_NAME(border_router_cmd_process);
+PROCESS_NAME(border_router_process);
+PROCESS_NAME(border_router_cmd_process);
 // PROCESS_NAME(webserver_nogui_process);
 
 #if WEBSERVER==0
 /* No webserver */
-//AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process, &ipsec_example_process);
+AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process, &ipsec_example_process);
 #else
 //AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
 //		    &webserver_nogui_process, &ipsec_example_process);
@@ -106,13 +106,11 @@ tcpip_handler(void)
     udp_bind(server_conn, UIP_HTONS(MOTE_PORT));
     server_conn->rport = UIP_UDP_BUF->srcport;
 
-    // PRINTF("IPSEC-EXAMPLE after: %u", UIP_HTONS(server_conn->rport));
-
-
-    for(i=0; i<datalen; i++) {
-      data[i]++;
+    printf("Replied:\"");
+    for(i = 0; i < datalen; i++) {
+      printf("%c", ++data[i]);
     }
-    printf("Replied: %10s...\n", data);
+		printf("\"\n(length %hu)\n", datalen);
     
     uip_udp_packet_send(server_conn, data, datalen);
 
@@ -143,7 +141,7 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
 {
   PROCESS_BEGIN();
 
-//  border_router_set_mac((uint8_t *) &uip_lladdr.addr);
+	border_router_set_mac((uint8_t *) &uip_lladdr.addr);
 
   /* new connection with remote host */
   printf("ipsec-example: calling udp_new\n");
