@@ -22,8 +22,7 @@ PROJECTDIRS += $(CONTIKI)/examples/ipv6/native-border-router
 CONTIKI_SOURCEFILES += border-router-cmds.c tun-bridge.c border-router-rdc.c \
 slip-config.c slip-dev.c border-router.c
 APPS = slip-cmd
-CFLAGS += -DCMD_CONF_OUTPUT=border_router_cmd_output -DUIP_FALLBACK_INTERFACE=rpl_interface
-
+CFLAGS += -DCMD_CONF_OUTPUT=border_router_cmd_output -DUIP_FALLBACK_INTERFACE=rpl_interface -DCONTIKI_TARGET_NATIVE=1
 endif
 
 all: $(CONTIKI_PROJECT)

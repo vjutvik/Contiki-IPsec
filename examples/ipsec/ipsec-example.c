@@ -54,23 +54,16 @@
 #include "net/uip.h"
 
 PROCESS(ipsec_example_process, "IPsec Example");
-//AUTOSTART_PROCESSES(&ipsec_example_process);
 
+#if CONTIKI_TARGET_NATIVE
+#include "border-router.h" 
 PROCESS_NAME(border_router_process);
 PROCESS_NAME(border_router_cmd_process);
-// PROCESS_NAME(webserver_nogui_process);
-
-#if WEBSERVER==0
-/* No webserver */
 AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process, &ipsec_example_process);
 #else
-//AUTOSTART_PROCESSES(&border_router_process, &border_router_cmd_process,
-//		    &webserver_nogui_process, &ipsec_example_process);
+AUTOSTART_PROCESSES(&ipsec_example_process);
 #endif
 
-//AUTOSTART_PROCESSES(&ipsec_example_process);
-
-// test end
 
 #define DEBUG 1
 #if DEBUG
@@ -141,8 +134,10 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
 {
   PROCESS_BEGIN();
 
+	#if CONTIKI_TARGET_NATIVE
 	border_router_set_mac((uint8_t *) &uip_lladdr.addr);
-
+	#endif
+	
   /* new connection with remote host */
   printf("ipsec-example: calling udp_new\n");
   server_conn = udp_new(NULL, UIP_HTONS(0), NULL);
