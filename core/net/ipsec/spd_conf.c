@@ -154,7 +154,7 @@ spd_entry_t spd_table[SPD_ENTRIES] =
       .offer = my_ah_esp_proposal
     },
 
-    // PROTECT all ICMP6 traffic
+    // BYPASS all ICMP6 traffic in order to make RPL auto configuration possible
     {
       .selector =
       {
@@ -163,7 +163,7 @@ spd_entry_t spd_table[SPD_ENTRIES] =
         set_any_my_port(),
         set_any_peer_port()
       },
-      .proc_action = SPD_ACTION_PROTECT,     // No protection necessary
+      .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
       .offer = NULL                         // N/A
     },
     
