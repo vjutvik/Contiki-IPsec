@@ -1,5 +1,9 @@
 ### Checking for the CPU architecture and the CPU.
 
+### WARNING! The 32 -bit target appears to broken in this port. Use 8 or 16 -bit.
+### Vilhelm Jutvik, 120917
+
+
 # Default settings
 CPU_ARCH = EIGHT_BIT_PROCESSOR
 CPU = universal
@@ -23,7 +27,7 @@ ifeq ($(TARGET),wismote)
 # All word lengths except eight appears to be broken in this port
 #  CPU_ARCH = THIRTYTWO_BIT_PROCESSOR
 
-	CPU_ARCH = EIGHT_BIT_PROCESSOR
+	CPU_ARCH = SIXTEEN_BIT_PROCESSOR
 	CPU = msp430
 
 #  CPU_ARCH = SIXTEEN_BIT_PROCESSOR
@@ -36,7 +40,7 @@ ifeq ($(TARGET),native)
 # All word lengths except eight appears to be broken in this port
 #  CPU_ARCH = THIRTYTWO_BIT_PROCESSOR
 
-  CPU_ARCH = EIGHT_BIT_PROCESSOR
+  CPU_ARCH = SIXTEEN_BIT_PROCESSOR
   CPU = x86
 endif
 

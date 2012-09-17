@@ -14,6 +14,7 @@ static uip_ip6addr_t molniya;
 
 void sad_conf()
 {
+	return;
   /**
     * This is where you (as the sysadmin) can add manual SAs to the SAD.
     *

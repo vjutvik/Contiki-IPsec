@@ -163,7 +163,7 @@ spd_entry_t spd_table[SPD_ENTRIES] =
         set_any_my_port(),
         set_any_peer_port()
       },
-      .proc_action = SPD_ACTION_BYPASS,     // No protection necessary
+      .proc_action = SPD_ACTION_PROTECT,     // No protection necessary
       .offer = NULL                         // N/A
     },
     
