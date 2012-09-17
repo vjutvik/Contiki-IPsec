@@ -967,7 +967,6 @@ uip_process(uint8_t flag)
       goto tcp_send_syn;
 #endif /* UIP_ACTIVE_OPEN */
     }
-    PRINTF("Dropping line 961\n");
     goto drop;
 #endif /* UIP_TCP */
     /* Check if we were invoked because of the perodic timer fireing. */
@@ -1172,8 +1171,6 @@ uip_process(uint8_t flag)
         break;
       case 1:
         /*silently discard*/
-      PRINTF("Dropping line 1168\n");
-
         goto drop;
       case 2:
         /* send icmp error message (created in ext_hdr_options_process)
