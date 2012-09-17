@@ -7,8 +7,11 @@
 #undef UIP_CONF_LOGGING
 #define UIP_CONF_LOGGING 		0
 
-#define WITH_IPV6 					1
-#define UIP_CONF_IPV6 			1
+#define UIP_CONF_BUFFER_SIZE	800
+#define SICSLOWPAN_CONF_FRAG	1
+
+#define WITH_IPV6 						1
+#define UIP_CONF_IPV6 				1
   
 /* IPsec configuration */
 /* AH and ESP can be enabled/disabled independently */
