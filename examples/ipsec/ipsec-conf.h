@@ -7,8 +7,16 @@
 #undef UIP_CONF_LOGGING
 #define UIP_CONF_LOGGING 		0
 
+#ifdef UIP_CONF_BUFFER_SIZE
+#undef UIP_CONF_BUFFER_SIZE
+#endif 
 #define UIP_CONF_BUFFER_SIZE	800
+
+#ifdef SICSLOWPAN_CONF_FRAG
+#undef SICSLOWPAN_CONF_FRAG
+#endif
 #define SICSLOWPAN_CONF_FRAG	1
+
 
 #define WITH_IPV6 						1
 #define UIP_CONF_IPV6 				1
