@@ -1440,7 +1440,7 @@ uip_process(uint8_t flag)
 	#if UIP_TCP
 	      case UIP_PROTO_TCP:
 	        /* TCP, for both IPv4 and IPv6 */
-	        
+	        remove_ext_hdr();
 	  #if WITH_IPSEC
 	        packet_desc.nextlayer_proto = *uip_next_hdr;
 	        packet_desc.peer_port = uip_ntohs(UIP_TCP_BUF->srcport);
@@ -1454,7 +1454,7 @@ uip_process(uint8_t flag)
 	#if UIP_UDP
 	      case UIP_PROTO_UDP:
 	        /* UDP, for both IPv4 and IPv6 */
-	        
+	        remove_ext_hdr();
 	  #if WITH_IPSEC
 	        /* See comment in UIP_PROTO_TCP for clarification */
 	        packet_desc.nextlayer_proto = *uip_next_hdr;
@@ -1694,8 +1694,6 @@ uip_process(uint8_t flag)
   /* UDP input processing. */
  udp_input:
 
-  remove_ext_hdr();
-
   PRINTF("Receiving UDP packet\n");
   
   UIP_STAT(++uip_stat.udp.recv);
@@ -1814,8 +1812,6 @@ uip_process(uint8_t flag)
 #if UIP_TCP
   /* TCP input processing. */
  tcp_input:
-
-  remove_ext_hdr();
 
   UIP_STAT(++uip_stat.tcp.recv);
   PRINTF("Receiving TCP packet\n");
