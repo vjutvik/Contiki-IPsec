@@ -33,7 +33,7 @@ spd_entry_t *spd_get_entry_by_addr(ipsec_addr_t *addr)
     if (ipsec_a_is_member_of_b(addr, (ipsec_addr_set_t *) &spd_table[n].selector))
       return &spd_table[n];
   }
-  PRINTF(IPSEC "Error: spd_get_entry_by_addr: Nothing found\n");
+  PRINTF(IPSEC "Error: spd_get_entry_by_addr: Nothing found. You ought to have a final rule in the SPD table that catches all traffic. Please see the RFC.\n");
   return NULL;
 }
 
