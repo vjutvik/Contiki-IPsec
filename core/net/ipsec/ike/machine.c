@@ -1,6 +1,6 @@
 #include <string.h>
-#include <stdlib.h>
 
+#include "ipsec_malloc.h"
 #include "common_ike.h"
 #include "machine.h"
 #include "payload.h"
@@ -140,7 +140,13 @@ void ike_statem_init()
 
 ike_statem_session_t *ike_statem_session_init()
 {
-  ike_statem_session_t *session = malloc(sizeof(ike_statem_session_t));
+  ike_statem_session_t *session = ipsec_malloc(sizeof(ike_statem_session_t));
+
+	if (session == NULL) {
+		PRINTF(IPSEC_IKE_ERROR "Could not initiate IKE session\n");
+		return NULL;
+	}
+		
   PRINTF(IPSEC_IKE "Initiating IKE session %p\n", session);
   list_push(sessions, session);
 
@@ -152,8 +158,13 @@ ike_statem_session_t *ike_statem_session_init()
   session->my_msg_id = session->peer_msg_id = 0;
 
   // malloc() will do as this memory will soon be freed and thus won't clog up the heap for long.
-  session->ephemeral_info = malloc(sizeof(ike_statem_ephemeral_info_t));
+  session->ephemeral_info = ipsec_malloc(sizeof(ike_statem_ephemeral_info_t));
 
+	if (session->ephemeral_info == NULL) {
+		PRINTF(IPSEC_IKE_ERROR "Could not allocate memory for ephemeral data structures\n");
+		return NULL;
+	}
+	
   // This random seed will be used for generating our nonce
   session->ephemeral_info->my_nonce_seed = rand16();
    
@@ -169,9 +180,6 @@ ike_statem_session_t *ike_statem_session_init()
   return session;
 }
 
-void testar(int c) {
-  return;
-}
 
 /**
   * Sets up a new session to handle an incoming request
@@ -179,6 +187,9 @@ void testar(int c) {
 void ike_statem_setup_responder_session()
 {
   ike_statem_session_t *session = ike_statem_session_init();
+
+	if (session == NULL)
+		return NULL;
 
   // We're the responder
   IKE_STATEM_MYSPI_SET_R(session->initiator_and_my_spi);
@@ -201,7 +212,10 @@ void ike_statem_setup_responder_session()
 void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_entry_t *commanding_entry)
 {
   ike_statem_session_t *session = ike_statem_session_init();
-  
+
+  if (session == NULL)
+		return NULL;
+
   // Populate the session entry
   memcpy(&session->peer, triggering_pkt_addr->peer_addr, sizeof(uip_ip6addr_t));
   

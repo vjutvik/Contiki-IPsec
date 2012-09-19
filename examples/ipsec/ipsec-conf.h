@@ -28,6 +28,15 @@
 /* The IKE subsystem is optional if the SAs are manually configured */
 #define WITH_CONF_IPSEC_IKE             1
 
+/*
+ * Manual SA configuration allows you as developer to create persistent SAs in the SAD.
+ * This is probably what you want to use if WITH_CONF_IPSEC_IKE is set 0, but please note
+ * that both features can be used simultaneously on a host as per the IPsec RFC.
+ *
+ * The manual SAs can be set in the function sad_conf()
+ */
+#define WITH_CONF_MANUAL_SA 	1
+
 /* Configuring an AES implementation */
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes
 

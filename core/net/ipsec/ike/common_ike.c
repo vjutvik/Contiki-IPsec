@@ -3,13 +3,10 @@
   */
 
 #include <lib/random.h>
-//#include "machine.h"
-#include <stdlib.h>
 #include "contikiecc/ecc/ecc.h"
 #include "contikiecc/ecc/ecdh.h"
 #include "transforms/integ.h"
 #include "transforms/encr.h"
-//#include "payload.h"
 #include "machine.h"
 #include "spd_conf.h"
 #include "common_ike.h"
@@ -269,7 +266,12 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   uint32_t time = clock_time();
   sad_entry_t *outgoing_sad_entry = sad_create_outgoing_entry(time);
   sad_entry_t *incoming_sad_entry = sad_create_incoming_entry(time);
-  
+
+  if (outgoing_sad_entry == NULL || incoming_sad_entry == NULL) {
+		PRINTF(IPSEC_IKE_ERROR "Couldn't create SAs\n");
+		goto memory_fail;
+	}
+
   uint8_t *ptr = msg_buf + sizeof(ike_payload_ike_hdr_t);
   uint8_t *end = msg_buf + uip_datalen();
   notify_msg_type_t fail_notify_type = 0;
@@ -506,9 +508,10 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
   return STATE_SUCCESS;
   
   fail:
-  ike_statem_send_single_notify(session, fail_notify_type);
   sad_remove_outgoing_entry(outgoing_sad_entry);
   sad_remove_incoming_entry(incoming_sad_entry);
+	memory_fail:
+  ike_statem_send_single_notify(session, fail_notify_type);
   return STATE_FAILURE;
 }
 

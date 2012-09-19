@@ -14,7 +14,6 @@ static uip_ip6addr_t molniya;
 
 void sad_conf()
 {
-	return;
   /**
     * This is where you (as the sysadmin) can add manual SAs to the SAD.
     *
@@ -50,6 +49,11 @@ void sad_conf()
     * Doing so will disable anti-replay protection (see RFC 4301, section 4.5).
     */
   sad_entry_t *my_incoming_entry = sad_create_incoming_entry(0);
+
+	if (my_incoming_entry == NULL) {
+		PRINTF(IPSEC_ERROR "Panic! Could not set up static SAs\n");
+		return;
+	}
 
   /**
     * Upon the return of sad_create_incoming_entry() we need to set sa and traffic_desc.
@@ -95,6 +99,11 @@ void sad_conf()
     * thus disabling anti-replay protection.
     */
   sad_entry_t *my_outgoing_entry = sad_create_outgoing_entry(0);
+
+	if (my_outgoing_entry == NULL) {
+		PRINTF(IPSEC_ERROR "Panic! Could not set up static SAs\n");
+		return;
+	}
 
   /**
     * Upon the return of sad_create_incoming_entry() we need to set sa, traffic_desc and spi.

@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "sad.h"
 #include "common_ike.h"
 #include "auth.h"

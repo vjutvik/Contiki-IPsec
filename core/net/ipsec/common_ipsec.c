@@ -1,7 +1,4 @@
-#include <stdlib.h>
 #include <string.h>
-
-//#include "ike/payload.h"
 #include "common_ipsec.h"
 
 /**

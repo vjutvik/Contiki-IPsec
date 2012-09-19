@@ -10,11 +10,6 @@
 
 #include <contiki-conf.h>
 #include "net/uip.h"
-// #include "ipsec/spd.h"
-// #include "ipsec/sad.h"
-// #include "ipsec/ike/ike.h"
-// #include "ipsec/common_ipsec.h"
-// #include "aes-moo.h"
 
 #if WITH_CONF_IPSEC_AH
 #define WITH_IPSEC_AH     WITH_CONF_IPSEC_AH
@@ -47,6 +42,7 @@
   */
 #define IKE "IKEv2: "
 #define IPSEC "IPsec: "
+#define IPSEC_ERROR "IPsec error:"
 
 #define DEBUG 1
 #if DEBUG

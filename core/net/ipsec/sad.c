@@ -2,9 +2,9 @@
   * Implementation of the SAD (and the SPD-S cache) as described in RFC 4301.
   *
   */
-#include <stdlib.h>
 #include <lib/list.h>
 #include <net/uip.h>
+#include "ipsec_malloc.h"
 #include "sad.h"
 #include "spd.h"
 
@@ -33,7 +33,9 @@ void sad_init()
 
   // I expect the compiler to inline this function as this is the
   // only point where it's called.
+	#if WITH_CONF_MANUAL_SA
   sad_conf();
+	#endif
 }
 
 
@@ -76,7 +78,12 @@ uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
   */
 sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
 {
-  sad_entry_t *newentry = malloc(sizeof(sad_entry_t));
+  sad_entry_t *newentry = ipsec_malloc(sizeof(sad_entry_t));
+
+	if (newentry == NULL) {
+		PRINTF(IPSEC_ERROR "Could not allocate memory for outgoing SA entry\n");
+		return NULL;
+	}
   
   // Should we not assert that there's no traffic_desc overlap so that the invariant is upheld?
 
@@ -105,7 +112,12 @@ sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
   */
 sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation)
 {
-  sad_entry_t *newentry = malloc(sizeof(sad_entry_t));
+  sad_entry_t *newentry = ipsec_malloc(sizeof(sad_entry_t));
+
+	if (newentry == NULL) {
+		PRINTF(IPSEC_ERROR "Could not allocate memory for incoming SA entry\n");
+		return NULL;
+	}
 
   SAD_RESET_ENTRY(newentry, time_of_creation);
   newentry->spi = uip_htonl(next_sad_local_spi++);
