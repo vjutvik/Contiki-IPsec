@@ -1441,10 +1441,11 @@ uip_process(uint8_t flag)
 	      case UIP_PROTO_TCP:
 	        /* TCP, for both IPv4 and IPv6 */
 	  #if WITH_IPSEC
+					// Read next header here as remove_ext_hdr() doesn't update the uip_next_hdr ptr
 	        packet_desc.nextlayer_proto = *uip_next_hdr;
 		#endif
-		#if WITH_IPSEC
 	        remove_ext_hdr();
+		#if WITH_IPSEC
 	        packet_desc.peer_port = uip_ntohs(UIP_TCP_BUF->srcport);
 	        packet_desc.my_port = uip_ntohs(UIP_TCP_BUF->destport);
 	        if (ipsec_filter(sad_entry, &packet_desc))
@@ -1456,10 +1457,13 @@ uip_process(uint8_t flag)
 	#if UIP_UDP
 	      case UIP_PROTO_UDP:
 	        /* UDP, for both IPv4 and IPv6 */
-	        remove_ext_hdr();
 	  #if WITH_IPSEC
-	        /* See comment in UIP_PROTO_TCP for clarification */
+					// Read next header here as remove_ext_hdr() doesn't update the uip_next_hdr ptr
 	        packet_desc.nextlayer_proto = *uip_next_hdr;
+		#endif
+	        remove_ext_hdr();
+		#if WITH_IPSEC
+	        /* See comment in UIP_PROTO_TCP for clarification */
 	        packet_desc.peer_port = uip_ntohs(UIP_UDP_BUF->srcport);
 	        packet_desc.my_port = uip_ntohs(UIP_UDP_BUF->destport);
 	        if (ipsec_filter(sad_entry, &packet_desc))
