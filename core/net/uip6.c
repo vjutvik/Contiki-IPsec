@@ -1440,9 +1440,11 @@ uip_process(uint8_t flag)
 	#if UIP_TCP
 	      case UIP_PROTO_TCP:
 	        /* TCP, for both IPv4 and IPv6 */
-	        remove_ext_hdr();
 	  #if WITH_IPSEC
 	        packet_desc.nextlayer_proto = *uip_next_hdr;
+		#endif
+		#if WITH_IPSEC
+	        remove_ext_hdr();
 	        packet_desc.peer_port = uip_ntohs(UIP_TCP_BUF->srcport);
 	        packet_desc.my_port = uip_ntohs(UIP_TCP_BUF->destport);
 	        if (ipsec_filter(sad_entry, &packet_desc))
