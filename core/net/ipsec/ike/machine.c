@@ -1,5 +1,5 @@
 #include <string.h>
-
+#include <stdlib.h>
 #include "ipsec_malloc.h"
 #include "common_ike.h"
 #include "machine.h"
