@@ -45,6 +45,4 @@
 /* Configuring a cipher block MAC mode of operation (authentication) */
 #define IPSEC_CONF_MAC aesxcbc_mac
 
-/* Implication. Don't touch. */
-#define WITH_CONF_IPSEC WITH_CONF_IPSEC_ESP
 #endif
