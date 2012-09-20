@@ -189,7 +189,7 @@ void ike_statem_setup_responder_session()
   ike_statem_session_t *session = ike_statem_session_init();
 
 	if (session == NULL)
-		return NULL;
+		return;
 
   // We're the responder
   IKE_STATEM_MYSPI_SET_R(session->initiator_and_my_spi);
@@ -214,7 +214,7 @@ void ike_statem_setup_initiator_session(ipsec_addr_t *triggering_pkt_addr, spd_e
   ike_statem_session_t *session = ike_statem_session_init();
 
   if (session == NULL)
-		return NULL;
+		return;
 
   // Populate the session entry
   memcpy(&session->peer, triggering_pkt_addr->peer_addr, sizeof(uip_ip6addr_t));
