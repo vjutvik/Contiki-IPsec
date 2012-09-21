@@ -58,19 +58,6 @@ void prf(sa_prf_transform_type_t prf_type, prf_data_t *prf_data)
 {
   switch (prf_type) {
     case SA_PRF_HMAC_SHA1:         // MUST
-
-    // FIX: This copy paste thing ain't beautiful. 
-    // Make prf and hmac_sha1 use the same datastructures in the future.
-    /*
-    hmac_data_t hmac_data = {
-      .out = prf_data->out,
-      .outlen = prf_data->outlen,
-      .key = prf_data->key,
-      .keylen = prf_data->keylen,
-      .data = prf_data->data,
-      .datalen = prf_data->datalen
-    };
-    */
     hmac_sha1(prf_data);
     break;
     
