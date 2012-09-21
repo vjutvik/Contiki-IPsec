@@ -14,7 +14,7 @@
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
@@ -31,38 +31,41 @@
 
 /**
  * \file
- *         Header file for 8051 stack debugging facilities
+ *         8051 stack debugging facilities
  *
  * \author
  *         George Oikonomou - <oikonomou@users.sourceforge.net>
  *         Philippe Retornaz (EPFL)
  */
-#ifndef STACK_H_
-#define STACK_H_
+#include "contiki.h"
 
-#if STACK_CONF_DEBUGGING
-extern CC_AT_DATA uint8_t sp;
-
-#define stack_dump(f) do { \
-  putstring(f); \
-  sp = SP; \
-  puthex(sp); \
-  putchar('\n'); \
-} while(0)
-
-#define stack_max_sp_print(f) do { \
-  putstring(f); \
-  puthex(stack_get_max()); \
-  putchar('\n'); \
-} while(0)
-
-void stack_poison(void);
-uint8_t stack_get_max(void);
-#else
-#define stack_dump(...)
-#define stack_max_sp_print(...)
-#define stack_poison()
-#define stack_get_max()
+#ifndef STACK_POISON
+#define STACK_POISON 0xAA
 #endif
 
-#endif /* STACK_H_ */
+CC_AT_DATA uint8_t sp;
+
+void
+stack_poison(void)
+{
+  __asm
+  mov r1, _SP
+poison_loop:
+  inc r1
+  mov @r1, #STACK_POISON
+  cjne r1, #0xFF, poison_loop
+  __endasm;
+}
+
+uint8_t
+stack_get_max(void)
+{
+  __data uint8_t * sp = (__data uint8_t *) 0xff;
+  uint8_t free = 0;
+
+  while(*sp-- == STACK_POISON) {
+    free++;
+  }
+
+  return 0xff - free;
+}
