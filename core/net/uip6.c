@@ -2696,8 +2696,9 @@ uip_process(uint8_t flag)
   return;
 
  drop:
- PRINTF("Dropping packet\n");
+ 	PRINTF("Dropping packet\n");
   uip_len = 0;
+	uip_ext_end_len = 0;
   uip_ext_len = 0;
   uip_ext_bitmap = 0;
   uip_flags = 0;
