@@ -31,7 +31,7 @@ all: $(CONTIKI_PROJECT)
 # HEAP size increase for the IAR compiler. This is a must as both the IPsec and IKEv2 implementation
 # depends on malloc(). The heap size is in hex (ex. 0x400 bytes = 1024 bytes). 
 #
-IAR_DATA16_HEAP_SIZE=400
+IAR_DATA16_HEAP_SIZE=800
 
 include $(CONTIKI)/Makefile.include
 

@@ -42,7 +42,7 @@
   */
 #define IKE "IKEv2: "
 #define IPSEC "IPsec: "
-#define IPSEC_ERROR "IPsec error:"
+#define IPSEC_ERROR "IPsec error: "
 
 #define DEBUG 1
 #if DEBUG
