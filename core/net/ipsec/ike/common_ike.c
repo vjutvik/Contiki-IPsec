@@ -227,7 +227,8 @@ transition_return_t ike_statem_send_sa_init_msg(ike_statem_session_t *session, p
 
   // Write key exchange data (varlen)
   // (Note: We cast the first arg of ecdh_enc...() in the firm belief that payload_arg->start is at a 4 byte alignment)
-  payload_arg->start = ecdh_encode_public_key((uint32_t *) (payload_arg->start + sizeof(ike_payload_ke_t)), session->ephemeral_info->my_prv_key);
+	PRINTF(IPSEC_IKE "Computes and encodes public ECC Diffie Hellman key\n");
+	payload_arg->start = ecdh_encode_public_key((uint32_t *) (payload_arg->start + sizeof(ike_payload_ke_t)), session->ephemeral_info->my_prv_key);
   ke_genpayloadhdr->len = uip_htons(payload_arg->start - (uint8_t *) ke_genpayloadhdr);
   // End KE payload
   
@@ -752,7 +753,6 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
     * Generate keying material for the IKE SA.
     * See section 2.14 "Generating Keying Material for the IKE SA"
     */
-  PRINTF(IPSEC_IKE "Calculating shared Diffie Hellman secret\n");
   ike_statem_get_ike_keymat(session, peer_pub_key);
 
   // Set our child SPI. To be used during the AUTH exchange.
@@ -1646,10 +1646,10 @@ uint8_t ike_statem_handle_notify(ike_payload_notify_t *notify_payload)
 void ike_statem_get_ike_keymat(ike_statem_session_t *session, uint8_t *peer_pub_key)
 {
   // Calculate the DH exponential: g^ir
-  PRINTF(IPSEC_IKE "Calculating shared DH secret\n");
+  PRINTF(IPSEC_IKE "Calculating shared ECC Diffie Hellman secret\n");
   uint8_t gir[IKE_DH_SCALAR_LEN];
   ecdh_get_shared_secret(gir, peer_pub_key, session->ephemeral_info->my_prv_key);
-  MEMPRINTF("Shared DH secret (g^ir)", gir, IKE_DH_SCALAR_LEN);
+  MEMPRINTF("Shared ECC Diffie Hellman secret (g^ir)", gir, IKE_DH_SCALAR_LEN);
 
   /**
     * The order of the strings will depend on who's the initiator. Prepare that.
