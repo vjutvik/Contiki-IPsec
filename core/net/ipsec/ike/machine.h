@@ -74,7 +74,7 @@ typedef (ike_statem_session_t *) ike_statem_statefn_args_t;
 
 // The maximum size of the peer's first message.
 // Used for calculating the AUTH hash
-#define IKE_STATEM_FIRSTMSG_MAXLEN 800
+#define IKE_STATEM_FIRSTMSG_MAXLEN 500
 
 // The maximum number of tuples that can be returned in a reply from 
 #define IKE_REPLY_MAX_PROPOSAL_TUPLES 10

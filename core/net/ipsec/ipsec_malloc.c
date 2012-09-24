@@ -12,5 +12,6 @@ void *ipsec_malloc(size_t size)
 		PRINTF(IPSEC_ERROR "malloc() out of memory (%u bytes requested)\n", size);
 		return NULL;
 	}
+	PRINTF(IPSEC "Allocating %u bytes\n", size);
 	return ptr;
 }
