@@ -60,9 +60,10 @@ void ike_statem_enterstate(ike_statem_session_t *session)
 	STOP_RETRANSTIMER((session));                               
 
 	/* Were we waiting for a reply? If so, then our last message must have gone through. Increase our message ID. */
-	if (session->transition_fn != NULL)
+	if (session->transition_fn != NULL) {
 		IKE_STATEM_INCRMYMSGID(session);                          
-	session->transition_fn = NULL;
+		session->transition_fn = NULL;
+	}
 	                                                            
   state_return_t rtvl = (*(session)->next_state_fn)(session); 
   if (rtvl != STATE_SUCCESS) {                                
