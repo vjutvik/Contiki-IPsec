@@ -94,9 +94,6 @@ state_return_t ike_statem_state_authrespwait(ike_statem_session_t *session)
     session->transition_fn = NULL;
     session->next_state_fn = &ike_statem_state_established_handler;
 
-    //session->transition_arg = &session_trigger;
-
-    //IKE_STATEM_INCRMYMSGID(session);
     return STATE_SUCCESS;
   }
 

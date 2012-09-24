@@ -22,14 +22,13 @@
   *   4 B * session_count   # State id and state 
   *   2 B * state_count     # With the assumption that each state references two other states, on average
   */
-/*
-typedef enum {
-  IKE_MSTATE_RESPOND_START,
-  IKE_MSTATE_INITITATE_START,
-  IKE_MSTATE_STARTNETTRAFFIC
-  ...
-} ike_statem_state_t;
-*/
+
+#define SET_RETRANSTIMER(session) \
+  ctimer_set(&session->retrans_timer, IKE_STATEM_TIMEOUT, &ike_statem_timeout_handler, (void *) session);
+#define STOP_RETRANSTIMER(session) ctimer_stop(&(session)->retrans_timer)
+
+#define SA_INDEX(arg) arg - 1
+
 
 // Initialize the session table
 LIST(sessions);
@@ -54,31 +53,33 @@ void ike_statem_timeout_handler(void *session);
 /**
   * To be called in order to enter a _state_ (not execute a transition!)
   */
-#define IKE_STATEM_ENTERSTATE(session)                                        \
-  /* Stop retransmission timer (if any has been set) */                       \
-  PRINTF(IPSEC_IKE "Session %p is entering state %p\n", (session), (session)->next_state_fn);  \
-  STOP_RETRANSTIMER((session));                                               \
-  state_return_t rtvl = (*(session)->next_state_fn)(session);                 \
-  if (rtvl != STATE_SUCCESS) {                                                \
-    /*                                                                                \
-    if (rtvl != STATE_ERR_NO_NOTIFY) {                                                \
-      transition_return_t len = ike_statem_send_single_notify(session, (rtvl);        \
-      session->transition_fn = &ike_statem_trans_authreq;                             \
-      ike_statem_run_transition(ike_statem_session_t *session, 0)                     \
-    }                                                                                 \
-    */                                                                                \
-    PRINTF(IPSEC_IKE "Removing IKE session %p due to termination in state %p\n", session, (session)->next_state_fn);  \
-    ike_statem_remove_session(session);                                       \
-  }                                                                           \
-  else                                                                        \
-    IKE_STATEM_INCRPEERMSGID(session);                                        \
-  return
+void ike_statem_enterstate(ike_statem_session_t *session)
+{                                        	
+  /* Stop retransmission timer (if any has been set) */
+  PRINTF(IPSEC_IKE "Session %p is entering state %p\n", (session), (session)->next_state_fn);
 
-#define SET_RETRANSTIMER(session) \
-  ctimer_set(&session->retrans_timer, IKE_STATEM_TIMEOUT, &ike_statem_timeout_handler, (void *) session);
-#define STOP_RETRANSTIMER(session) ctimer_stop(&(session)->retrans_timer)
+	/* Were we waiting for a reply? If so, then our last message must have gone through. Increase our message ID. */
+	if (etimer_expiration_time(&(session)->retrans_timer.etimer) < IKE_STATEM_TIMEOUT)
+		IKE_STATEM_INCRMYMSGID(session);                          
+	STOP_RETRANSTIMER((session));                               
+                                                              
+  state_return_t rtvl = (*(session)->next_state_fn)(session); 
+  if (rtvl != STATE_SUCCESS) {                                
+    /*                                                        
+    if (rtvl != STATE_ERR_NO_NOTIFY) {                        
+      transition_return_t len = ike_statem_send_single_notify(session, (rtvl); 
+      session->transition_fn = &ike_statem_trans_authreq;                      
+      ike_statem_run_transition(ike_statem_session_t *session, 0)              
+    }                                                                          
+    */                                                                         
+    PRINTF(IPSEC_IKE "Removing IKE session %p due to termination in state %p\n", session, (session)->next_state_fn);
+    ike_statem_remove_session(session);
+  }                                    
+  else                                 
+    IKE_STATEM_INCRPEERMSGID(session); 
+	return;
+}
 
-#define SA_INDEX(arg) arg - 1
 
 /**
   * Executes a state transition, moving from one state to another and sends a
@@ -201,7 +202,7 @@ void ike_statem_setup_responder_session()
   session->my_msg_id = 0;
   session->peer_msg_id = 0;
 
-  IKE_STATEM_ENTERSTATE(session);
+  ike_statem_enterstate(session);
 }
 
 
@@ -363,7 +364,7 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
       }
     }
     
-    IKE_STATEM_ENTERSTATE(session);
+    ike_statem_enterstate(session);
   }
   else {
     PRINTF(IPSEC_IKE_ERROR "We didn't find the session.\n");

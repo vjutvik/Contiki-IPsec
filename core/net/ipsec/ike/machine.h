@@ -32,7 +32,7 @@
 /**
   * Protocol-related stuff
   */
-#define IKE_STATEM_TIMEOUT 20 * CLOCK_SECOND
+#define IKE_STATEM_TIMEOUT 5 * CLOCK_SECOND
 
 /**
   * Global buffers used for communicating information with the state machine
@@ -108,14 +108,12 @@ typedef uint16_t transition_return_t;
   * Can either be called from a state or from ike_statem_timeout_handler()
   */
 #define IKE_STATEM_TRANSITION(session)                                  \
-  /* Run transition and increase our message ID if successfull */       \
-  if (ike_statem_run_transition(session, 1) != TRANSITION_FAILURE)      \
-    IKE_STATEM_INCRMYMSGID(session)
+  /* Run transition */       																						\
+  ike_statem_run_transition(session, 1)
 
 #define IKE_STATEM_TRANSITION_NO_TIMEOUT(session)                         \
-  /* Run transition and increase our message ID if successfull */         \
-  if (ike_statem_run_transition(session, 0) != TRANSITION_FAILURE)        \
-    IKE_STATEM_INCRMYMSGID(session)
+  /* Run transition */         																						\
+  ike_statem_run_transition(session, 0)
 
 /**
   * Storage structure for temporary information used during connection setup.
