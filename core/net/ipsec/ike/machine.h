@@ -32,7 +32,7 @@
 /**
   * Protocol-related stuff
   */
-#define IKE_STATEM_TIMEOUT 5 * CLOCK_SECOND
+#define IKE_STATEM_TIMEOUT 15 * CLOCK_SECOND
 
 /**
   * Global buffers used for communicating information with the state machine
