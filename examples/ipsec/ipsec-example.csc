@@ -8,6 +8,7 @@
   <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/powertracker</project>
   <simulation>
     <title>IPsec Example</title>
+    <speedlimit>1.0</speedlimit>
     <randomseed>123456</randomseed>
     <motedelay_us>1000000</motedelay_us>
     <radiomedium>
@@ -88,10 +89,10 @@
   <plugin>
     se.sics.cooja.plugins.SimControl
     <width>280</width>
-    <z>1</z>
+    <z>3</z>
     <height>160</height>
-    <location_x>400</location_x>
-    <location_y>0</location_y>
+    <location_x>15</location_x>
+    <location_y>516</location_y>
   </plugin>
   <plugin>
     se.sics.cooja.plugins.Visualizer
@@ -105,9 +106,9 @@
       <skin>se.sics.cooja.plugins.skins.AttributeVisualizerSkin</skin>
       <viewport>8.170407035136911 0.0 0.0 8.170407035136911 -570.6979795599264 -66.05450565206408</viewport>
     </plugin_config>
-    <width>400</width>
-    <z>2</z>
-    <height>400</height>
+    <width>357</width>
+    <z>1</z>
+    <height>402</height>
     <location_x>1</location_x>
     <location_y>1</location_y>
   </plugin>
@@ -115,48 +116,20 @@
     se.sics.cooja.plugins.LogListener
     <plugin_config>
       <filter />
+      <coloring />
     </plugin_config>
-    <width>715</width>
+    <width>911</width>
     <z>0</z>
-    <height>240</height>
-    <location_x>400</location_x>
-    <location_y>160</location_y>
-  </plugin>
-  <plugin>
-    se.sics.cooja.plugins.TimeLine
-    <plugin_config>
-      <mote>0</mote>
-      <mote>1</mote>
-      <showRadioRXTX />
-      <showRadioHW />
-      <showLEDs />
-      <split>-1</split>
-      <zoomfactor>500.0</zoomfactor>
-    </plugin_config>
-    <width>1115</width>
-    <z>5</z>
-    <height>166</height>
-    <location_x>0</location_x>
-    <location_y>626</location_y>
-  </plugin>
-  <plugin>
-    se.sics.cooja.plugins.Notes
-    <plugin_config>
-      <notes>Enter notes here</notes>
-      <decorations>true</decorations>
-    </plugin_config>
-    <width>435</width>
-    <z>4</z>
-    <height>160</height>
-    <location_x>680</location_x>
-    <location_y>0</location_y>
+    <height>938</height>
+    <location_x>362</location_x>
+    <location_y>2</location_y>
   </plugin>
   <plugin>
     SerialSocketServer
     <mote_arg>0</mote_arg>
-    <width>431</width>
-    <z>3</z>
-    <height>97</height>
+    <width>347</width>
+    <z>2</z>
+    <height>102</height>
     <location_x>10</location_x>
     <location_y>407</location_y>
   </plugin>
