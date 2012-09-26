@@ -15,7 +15,7 @@ process_event_t ike_negotiate_event;
 	*												offset to the beginning of the area covered by 'h'
 	*/
 #if IPSEC_MEM_STATS
-#define STACK_MAX_MEM 2048
+#define STACK_MAX_MEM (3 * 1024)
 
 void cover(void)
 {
