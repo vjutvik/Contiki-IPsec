@@ -31,7 +31,7 @@ u8_t *cover(void)
 u16_t get_cover_consumed(u8_t *buff)
 {
 	u16_t i;
-	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) buff[i], "hhhhh", 5); i += 5)
+	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) (buff + i), "hhhhh", 5); i += 5)
 		;
 	return i;
 }
@@ -111,6 +111,15 @@ PROCESS_THREAD(ike2_service, ev, data)
   while(1) {
     PROCESS_WAIT_EVENT();
 		
+		ENERGEST_TYPE_CPU,
+	  ENERGEST_TYPE_LPM,
+	  ENERGEST_TYPE_IRQ,
+	  ENERGEST_TYPE_LED_GREEN,
+	  ENERGEST_TYPE_LED_YELLOW,
+	  ENERGEST_TYPE_LED_RED,
+	  ENERGEST_TYPE_TRANSMIT,
+	  ENERGEST_TYPE_LISTEN,
+		
 		#if IPSEC_MEM_STATS
 		u8_t *stackbuff = cover();
 		#endif
@@ -126,7 +135,7 @@ PROCESS_THREAD(ike2_service, ev, data)
       else
         PRINTF(IPSEC_IKE "IKEv2 Service: Unknown event\n");
     }
-		
+
 		#if IPSEC_MEM_STATS
 		PRINTF(IPSEC_IKE "Stack extended, at most, to %u B	\n", get_cover_consumed(stackbuff));
 		#endif
