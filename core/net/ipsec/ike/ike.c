@@ -7,6 +7,35 @@
 ipsec_addr_t ike_arg_packet_tag;
 process_event_t ike_negotiate_event;
 
+/**
+	* Functions for (roughly) finding the stack's maximum extent.
+	*
+	* cover() 							covers STACK_MAX_MEM B of stack memory with the character 'h'
+	* get_cover_consumed() 	counts the number of bytes from the current stack
+	*												offset to the beginning of the area covered by 'h'
+	*/
+#if IPSEC_MEM_STATS
+#define STACK_MAX_MEM 2048
+
+void cover(void)
+{
+	u8_t buff[STACK_MAX_MEM];
+	u16_t i;
+	for (i = 0; i < STACK_MAX_MEM; ++i)
+		buff[i] = 'h';
+}
+
+u16_t get_cover_consumed(void)
+{
+	u8_t buff[STACK_MAX_MEM];
+	u16_t i;
+	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) &buff[i], "hhhhh", 5); i += 5)
+		;
+	return i;
+}
+#endif
+
+
 void ike_init()
 {
   ecc_init();
@@ -79,20 +108,26 @@ PROCESS_THREAD(ike2_service, ev, data)
   
   while(1) {
     PROCESS_WAIT_EVENT();
+		
+		#if IPSEC_MEM_STATS
+		cover();
+		#endif
+		
     if (ev == ike_negotiate_event) {
       PRINTF(IPSEC_IKE "Negotiating child SAs in response to SPD entry %p for triggering packet\n", data);
-      // PRINTADDR(&ike_arg_packet_tag);
       
       ike_negotiate_sa(&ike_arg_packet_tag, (spd_entry_t *) data);
-
-      //ike_negotiate_sa((ipsec_addr_t *) ((u8_t **) data)[0], (spd_entry_t *) ((u8_t **) data)[1]);
     }
     else {
       if (ev == tcpip_event)
         ike_statem_incoming_data_handler();
       else
-        PRINTF(IPSEC_IKE "ike2_service: Unknown event\n");
+        PRINTF(IPSEC_IKE "IKEv2 Service: Unknown event\n");
     }
+		
+		#if IPSEC_MEM_STATS
+		PRINTF(IPSEC_IKE "Stack extended, at most, to %u B	\n", get_cover_consumed());
+		#endif
   }
   
   PROCESS_END();
