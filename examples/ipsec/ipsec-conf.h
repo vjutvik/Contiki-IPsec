@@ -35,7 +35,7 @@
  *
  * The manual SAs can be set in the function sad_conf()
  */
-#define WITH_CONF_MANUAL_SA 	1
+#define WITH_CONF_MANUAL_SA 	0
 
 /* Configuring an AES implementation */
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes

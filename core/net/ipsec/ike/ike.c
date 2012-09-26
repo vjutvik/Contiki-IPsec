@@ -19,20 +19,19 @@ process_event_t ike_negotiate_event;
 
 void dummy(u8_t *ptr) {};
 
-void cover(void)
+u8_t *cover(void)
 {
 	volatile u8_t buff[STACK_MAX_MEM];
 	u16_t i;
 	for (i = 0; i < STACK_MAX_MEM; ++i)
 		buff[i] = 'h';
-	dummy((u8_t *) buff);
+	return (u8_t *) buff;
 }
 
-u16_t get_cover_consumed(void)
+u16_t get_cover_consumed(u8_t *buff)
 {
-	volatile u8_t buff[STACK_MAX_MEM];
 	u16_t i;
-	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) &buff[i], "hhhhh", 5); i += 5)
+	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) buff[i], "hhhhh", 5); i += 5)
 		;
 	return i;
 }
@@ -113,7 +112,7 @@ PROCESS_THREAD(ike2_service, ev, data)
     PROCESS_WAIT_EVENT();
 		
 		#if IPSEC_MEM_STATS
-		cover();
+		u8_t *stackbuff = cover();
 		#endif
 		
     if (ev == ike_negotiate_event) {
@@ -129,7 +128,7 @@ PROCESS_THREAD(ike2_service, ev, data)
     }
 		
 		#if IPSEC_MEM_STATS
-		PRINTF(IPSEC_IKE "Stack extended, at most, to %u B	\n", get_cover_consumed());
+		PRINTF(IPSEC_IKE "Stack extended, at most, to %u B	\n", get_cover_consumed(stackbuff));
 		#endif
   }
   
