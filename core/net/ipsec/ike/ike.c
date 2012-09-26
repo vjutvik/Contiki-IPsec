@@ -110,7 +110,7 @@ PROCESS_THREAD(ike2_service, ev, data)
   
   while(1) {
     PROCESS_WAIT_EVENT();
-		
+		/*
 		ENERGEST_TYPE_CPU,
 	  ENERGEST_TYPE_LPM,
 	  ENERGEST_TYPE_IRQ,
@@ -119,7 +119,7 @@ PROCESS_THREAD(ike2_service, ev, data)
 	  ENERGEST_TYPE_LED_RED,
 	  ENERGEST_TYPE_TRANSMIT,
 	  ENERGEST_TYPE_LISTEN,
-		
+		*/
 		#if IPSEC_MEM_STATS
 		u8_t *stackbuff = cover();
 		#endif
