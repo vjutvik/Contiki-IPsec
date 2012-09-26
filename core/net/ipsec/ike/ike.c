@@ -25,13 +25,14 @@ u8_t *cover(void)
 	u16_t i;
 	for (i = 0; i < STACK_MAX_MEM; ++i)
 		buff[i] = 'h';
+		
 	return (u8_t *) buff;
 }
 
 u16_t get_cover_consumed(u8_t *buff)
 {
 	u16_t i;
-	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) (buff + i), "hhhhh", 5); i += 5)
+	for (i = STACK_MAX_MEM - 5; i > 4 && strncmp((const char *) (buff + i), "hhhhh", 5); i -= 5)
 		;
 	return i;
 }
@@ -110,20 +111,27 @@ PROCESS_THREAD(ike2_service, ev, data)
   
   while(1) {
     PROCESS_WAIT_EVENT();
-		/*
-		ENERGEST_TYPE_CPU,
-	  ENERGEST_TYPE_LPM,
-	  ENERGEST_TYPE_IRQ,
-	  ENERGEST_TYPE_LED_GREEN,
-	  ENERGEST_TYPE_LED_YELLOW,
-	  ENERGEST_TYPE_LED_RED,
-	  ENERGEST_TYPE_TRANSMIT,
-	  ENERGEST_TYPE_LISTEN,
-		*/
+
+
 		#if IPSEC_MEM_STATS
 		u8_t *stackbuff = cover();
 		#endif
-		
+
+ 		#if IPSEC_TIME_STATS
+		clock_time_t start = clock_time();
+ /*
+ 		ENERGEST_TYPE_CPU,
+ 	  ENERGEST_TYPE_LPM,
+ 	  ENERGEST_TYPE_IRQ,
+ 	  ENERGEST_TYPE_LED_GREEN,
+ 	  ENERGEST_TYPE_LED_YELLOW,
+ 	  ENERGEST_TYPE_LED_RED,
+ 	  ENERGEST_TYPE_TRANSMIT,
+ 	  ENERGEST_TYPE_LISTEN,
+ 	*/
+ 		#endif
+
+ 
     if (ev == ike_negotiate_event) {
       PRINTF(IPSEC_IKE "Negotiating child SAs in response to SPD entry %p for triggering packet\n", data);
       
@@ -136,9 +144,18 @@ PROCESS_THREAD(ike2_service, ev, data)
         PRINTF(IPSEC_IKE "IKEv2 Service: Unknown event\n");
     }
 
+		#if IPSEC_TIME_STATS
+		clock_time_t elapsed = clock_time() - start;
+		u16_t sec = elapsed / CLOCK_SECOND;
+		u16_t parts = elapsed % CLOCK_SECOND
+		PRINTF(IPSEC_IKE "Time required %hu sec, %hu parts (CLOCK_SECOND is " CLOCK_SECOND ")", sec, parts);
+		#endif
+
 		#if IPSEC_MEM_STATS
 		PRINTF(IPSEC_IKE "Stack extended, at most, to %u B	\n", get_cover_consumed(stackbuff));
 		#endif
+		
+		
   }
   
   PROCESS_END();
