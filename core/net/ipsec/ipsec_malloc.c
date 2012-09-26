@@ -14,12 +14,13 @@ void *ipsec_malloc(size_t size)
 	
 	if (ptr == NULL) {
 		PRINTF(IPSEC_ERROR "malloc() out of memory (%u bytes requested)\n", size);
-		#if IPSEC_MEM_STATS
-		allocated += size;
-		PRINTF(IPSEC "IPsec now has %u B memory on the heap\n", allocated);
-		#endif		
 		return NULL;
 	}
+	#if IPSEC_MEM_STATS
+	allocated += size;
+	PRINTF(IPSEC "Allocating %u bytes. IPsec now has %u B memory on the heap\n", size, allocated);
+	#else
 	PRINTF(IPSEC "Allocating %u bytes\n", size);
+	#endif		
 	return ptr;
 }
