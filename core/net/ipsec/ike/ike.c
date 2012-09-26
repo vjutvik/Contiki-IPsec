@@ -15,19 +15,22 @@ process_event_t ike_negotiate_event;
 	*												offset to the beginning of the area covered by 'h'
 	*/
 #if IPSEC_MEM_STATS
-#define STACK_MAX_MEM (3 * 1024)
+#define STACK_MAX_MEM 2000
+
+void dummy(u8_t *ptr) {};
 
 void cover(void)
 {
-	u8_t buff[STACK_MAX_MEM];
+	volatile u8_t buff[STACK_MAX_MEM];
 	u16_t i;
 	for (i = 0; i < STACK_MAX_MEM; ++i)
 		buff[i] = 'h';
+	dummy((u8_t *) buff);
 }
 
 u16_t get_cover_consumed(void)
 {
-	u8_t buff[STACK_MAX_MEM];
+	volatile u8_t buff[STACK_MAX_MEM];
 	u16_t i;
 	for (i = 0; i < STACK_MAX_MEM && strncmp((const char *) &buff[i], "hhhhh", 5); i += 5)
 		;

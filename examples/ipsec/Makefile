@@ -32,7 +32,7 @@ all: $(CONTIKI_PROJECT)
 # depends on malloc(). The heap size is in hex (ex. 0x400 bytes = 1024 bytes). 
 #
 IAR_DATA16_HEAP_SIZE=1000
-IAR_STACK_SIZE=1200
+IAR_STACK_SIZE=790
 
 include $(CONTIKI)/Makefile.include
 
