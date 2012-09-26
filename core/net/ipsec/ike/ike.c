@@ -4,6 +4,10 @@
 #include "common_ike.h"
 #include "spd.h"
 
+#if IPSEC_TIME_STATS
+#include <clock.h>
+#endif
+
 ipsec_addr_t ike_arg_packet_tag;
 process_event_t ike_negotiate_event;
 
@@ -147,8 +151,9 @@ PROCESS_THREAD(ike2_service, ev, data)
 		#if IPSEC_TIME_STATS
 		clock_time_t elapsed = clock_time() - start;
 		u16_t sec = elapsed / CLOCK_SECOND;
-		u16_t parts = elapsed % CLOCK_SECOND
-		PRINTF(IPSEC_IKE "Time required %hu sec, %hu parts (CLOCK_SECOND is " CLOCK_SECOND ")", sec, parts);
+		u16_t parts = elapsed % CLOCK_SECOND;
+		u16_t clock_second = CLOCK_SECOND;
+		PRINTF(IPSEC_IKE "Time required %hu sec, %hu parts (CLOCK_SECOND is %hu)\n", sec, parts, clock_second);
 		#endif
 
 		#if IPSEC_MEM_STATS
