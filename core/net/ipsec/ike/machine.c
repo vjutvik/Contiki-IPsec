@@ -50,6 +50,7 @@ extern uint16_t uip_slen;
 void ike_statem_send(ike_statem_session_t *session, uint16_t len);
 void ike_statem_timeout_handler(void *session);
 
+
 /**
   * To be called in order to enter a _state_ (not execute a transition!)
   */
@@ -251,7 +252,7 @@ void ike_statem_remove_session(ike_statem_session_t *session)
   */
 void ike_statem_clean_session(ike_statem_session_t *session)
 {
-  free(session->ephemeral_info);
+  ipsec_free(session->ephemeral_info);
 }
 
 
@@ -385,6 +386,20 @@ void ike_statem_incoming_data_handler()//uint32_t *start, uint16_t len)
 void ike_statem_send(ike_statem_session_t *session, uint16_t len)
 {
   uip_udp_buffer_set_datalen(len);
-  uip_udp_buffer_sendto(my_conn, &session->peer, uip_htons(IKE_UDP_PORT));
+	
+	#if IPSEC_TIME_STATS
+  uint32_t cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  uint32_t transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+	#endif
+
+ 	uip_udp_buffer_sendto(my_conn, &session->peer, uip_htons(IKE_UDP_PORT));
+
+	#if IPSEC_TIME_STATS
+  cpu = energest_type_time(ENERGEST_TYPE_CPU) - cpu;
+  transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT) - transmit;
+
+	uint32_t arch_second = RTIMER_ARCH_SECOND;
+	printf("CPU time: %u, TRANSMIT time: %u, arch second %u\n", cpu, transmit, arch_second);
+	#endif
 }
 

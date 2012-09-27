@@ -18,9 +18,14 @@ void *ipsec_malloc(size_t size)
 	}
 	#if IPSEC_MEM_STATS
 	allocated += size;
-	PRINTF(IPSEC "Allocating %u bytes. IPsec now has %u B memory on the heap\n", size, allocated);
+	PRINTF(IPSEC "Allocating %u bytes at %p. IPsec now has allocated %u B memory\n", size, ptr, allocated);
 	#else
-	PRINTF(IPSEC "Allocating %u bytes\n", size);
-	#endif		
+	PRINTF(IPSEC "Allocating %u bytes at %p\n", size, ptr);
+	#endif
 	return ptr;
+}
+
+void ipsec_free(void *ptr)
+{
+	PRINTF(IPSEC "Freeing memory at %p\n", ptr);
 }

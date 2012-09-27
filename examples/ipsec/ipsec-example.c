@@ -104,8 +104,18 @@ tcpip_handler(void)
       printf("%c", ++data[i]);
     }
 		printf("\"\n(length %hu)\n", datalen);
+
     
+	  uint32_t cpu = energest_type_time(ENERGEST_TYPE_CPU);
+	  uint32_t transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+
     uip_udp_packet_send(server_conn, data, datalen);
+
+	  cpu = energest_type_time(ENERGEST_TYPE_CPU) - cpu;
+	  transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT) - transmit;
+
+		uint32_t arch_second = RTIMER_ARCH_SECOND;
+		printf("CPU time: %u, TRANSMIT time: %u, arch second %u\n", cpu, transmit, arch_second);
 
     memset(&server_conn->ripaddr, 0, sizeof(server_conn->ripaddr));
     server_conn->rport = 0;
