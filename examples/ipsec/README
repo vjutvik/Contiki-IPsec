@@ -83,7 +83,7 @@ Major features not implemented:
 Features that ought to be implemented in IKEv2, but haven't yet:
 	Deletion of Child and IKE SAs (Delete payload)
 	State machine Established can't create child SAs currently
-
+ 
 
 Configuring IPsec and IKEv2
 ===========================
