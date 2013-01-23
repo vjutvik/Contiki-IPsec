@@ -1,0 +1,113 @@
+What is IKEv2 and IPsec?
+========================
+
+IPsec according to Wikipedia:
+
+"IPsec is an end-to-end security scheme operating in the Internet Layer of the Internet Protocol Suite. It can be used in protecting data flows between a pair of hosts (host-to-host), between a pair of security gateways (network-to-network), or between a security gateway and a host (network-to-host).[1]"
+
+The security between the hosts are dependent upon shared secrets which IPsec stores in a structure called Security Associations (SAs). SAs can be manually created by an administrator or automatically by an IKEv2 daemon which negotiates it with the other host.
+
+IPsec and IKEv2 are described in RFC no. 4301 and 5996, respectively. 
+
+
+
+A typical IKEv2 handshake
+-------------------------
+An IKEv2 negotiation takes place over port 500 UDP. Page 6 in RFC 5996 describes the exchanges as follows:
+
+> An IKE message flow always consists of a request followed by a response. It is the responsibility of the requester to ensure reliability. If
+> the response is not received within a timeout interval, the requester needs to retransmit the request (or abandon the connection).
+> 
+> The first exchange of an IKE session, IKE_SA_INIT, negotiates security parameters for the IKE SA, sends nonces, and sends Diffie-Hellman values.
+> 
+> The second exchange, IKE_AUTH, transmits identities, proves knowledge of the secrets corresponding to the two identities, and sets up an SA
+> for the first (and often only) AH or ESP Child SA (unless there is failure setting up the AH or ESP Child SA, in which case the IKE SA is 
+> still established without the Child SA).
+> 
+> The types of subsequent exchanges are CREATE_CHILD_SA (which creates a Child SA) and INFORMATIONAL (which deletes an SA, reports error
+> conditions, or does other housekeeping). Every request requires a response. An INFORMATIONAL request with no payloads (other than the 
+> empty Encrypted payload required by the syntax) is commonly used as a check for liveness. These subsequent exchanges cannot be used until
+> the initial exchanges have completed.
+
+Implementation Features
+=======================
+
+IPsec
+-----
+Should be nearly standards-compliant in terms of features. 
+
+Major features implemented:
+        Replay protection
+        ESP
+        Transport mode
+        Traffic selectors (traffic multiplexing over SAs)
+        SAD, with SA expiration mechanism
+        SPD and related functions (incl. one SA offer for each SPD rule)
+        Encryption
+                ESP-NULL
+                AES-CTR, varying key length (only 128 bit tested). Partial rewrite of Simon's code.
+        Integrity
+                AES-XCBC. Partial rewrite of Simon's code.
+
+
+Major features not implemented:
+        AH
+        Tunnel mode
+        Various integrity and encryption algorithms tagged as REQUIRED
+
+
+IKEv2
+-----
+Implements a subset of RFC 5996 and associated standards, but is not standards-compliant because of missing features.
+Major features implemented:
+        State machine for responder
+        State machine for initiator
+        ECC DH (only DH group 25)
+        Authentication by means of pre-shared key
+        Traffic selector negotiation (note: this is only a simplification of section 2.9's algorithm)
+        SPD interface that allows multiple IKE SA offers
+        SK payload: Encryption and integrity is the same as in IPsec (it's a common interface)
+        Multiple concurrent sessions supported
+        Multiple child SAs per IKE SA
+
+Major features not implemented:
+        Cookie handling (the code is there, but it's not tested)
+        Only tunnel mode supported
+        EAP
+        No NAT support whatsoever, anywhere
+        No IPcomp support
+        Only IDs of type ID_RFC822_ADDR (e-mail address) are supported
+        No support for Certificates as IDs, nor for authentication
+
+
+Features that ought to be implemented in IKEv2, but haven't yet:
+	Deletion of Child and IKE SAs (Delete payload)
+	State machine Established can't create child SAs currently
+
+
+Configuring IPsec and IKEv2
+===========================
+
+Building
+========
+
+Building for the Native target
+------------------------------
+
+Building for the Wismote (MSP430x) target
+-----------------------------------------
+
+Building for other targets
+--------------------------
+
+Known to compile for ARM, but is not tested.
+
+Testing with Cooja
+==================
+
+About this implementation
+=========================
+
+Performance
+----------
+## Future work
