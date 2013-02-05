@@ -37,9 +37,18 @@
  */
 #define WITH_CONF_MANUAL_SA 	0
 
-/* Configuring an AES implementation */
+/**
+	* Configuring an AES implementation
+	*
+	*	The only current implementation is that provided by the MIRACL -library. In the future
+	* this can be extended with an interface to the CC2420 radio module which is equipped with 
+	* an AES hardware implementation.
+	*/
 #define CRYPTO_CONF_AES miracl_aes //cc2420_aes
 
+/**
+	* TODO: Remove the IPSEC_CONF -identifiers below once asserted it's safe 
+	*/
 /* Configuring a cipher block mode of operation (encryption/decryption) */
 #define IPSEC_CONF_BLOCK aesctr
 /* Configuring a cipher block MAC mode of operation (authentication) */

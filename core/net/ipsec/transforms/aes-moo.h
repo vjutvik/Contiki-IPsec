@@ -16,6 +16,10 @@
 #define CRYPTO_AES default_aes
 #endif
 
+/**
+	* TODO: Remove the IPSEC -identifiers below once asserted it's safe 
+	*/
+
 #ifdef IPSEC_CONF_BLOCK
 #define IPSEC_BLOCK IPSEC_CONF_BLOCK
 #else

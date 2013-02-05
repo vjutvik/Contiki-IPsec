@@ -32,7 +32,7 @@
 #define WITH_IPSEC    (WITH_IPSEC_ESP | WITH_IPSEC_AH)
 
 
-#define IPSEC_KEYSIZE_FIXTHIS   16  // Old bad code. Make this dynamic.
+#define IPSEC_KEYSIZE_FIXTHIS   16  // Old bad code. Make the key size dynamic.
 /*
 #define IPSEC_IVSIZE    8
 */
@@ -44,6 +44,9 @@
 #define IPSEC "IPsec: "
 #define IPSEC_ERROR "IPsec error: "
 
+/**
+	* IPsec / IKEv2 debug configuration options are set here!
+	*/
 #define DEBUG 1
 
 #if DEBUG
@@ -59,6 +62,8 @@
 #define PRINTF(...)
 #define PRINT6ADDR(addr)
 #endif
+
+/* End debug configuration options */
 
 /**
   * The length (in bytes) of the ICV field in the ESP header and that of IKEv2's SK payload.
