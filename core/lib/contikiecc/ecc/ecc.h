@@ -8,7 +8,7 @@
  * \file
  * Header file for the Elliptic Curve point arithmetic functions.
  * \author
- * Kasun Hewage <kasun.ch@gmail.com>
+ * Kasun Hewage <kasun.ch@gmail.com>, port to Contiki
  *
  */
 

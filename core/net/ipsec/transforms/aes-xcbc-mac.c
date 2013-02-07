@@ -1,8 +1,9 @@
 /**
  * \file
- *         AES-XCBC Message Authentication Code mode of operation
+ *         AES-XCBC Message Authentication Code mode of operation (RCF 3566)
  * \author
  *         Simon Duquennoy <simonduq@sics.se>
+ *				 Vilhelm Jutvik <ville@imorgon.se>, adapted for IKEv2
  */
 
 #include <string.h>

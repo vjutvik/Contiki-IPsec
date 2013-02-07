@@ -1,7 +1,17 @@
 /**
-  * DH interface for Contiki
-  * - Ville
-  */
+ * \addtogroup ecc
+ *
+ * @{
+ */
+
+/**
+ * \file
+ * 			Interface to Diffie–Hellman functions
+ * \author
+ * 			Kasun Hewage <kasun.ch@gmail.com>, port to Contiki
+ *			Vilhelm Jutvik <ville@imorgon.se>, created the interface and reshuffled some stuff
+ *
+ */
 #include <string.h>
 #include "contiki.h"
 #include "nn.h"
@@ -119,3 +129,4 @@ void ecdh_get_shared_secret(uint8_t *shared_key, uint8_t *peerKeData, NN_DIGIT *
   NN_Encode(shared_key, KEYDIGITS * NN_DIGIT_LEN, tempP.x, KEYDIGITS);
 }
 
+/** @} */

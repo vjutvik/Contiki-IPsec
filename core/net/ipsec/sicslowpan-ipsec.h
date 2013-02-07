@@ -1,4 +1,9 @@
 /**
+ * \addtogroup ipsec
+ * @{
+ */
+
+/**
  * \file
  *         6lowpan extension for IPsec
  * \author
@@ -12,7 +17,6 @@
 #include "ipsec.h"
 
 #define SICSLOWPAN_ESP_BUF  ((struct uip_esp_header *)&sicslowpan_buf[UIP_LLIPH_LEN])
-#define SICSLOWPAN_AH_BUF   ((struct uip_ah_header *)&sicslowpan_buf[UIP_LLIPH_LEN])
 
 /* 6lowpan IPsec extension */
 #define SICSLOWPAN_NHC_DEFAULT_SPI                  1
@@ -28,3 +32,5 @@
 #define SICSLOWPAN_NHC_AH_PL                        0x08 /* Payload Len compression (inferred from crypto suite) */
 
 #endif /* __SICSLOWPAN_IPSEC_H__ */
+
+/** @} */

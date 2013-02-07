@@ -1,3 +1,19 @@
+/**
+ * \addtogroup ecc
+ *
+ * @{
+ */
+
+/**
+ * \file
+ * 			SHA1 implementation
+ * \author
+ * 			Kasun Hewage <kasun.ch@gmail.com>, port to Contiki
+ *			Vilhelm Jutvik <ville@imorgon.se>, bug fixes, adaption to IKEv2
+ *
+ */
+
+
 #include "ecc_sha1.h"
 
   /*
@@ -393,3 +409,5 @@ void contikiecc_sha1(uint8_t *msg, uint16_t len, uint8_t *hash)
   sha1_update(&ctx, msg, len);
   sha1_digest(&ctx, hash);
 }
+
+/** @} */

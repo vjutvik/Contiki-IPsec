@@ -6,9 +6,10 @@
 
 /**
  * \file
- * Header file for the Natural Number Arithmatic operations.
+ * 				Header file for the Natural Number Arithmatic operations.
  * \author
- * Kasun Hewage <kasun.ch@gmail.com>
+ * 				Kasun Hewage <kasun.ch@gmail.com>, port to Contiki
+ *				Vilhelm Jutvik <ville@imorgon.se>, bug fixes
  *
  */
 

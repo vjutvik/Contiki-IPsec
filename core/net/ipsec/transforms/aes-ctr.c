@@ -1,12 +1,13 @@
 /**
  * \file
- *         AES-CTR block cipher mode of operation
+ *         AES-CTR block cipher mode of operation (RFC 3686)
+ * \brief
+ *				 Only 128 bit key sizes supported at this time
  * \author
  *         Simon Duquennoy <simonduq@sics.se>
+ *				 Vilhelm Jutvik <ville@imorgon.se>, adapted for IKEv2
+ * 
  *
- * RFC 3686
- *
- * Only 128 bit key sizes supported at this time
  */
 
 #include <stdlib.h>

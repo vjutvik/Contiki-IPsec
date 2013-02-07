@@ -1,6 +1,17 @@
- /*   No matter where you got this code, be aware that MIRACL is NOT
-  *   free software. For commercial use a license is required.
-  *   See www.shamus.ie
+/**
+ * \addtogroup ipsec
+ * @{
+ */
+
+/**
+ * \file
+ *		The library MIRACL that provides AES software encryption.
+ * \author
+ *		Copyright (c) 1988-2007 Shamus Software Ltd.
+ * \details
+ *   No matter where you got this code, be aware that MIRACL is NOT
+ *   free software. For commercial use a license is required.
+ *   See www.shamus.ie
 
 The Zipped archive MIRACL.ZIP contains all the source code for the latest 
 version of MIRACL: a Multiprecision Integer and Rational Arithmetic C/C++ 
@@ -576,3 +587,5 @@ struct aes_implem miracl_aes = {
     NULL,
 };
 /*---------------------------------------------------------------------------*/
+
+/** @} */

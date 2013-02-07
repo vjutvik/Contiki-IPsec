@@ -1,3 +1,18 @@
+/**
+ * \addtogroup ecc
+ *
+ * @{
+ */
+
+/**
+ * \file
+ * 			Source file for the Elliptic Curve point arithmetic functions.
+ * \author
+ * 			Kasun Hewage <kasun.ch@gmail.com>, port to Contiki
+ *			Vilhelm Jutvik <ville@imorgon.se>, bug fixes, adaption to IKEv2
+ *
+ */
+
 #include "ecc.h"
 #include "nn.h"
 
@@ -24,3 +39,5 @@ void ecdh_get_shared_secret(uint8_t *shared_key, uint8_t *peerPubKey, NN_DIGIT *
 // Deserialization. Takes an u8_t * as argument.
 #define ECDH_DESERIALIZE_TO_POINTT(ptr) ((point_t *) ptr)
 #define ECDH_DESERIALIZE_TO_NN(ptr) ((NN_DIGIT *) ptr)
+
+/** @} */

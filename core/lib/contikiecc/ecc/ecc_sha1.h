@@ -1,4 +1,17 @@
-/*
+/**
+ * \addtogroup ecc
+ *
+ * @{
+ */
+
+/**
+ * \file
+ * 			SHA1 implementation
+ * \author
+ * 			Kasun Hewage <kasun.ch@gmail.com>, port to Contiki
+ *			Vilhelm Jutvik <ville@imorgon.se>, bug fixes, adaption to IKEv2
+ *
+ * \details
  *  ecc_sha1.h
  *
  *  Description:
@@ -12,9 +25,6 @@
  *
  *      Please read the file sha1.c for more information.
  *
- */
-
-/*
  * This SHA-1 implementation is ported by An Liu from the example code
  * in RFC 3174
  */

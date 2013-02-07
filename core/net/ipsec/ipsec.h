@@ -1,8 +1,14 @@
 /**
+ * \addtogroup ipsec
+ * @{
+ */
+
+/**
  * \file
- *         IPsec constant values, headers, ...
+ *        IPsec and IKEv2 configuration
  * \author
- *         Simon Duquennoy <simonduq@sics.se>
+ *        Simon Duquennoy <simonduq@sics.se>
+ *				Vilhelm Jutvik <ville@imorgon.se>
  */
 
 #ifndef __IPSEC_H__
@@ -77,7 +83,6 @@
 #define UIP_PROTO_AH    51
 
 #define UIP_ESP_BUF ((struct uip_esp_header *)&uip_buf[uip_l2_l3_hdr_len])
-#define UIP_AH_BUF ((struct uip_ah_header *)&uip_buf[UIP_LLIPH_LEN])
 
 /* ESP header as defined in RFC 2406 */
 struct uip_esp_header {
@@ -91,18 +96,9 @@ struct uip_esp_header {
   */
 };
 
-/* AH header as defined in RFC 4302 */
-struct uip_ah_header {
-  unsigned char     next;
-  unsigned char     len;
-  uint16_t          reserved;
-  uint32_t          spi;
-  uint32_t          seqno;
-  unsigned char     mac[IPSEC_ICVLEN];
-};
-
 /* The length of extension headers data coming after the payload */
 extern uint8_t uip_ext_end_len;
 
 
 #endif /* __IPSEC_H__ */
+/** @} */
