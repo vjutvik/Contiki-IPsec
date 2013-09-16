@@ -110,7 +110,7 @@ The IPsec patch's main configuration is positioned in examples/ipsec/ipsec-conf.
 ### Configuring the SPD ###
 SPD, or Security Policy Database, is the set of rules that dictates what IP-traffic is to be protected by IPsec, and which is not. The implementation closely follows the structure outlined in RFC 4301. The relevant passage begins at p. 19, section 4.4.1.
 
-The declaration of the SPD is made in the array spd\_table located in the file core/net/ipsec/spc\_conf.c, line 127. Whenever an IP-packet is about to enter or leave the system (forwarded packets are not considered though), the array is traversed from the top to the bottom until a rule with a matching traffic pattern is found. The existing table is suited to the example in this README, but *you must substitute the IPv6-addresses used therein with those of your system*. Failure to do so will result in an inoperative system.
+The declaration of the SPD is made in the array spd\_table located in the file core/net/ipsec/spd\_conf.c, line 127. Whenever an IP-packet is about to enter or leave the system (forwarded packets are not considered though), the array is traversed from the top to the bottom until a rule with a matching traffic pattern is found. The existing table is suited to the example in this README, but *you must substitute the IPv6-addresses used therein with those of your system*. Failure to do so will result in an inoperative system.
 
 More help is available in the source code's comments and section 4.4.1 of RFC 4301.
 

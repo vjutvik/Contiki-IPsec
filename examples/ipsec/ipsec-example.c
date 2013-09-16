@@ -153,13 +153,22 @@ PROCESS_THREAD(ipsec_example_process, ev, data)
   server_conn = udp_new(NULL, UIP_HTONS(0), NULL);
   udp_bind(server_conn, UIP_HTONS(MOTE_PORT));
 
-  /* IKEv2 immediate transmit */
-/*  ctimer_set(&retrans_timer, 10 * CLOCK_SECOND, &ipsec_ex_transmit, NULL);
+  /*
+	 * IKEv2 handshake
+	 *
+	 * Uncomment this block of code in order to transmit a packet on port 1234 to host aaaa::1 10 seconds after startup.
+	 * This will cause the mote to initiate the IKEv2 negotiation (given that there exists such a PROTECT rule in the SPD
+	 * for the traffic in question).
+	 * 
+	*/
+/*  
+  ctimer_set(&retrans_timer, 10 * CLOCK_SECOND, &ipsec_ex_transmit, NULL);
 
   uip_ip6addr(&server_conn->ripaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 1);
   server_conn->rport = UIP_HTONS(1234);
-  uip_udp_packet_send(server_conn, "hej", 3);
+  uip_udp_packet_send(server_conn, "hello", 5);
 */
+
   /* wait for incoming data */
   while(1) {
     PROCESS_YIELD();
