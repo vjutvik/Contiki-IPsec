@@ -168,14 +168,14 @@ The demonstration consists of one host sending a UDP packet on port 1234 to the 
 
 ### Testing with the native target ###
 While in the ipsec-example directory, run:
-	make TARGET=native
+> make TARGET=native
 
 If you've changed scripts/strongswan/strongswan.conf (which you probably have), note that you have to make sure that your changes have been
 replicated to /etc/strongswan.conf
 
 Now, proceed to flush all SAs, policies and then restart the charon daemon.
-	sudo scripts/strongswan/reset\_ike\_ipsec.sh
-	make TARGET=native connect-router
+> sudo scripts/strongswan/reset\_ike\_ipsec.sh
+> make TARGET=native connect-router
 
 Upon entering the final line, you should see something like the following:
 
@@ -223,7 +223,7 @@ Upon entering the final line, you should see something like the following:
 >  0x8072c68: =>fe80::302:304:506:708
 
 You should now be able to communicate over IPsec by using the NetCat utility to send the mote a UDP packet on port 1234. Type
-	nc -u <the native mote's address> 1234
+> nc -u <the native mote's address> 1234
 
 and enter a random string of your liking. The small app that runs in Contiki and listens on port 1234 should reply by taking each character and incremeting its value by one. For example, this was the output when the author entered the string "Contiki":
 
