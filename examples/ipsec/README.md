@@ -167,8 +167,160 @@ Testing the Demonstration Setup
 The demonstration consists of one host sending a UDP packet on port 1234 to the other host. This will trigger an IKEv2 handshake as there are no SAs in place and the policy is set to require UDP traffic to be protected.
 
 ### Testing with the native target ###
-TODO Real Soon Now
-Contact ville@imorgon.se for instructions
+While in the ipsec-example directory, run:
+	make TARGET=native
+
+If you've changed scripts/strongswan/strongswan.conf (which you probably have), note that you have to make sure that your changes have been
+replicated to /etc/strongswan.conf
+
+Now, proceed to flush all SAs, policies and then restart the charon daemon.
+	sudo scripts/strongswan/reset\_ike\_ipsec.sh
+	make TARGET=native connect-router
+
+Upon entering the final line, you should see something like the following:
+
+> user@ubuntu:~/share/contiki-master/examples/ipsec$ make TARGET=native connect-router
+> sudo ./ipsec-example.native -s /dev/null aaaa::1/64
+> PID is 8974
+> Contiki-2.6-199-ge1c5f6f started with IPV6, RPL
+> Rime started with address 1.2.3.4.5.6.7.8
+> MAC nullmac RDC nullrdc NETWORK sicslowpan
+> IPsec: SAD and SPD initialized
+> ECC INITIALIZED: key bit len: 192 NN_DIGIT_BITS: 16
+> ike_statem_init: calling udp_new
+> UIP_UDP_CONNS: 12
+> UDP conn: 0, lport: 0
+> returning 0x80729c4, lport 1025
+> Setting 0x80729c4 to lport 500
+> IPsec IKEv2: State machine initialized. Listening on UDP port 500.
+> IPsec: IKEv2 service initialized
+> Tentative link-local IPv6 address fe80:0000:0000:0000:0302:0304:0506:0708
+> ipsec-example: calling udp_new
+> UIP_UDP_CONNS: 12
+> UDP conn: 0, lport: 500
+> UDP conn: 1, lport: 0
+> returning 0x80729e4, lport 1026
+> Setting 0x80729e4 to lport 1234
+> RPL-Border router started
+> opened tun device ``/dev/tun0''
+> ifconfig tun0 inet `hostname` up
+> ifconfig tun0 add aaaa::1/64
+> ifconfig tun0
+> 
+> tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+>           inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
+>           inet6 addr: aaaa::1/64 Scope:Global
+>           UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+>           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 txqueuelen:500 
+>           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+> 
+> Setting prefix aaaa::1
+> created a new RPL dag
+> Server IPv6 addresses:
+>  0x8072c48: =>aaaa::302:304:506:708
+>  0x8072c68: =>fe80::302:304:506:708
+
+You should now be able to communicate over IPsec by using the NetCat utility to send the mote a UDP packet on port 1234. Type
+	nc -u <the native mote's address> 1234
+
+and enter a random string of your liking. The small app that runs in Contiki and listens on port 1234 should reply by taking each character and incremeting its value by one. For example, this was the output when the author entered the string "Contiki":
+
+> user@ubuntu:~/share/contiki-master/examples/ipsec$ nc -u coojanative 1234
+> Contiki
+> Dpoujlj
+
+Prior the reply returning, you should see intensive activity on the console where your native mote is running. It should be something like:
+
+> IPv6 packet received from aaaa::1 to aaaa::302:304:506:708
+> INCOMING IPsec PACKET PROCESSING
+> Proc hdr 17
+> Applicable packet policy:
+> Selector: Action: BYPASS
+> Offer at addr: (nil)
+> Receiving UDP packet
+> uip_udp_conn->lport 500, uip_udp_conn->rport 0
+> IPsec IKEv2: Handling incoming request for a new IKE session
+> IPsec: Allocating 204 bytes at 0x9ceb008. IPsec now has allocated 204 B memory
+> IPsec IKEv2: Initiating IKE session 0x9ceb008
+> IPsec: Allocating 824 bytes at 0x9ceb0d8. IPsec now has allocated 1028 B memory
+> IPsec IKEv2: Generating private ECC key
+> IPsec IKEv2: Session 0x9ceb008 is entering state 0x805d3fc
+> IPsec IKEv2: ike_statem_state_respond_start: Entering
+> Next payload is 33
+> IPsec IKEv2: Peer proposal accepted
+> Next payload is 34
+> IPsec IKEv2: KE payload: Using DH group no. 25
+> Next payload is 40
+> IPsec IKEv2: Parsed 32 B long nonce from the peer
+> Peer's nonce (len 32):
+> 0x9ceb122 (   0) 236edde1 9b3e3787 b7704126 0781e31e 
+> 0x9ceb132 (  16) ffa41c64 3528d61c ad4c0ef5 902be639 
+> 0x9ceb142 (  32) 201624c3 ca3e6d06 0c000000 00000000 
+> Next payload is 41
+> IPsec IKEv2: Received informative notify message of type no. 16388
+> Next payload is 41
+> IPsec IKEv2: Received informative notify message of type no. 16389
+> IPsec IKEv2: Calculating shared ECC Diffie Hellman secret
+> Shared ECC Diffie Hellman secret (g^ir) (len 24):
+> 0xbfa4627d (   0) 281bd666 9afacd98 af35e60b 4a214f76 
+> 0xbfa4628d (  16) cac30379 4788ac77 000000b8 62a4bf00 
+
+... and so on. This is the IKE negotiation's diagnostic output. At the end of it both hosts (the mote and the PC) should have two new SAs (one for each traffic direction), evidence of which is displayed in /var/log/syslog and the diagnotic output. Running _sudo setkey -D_ on the host will give you the details.
+
+If this doesn't work out for you, debugging can be tedious if you're not accustomed to Contiki and IPsec. I recommend your to read /var/log/syslog and make sure that charon's debug level is set sufficiently high in strongswan.conf (if you have used strongswan.conf from ipsec-example, it will be set accordingly). Other common problems are mis-set IP addresses in spd_conf.c or strongswan.conf. It can also be a good idea to run all reset scripts in scripts/ once more, just to make sure that everything really is ready to go.
+
+Finally, this is what the tunnel interface looks like to me after _connect-router_ is up and running. Please note its route in the second entry of the routing table.
+
+> user@ubuntu:~/share/contiki-master/tools$ ifconfig
+> eth0      Link encap:Ethernet  HWaddr 08:00:27:8d:af:42  
+>           inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0
+>           inet6 addr: fe80::a00:27ff:fe8d:af42/64 Scope:Link
+>           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+>           RX packets:817745 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:478434 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 txqueuelen:1000 
+>           RX bytes:317746348 (317.7 MB)  TX bytes:26547888 (26.5 MB)
+> 
+> lo        Link encap:Local Loopback  
+>           inet addr:127.0.0.1  Mask:255.0.0.0
+>           inet6 addr: ::1/128 Scope:Host
+>           UP LOOPBACK RUNNING  MTU:16436  Metric:1
+>           RX packets:128 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:128 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 txqueuelen:0 
+>           RX bytes:13188 (13.1 KB)  TX bytes:13188 (13.1 KB)
+> 
+> tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+>           inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
+>           inet6 addr: aaaa::1/64 Scope:Global
+>           UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+>           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+>           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+>           collisions:0 txqueuelen:500 
+>           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+> 
+> user@ubuntu:~/share/contiki-master/tools$ route
+> Kernel IP routing table
+> Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+> default         10.0.2.2        0.0.0.0         UG    100    0        0 eth0
+> 10.0.2.0        *               255.255.255.0   U     0      0        0 eth0
+> user@ubuntu:~/share/contiki-master/tools$ route -6
+> Kernel IPv6 routing table
+> Destination                    Next Hop                   Flag Met Ref Use If
+> ::/0                           ::                         !n   -1  1 62779 lo
+> aaaa::/64                      ::                         U    256 0     0 tun0
+> fe80::/64                      ::                         U    256 0     0 eth0
+> fe80::/64                      ::                         U    256 0     0 tun0
+> ::/0                           ::                         !n   -1  1 62779 lo
+> ::1/128                        ::                         Un   0   1    15 lo
+> aaaa::1/128                    ::                         Un   0   1     0 lo
+> fe80::a00:27ff:fe8d:af42/128   ::                         Un   0   1     0 lo
+> ff00::/8                       ::                         U    256 0     0 eth0
+> ff00::/8                       ::                         U    256 0     0 tun0
+> ::/0                           ::                         !n   -1  1 62779 lo
+> 
 
 ### Testing with Cooja ###
 TODO Real Soon Now

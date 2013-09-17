@@ -108,7 +108,6 @@ void sad_conf()
   my_incoming_entry->traffic_desc.peer_addr_from = &molniya;
   my_incoming_entry->traffic_desc.peer_addr_to = &molniya;
   my_incoming_entry->traffic_desc.nextlayer_proto = SPD_SELECTOR_NL_ANY_PROTOCOL;
-  //my_incoming_entry->traffic_desc.direction = SPD_INCOMING_TRAFFIC;
   // No HTONS needed here as the maximum and miniumum unsigned ints are represented the same way
   // in network as well as host byte order.
   my_incoming_entry->traffic_desc.my_port_from = 0;

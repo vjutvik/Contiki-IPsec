@@ -102,16 +102,6 @@
 #endif
 
 /**
-  * Type used for denoting the direction of traffic.
-  */
-typedef enum {
-  SPD_INCOMING_TRAFFIC,
-  SPD_OUTGOING_TRAFFIC,
-  SPD_ANY_TRAFFIC
-} direction_t;
-
-
-/**
   * Port ranges
   */
 #define PORT_MAX USHRT_MAX
