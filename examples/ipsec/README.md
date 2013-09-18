@@ -171,15 +171,17 @@ While in the ipsec-example directory, run:
 
 	make TARGET=native
 
-If you've changed scripts/strongswan/strongswan.conf (which you probably have), note that you have to make sure that your changes have been
-replicated to /etc/strongswan.conf
+If you've changed scripts/strongswan/strongswan.conf (which you probably have), please note that you have to make sure that your changes have been applied to /etc/strongswan.conf
 
-Now, proceed to flush all SAs, policies and then restart the charon daemon.
+Now, proceed to flush all SAs, policies and then restart the charon daemon:
 
 	sudo scripts/strongswan/reset_ike_ipsec.sh
+
+Run the native mote:
+
 	make TARGET=native connect-router
 
-Upon entering the final line, you should see something like the following:
+Upon starting the mote, you should see something like the following:
 
 	user@ubuntu:~/share/contiki-master/examples/ipsec$ make TARGET=native connect-router
 	sudo ./ipsec-example.native -s /dev/null aaaa::1/64
@@ -224,17 +226,17 @@ Upon entering the final line, you should see something like the following:
 	 0x8072c48: =>aaaa::302:304:506:708
 	 0x8072c68: =>fe80::302:304:506:708
 
-You should now be able to communicate over IPsec by using the NetCat utility to send the mote a UDP packet on port 1234. Type
+You should now be able to communicate over IPsec by using the NetCat utility to send the mote a UDP packet on port 1234. Type:
 	
 	nc -u <the native mote's address> 1234
 
-and enter a random string of your liking. The small app that runs in Contiki and listens on port 1234 should reply by taking each character and incrementing its value by one. For example, this was the output when the author entered the string "Contiki":
+...and enter a random string of your liking. The small Contiki-app that listens on port 1234 should reply by taking each character and incrementing its value by one. For example, this was the output when the author entered the string "Contiki":
 
 	user@ubuntu:~/share/contiki-master/examples/ipsec$ nc -u aaaa::302:304:506:708 1234
 	Contiki
 	Dpoujlj
 
-Prior the reply returning, you should see intensive activity on the console where your native mote is running. It should be something like:
+Prior to receiving the reply, you should see intensive activity on the console where your native mote is running. It should be something like the following:
 
 	IPv6 packet received from aaaa::1 to aaaa::302:304:506:708
 	INCOMING IPsec PACKET PROCESSING
@@ -274,7 +276,7 @@ Prior the reply returning, you should see intensive activity on the console wher
 
 If this doesn't work out for you, debugging can be tedious if you're not accustomed to Contiki and IPsec. I recommend your to read /var/log/syslog and make sure that charon's debug level is set sufficiently high in strongswan.conf (if you have used strongswan.conf from ipsec-example, it will be set accordingly). Other common problems are mis-set IP addresses in spd_conf.c or strongswan.conf. It can also be a good idea to run all reset scripts in scripts/ once more, just to make sure that everything really is ready to go.
 
-Finally, this is what the tunnel interface looks like to me after _connect-router_ is up and running. Please note its route in the second entry of the routing table.
+Finally, this is what the tunnel interface looks like to me when the native mote is up and running. Please note the route to the tun0 interface in the second entry of the routing table.
 
 	user@ubuntu:~/share/contiki-master/tools$ ifconfig
 	eth0      Link encap:Ethernet  HWaddr 08:00:27:8d:af:42  
