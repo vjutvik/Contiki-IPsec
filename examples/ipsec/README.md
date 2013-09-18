@@ -168,6 +168,7 @@ The demonstration consists of one host sending a UDP packet on port 1234 to the 
 
 ### Testing with the native target ###
 While in the ipsec-example directory, run:
+
 	make TARGET=native
 
 If you've changed scripts/strongswan/strongswan.conf (which you probably have), note that you have to make sure that your changes have been
