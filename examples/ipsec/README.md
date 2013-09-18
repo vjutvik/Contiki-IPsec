@@ -168,68 +168,70 @@ The demonstration consists of one host sending a UDP packet on port 1234 to the 
 
 ### Testing with the native target ###
 While in the ipsec-example directory, run:
-> make TARGET=native
+	make TARGET=native
 
 If you've changed scripts/strongswan/strongswan.conf (which you probably have), note that you have to make sure that your changes have been
 replicated to /etc/strongswan.conf
 
 Now, proceed to flush all SAs, policies and then restart the charon daemon.
-> sudo scripts/strongswan/reset\_ike\_ipsec.sh
-> make TARGET=native connect-router
+
+	sudo scripts/strongswan/reset_ike_ipsec.sh
+	make TARGET=native connect-router
 
 Upon entering the final line, you should see something like the following:
 
-> user@ubuntu:~/share/contiki-master/examples/ipsec$ make TARGET=native connect-router
-> sudo ./ipsec-example.native -s /dev/null aaaa::1/64
-> PID is 8974
-> Contiki-2.6-199-ge1c5f6f started with IPV6, RPL
-> Rime started with address 1.2.3.4.5.6.7.8
-> MAC nullmac RDC nullrdc NETWORK sicslowpan
-> IPsec: SAD and SPD initialized
-> ECC INITIALIZED: key bit len: 192 NN_DIGIT_BITS: 16
-> ike_statem_init: calling udp_new
-> UIP_UDP_CONNS: 12
-> UDP conn: 0, lport: 0
-> returning 0x80729c4, lport 1025
-> Setting 0x80729c4 to lport 500
-> IPsec IKEv2: State machine initialized. Listening on UDP port 500.
-> IPsec: IKEv2 service initialized
-> Tentative link-local IPv6 address fe80:0000:0000:0000:0302:0304:0506:0708
-> ipsec-example: calling udp_new
-> UIP_UDP_CONNS: 12
-> UDP conn: 0, lport: 500
-> UDP conn: 1, lport: 0
-> returning 0x80729e4, lport 1026
-> Setting 0x80729e4 to lport 1234
-> RPL-Border router started
-> opened tun device ``/dev/tun0''
-> ifconfig tun0 inet `hostname` up
-> ifconfig tun0 add aaaa::1/64
-> ifconfig tun0
-> 
-> tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
->           inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
->           inet6 addr: aaaa::1/64 Scope:Global
->           UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
->           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
->           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
->           collisions:0 txqueuelen:500 
->           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-> 
-> Setting prefix aaaa::1
-> created a new RPL dag
-> Server IPv6 addresses:
->  0x8072c48: =>aaaa::302:304:506:708
->  0x8072c68: =>fe80::302:304:506:708
+	user@ubuntu:~/share/contiki-master/examples/ipsec$ make TARGET=native connect-router
+	sudo ./ipsec-example.native -s /dev/null aaaa::1/64
+	PID is 8974
+	Contiki-2.6-199-ge1c5f6f started with IPV6, RPL
+	Rime started with address 1.2.3.4.5.6.7.8
+	MAC nullmac RDC nullrdc NETWORK sicslowpan
+	IPsec: SAD and SPD initialized
+	ECC INITIALIZED: key bit len: 192 NN_DIGIT_BITS: 16
+	ike_statem_init: calling udp_new
+	UIP_UDP_CONNS: 12
+	UDP conn: 0, lport: 0
+	returning 0x80729c4, lport 1025
+	Setting 0x80729c4 to lport 500
+	IPsec IKEv2: State machine initialized. Listening on UDP port 500.
+	IPsec: IKEv2 service initialized
+	Tentative link-local IPv6 address fe80:0000:0000:0000:0302:0304:0506:0708
+	ipsec-example: calling udp_new
+	UIP_UDP_CONNS: 12
+	UDP conn: 0, lport: 500
+	UDP conn: 1, lport: 0
+	returning 0x80729e4, lport 1026
+	Setting 0x80729e4 to lport 1234
+	RPL-Border router started
+	opened tun device ``/dev/tun0''
+	ifconfig tun0 inet `hostname` up
+	ifconfig tun0 add aaaa::1/64
+	ifconfig tun0
+	
+	tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+	          inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
+	          inet6 addr: aaaa::1/64 Scope:Global
+	          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+	          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+	          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+	          collisions:0 txqueuelen:500 
+	          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+	
+	Setting prefix aaaa::1
+	created a new RPL dag
+	Server IPv6 addresses:
+	 0x8072c48: =>aaaa::302:304:506:708
+	 0x8072c68: =>fe80::302:304:506:708
 
 You should now be able to communicate over IPsec by using the NetCat utility to send the mote a UDP packet on port 1234. Type
-> nc -u <the native mote's address> 1234
+	
+	nc -u <the native mote's address> 1234
 
-and enter a random string of your liking. The small app that runs in Contiki and listens on port 1234 should reply by taking each character and incremeting its value by one. For example, this was the output when the author entered the string "Contiki":
+and enter a random string of your liking. The small app that runs in Contiki and listens on port 1234 should reply by taking each character and incrementing its value by one. For example, this was the output when the author entered the string "Contiki":
 
-> user@ubuntu:~/share/contiki-master/examples/ipsec$ nc -u aaaa::302:304:506:708 1234
-> Contiki
-> Dpoujlj
+	user@ubuntu:~/share/contiki-master/examples/ipsec$ nc -u aaaa::302:304:506:708 1234
+	Contiki
+	Dpoujlj
 
 Prior the reply returning, you should see intensive activity on the console where your native mote is running. It should be something like:
 
@@ -273,52 +275,52 @@ If this doesn't work out for you, debugging can be tedious if you're not accusto
 
 Finally, this is what the tunnel interface looks like to me after _connect-router_ is up and running. Please note its route in the second entry of the routing table.
 
-> user@ubuntu:~/share/contiki-master/tools$ ifconfig
-> eth0      Link encap:Ethernet  HWaddr 08:00:27:8d:af:42  
->           inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0
->           inet6 addr: fe80::a00:27ff:fe8d:af42/64 Scope:Link
->           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
->           RX packets:817745 errors:0 dropped:0 overruns:0 frame:0
->           TX packets:478434 errors:0 dropped:0 overruns:0 carrier:0
->           collisions:0 txqueuelen:1000 
->           RX bytes:317746348 (317.7 MB)  TX bytes:26547888 (26.5 MB)
-> 
-> lo        Link encap:Local Loopback  
->           inet addr:127.0.0.1  Mask:255.0.0.0
->           inet6 addr: ::1/128 Scope:Host
->           UP LOOPBACK RUNNING  MTU:16436  Metric:1
->           RX packets:128 errors:0 dropped:0 overruns:0 frame:0
->           TX packets:128 errors:0 dropped:0 overruns:0 carrier:0
->           collisions:0 txqueuelen:0 
->           RX bytes:13188 (13.1 KB)  TX bytes:13188 (13.1 KB)
-> 
-> tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
->           inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
->           inet6 addr: aaaa::1/64 Scope:Global
->           UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
->           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
->           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
->           collisions:0 txqueuelen:500 
->           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-> 
-> user@ubuntu:~/share/contiki-master/tools$ route -6
-> Kernel IPv6 routing table
-> Destination                    Next Hop                   Flag Met Ref Use If
-> ::/0                           ::                         !n   -1  1 62779 lo
-> aaaa::/64                      ::                         U    256 0     0 tun0
-> fe80::/64                      ::                         U    256 0     0 eth0
-> fe80::/64                      ::                         U    256 0     0 tun0
-> ::/0                           ::                         !n   -1  1 62779 lo
-> ::1/128                        ::                         Un   0   1    15 lo
-> aaaa::1/128                    ::                         Un   0   1     0 lo
-> fe80::a00:27ff:fe8d:af42/128   ::                         Un   0   1     0 lo
-> ff00::/8                       ::                         U    256 0     0 eth0
-> ff00::/8                       ::                         U    256 0     0 tun0
-> ::/0                           ::                         !n   -1  1 62779 lo
-> 
+	user@ubuntu:~/share/contiki-master/tools$ ifconfig
+	eth0      Link encap:Ethernet  HWaddr 08:00:27:8d:af:42  
+	          inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0
+	          inet6 addr: fe80::a00:27ff:fe8d:af42/64 Scope:Link
+	          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+	          RX packets:817745 errors:0 dropped:0 overruns:0 frame:0
+	          TX packets:478434 errors:0 dropped:0 overruns:0 carrier:0
+	          collisions:0 txqueuelen:1000 
+	          RX bytes:317746348 (317.7 MB)  TX bytes:26547888 (26.5 MB)
+	
+	lo        Link encap:Local Loopback  
+	          inet addr:127.0.0.1  Mask:255.0.0.0
+	          inet6 addr: ::1/128 Scope:Host
+	          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+	          RX packets:128 errors:0 dropped:0 overruns:0 frame:0
+	          TX packets:128 errors:0 dropped:0 overruns:0 carrier:0
+	          collisions:0 txqueuelen:0 
+	          RX bytes:13188 (13.1 KB)  TX bytes:13188 (13.1 KB)
+	
+	tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+	          inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
+	          inet6 addr: aaaa::1/64 Scope:Global
+	          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+	          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+	          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+	          collisions:0 txqueuelen:500 
+	          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+	
+	user@ubuntu:~/share/contiki-master/tools$ route -6
+	Kernel IPv6 routing table
+	Destination                    Next Hop                   Flag Met Ref Use If
+	::/0                           ::                         !n   -1  1 62779 lo
+	aaaa::/64                      ::                         U    256 0     0 tun0
+	fe80::/64                      ::                         U    256 0     0 eth0
+	fe80::/64                      ::                         U    256 0     0 tun0
+	::/0                           ::                         !n   -1  1 62779 lo
+	::1/128                        ::                         Un   0   1    15 lo
+	aaaa::1/128                    ::                         Un   0   1     0 lo
+	fe80::a00:27ff:fe8d:af42/128   ::                         Un   0   1     0 lo
+	ff00::/8                       ::                         U    256 0     0 eth0
+	ff00::/8                       ::                         U    256 0     0 tun0
+	::/0                           ::                         !n   -1  1 62779 lo
+	
 
 ### Testing with Cooja ###
-TODO Real Soon Now
+TODO
 Contact ville@imorgon.se for instructions
 
 
