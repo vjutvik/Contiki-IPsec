@@ -227,45 +227,45 @@ You should now be able to communicate over IPsec by using the NetCat utility to 
 
 and enter a random string of your liking. The small app that runs in Contiki and listens on port 1234 should reply by taking each character and incremeting its value by one. For example, this was the output when the author entered the string "Contiki":
 
-> user@ubuntu:~/share/contiki-master/examples/ipsec$ nc -u coojanative 1234
+> user@ubuntu:~/share/contiki-master/examples/ipsec$ nc -u aaaa::302:304:506:708 1234
 > Contiki
 > Dpoujlj
 
 Prior the reply returning, you should see intensive activity on the console where your native mote is running. It should be something like:
 
-> IPv6 packet received from aaaa::1 to aaaa::302:304:506:708
-> INCOMING IPsec PACKET PROCESSING
-> Proc hdr 17
-> Applicable packet policy:
-> Selector: Action: BYPASS
-> Offer at addr: (nil)
-> Receiving UDP packet
-> uip_udp_conn->lport 500, uip_udp_conn->rport 0
-> IPsec IKEv2: Handling incoming request for a new IKE session
-> IPsec: Allocating 204 bytes at 0x9ceb008. IPsec now has allocated 204 B memory
-> IPsec IKEv2: Initiating IKE session 0x9ceb008
-> IPsec: Allocating 824 bytes at 0x9ceb0d8. IPsec now has allocated 1028 B memory
-> IPsec IKEv2: Generating private ECC key
-> IPsec IKEv2: Session 0x9ceb008 is entering state 0x805d3fc
-> IPsec IKEv2: ike_statem_state_respond_start: Entering
-> Next payload is 33
-> IPsec IKEv2: Peer proposal accepted
-> Next payload is 34
-> IPsec IKEv2: KE payload: Using DH group no. 25
-> Next payload is 40
-> IPsec IKEv2: Parsed 32 B long nonce from the peer
-> Peer's nonce (len 32):
-> 0x9ceb122 (   0) 236edde1 9b3e3787 b7704126 0781e31e 
-> 0x9ceb132 (  16) ffa41c64 3528d61c ad4c0ef5 902be639 
-> 0x9ceb142 (  32) 201624c3 ca3e6d06 0c000000 00000000 
-> Next payload is 41
-> IPsec IKEv2: Received informative notify message of type no. 16388
-> Next payload is 41
-> IPsec IKEv2: Received informative notify message of type no. 16389
-> IPsec IKEv2: Calculating shared ECC Diffie Hellman secret
-> Shared ECC Diffie Hellman secret (g^ir) (len 24):
-> 0xbfa4627d (   0) 281bd666 9afacd98 af35e60b 4a214f76 
-> 0xbfa4628d (  16) cac30379 4788ac77 000000b8 62a4bf00 
+ IPv6 packet received from aaaa::1 to aaaa::302:304:506:708
+ INCOMING IPsec PACKET PROCESSING
+ Proc hdr 17
+ Applicable packet policy:
+ Selector: Action: BYPASS
+ Offer at addr: (nil)
+ Receiving UDP packet
+ uip_udp_conn->lport 500, uip_udp_conn->rport 0
+ IPsec IKEv2: Handling incoming request for a new IKE session
+ IPsec: Allocating 204 bytes at 0x9ceb008. IPsec now has allocated 204 B memory
+ IPsec IKEv2: Initiating IKE session 0x9ceb008
+ IPsec: Allocating 824 bytes at 0x9ceb0d8. IPsec now has allocated 1028 B memory
+ IPsec IKEv2: Generating private ECC key
+ IPsec IKEv2: Session 0x9ceb008 is entering state 0x805d3fc
+ IPsec IKEv2: ike_statem_state_respond_start: Entering
+ Next payload is 33
+ IPsec IKEv2: Peer proposal accepted
+ Next payload is 34
+ IPsec IKEv2: KE payload: Using DH group no. 25
+ Next payload is 40
+ IPsec IKEv2: Parsed 32 B long nonce from the peer
+ Peer's nonce (len 32):
+ 0x9ceb122 (   0) 236edde1 9b3e3787 b7704126 0781e31e 
+ 0x9ceb132 (  16) ffa41c64 3528d61c ad4c0ef5 902be639 
+ 0x9ceb142 (  32) 201624c3 ca3e6d06 0c000000 00000000 
+ Next payload is 41
+ IPsec IKEv2: Received informative notify message of type no. 16388
+ Next payload is 41
+ IPsec IKEv2: Received informative notify message of type no. 16389
+ IPsec IKEv2: Calculating shared ECC Diffie Hellman secret
+ Shared ECC Diffie Hellman secret (g^ir) (len 24):
+ 0xbfa4627d (   0) 281bd666 9afacd98 af35e60b 4a214f76 
+ 0xbfa4628d (  16) cac30379 4788ac77 000000b8 62a4bf00 
 
 ... and so on. This is the IKE negotiation's diagnostic output. At the end of it both hosts (the mote and the PC) should have two new SAs (one for each traffic direction), evidence of which is displayed in /var/log/syslog and the diagnotic output. Running _sudo setkey -D_ on the host will give you the details.
 
@@ -301,11 +301,6 @@ Finally, this is what the tunnel interface looks like to me after _connect-route
 >           collisions:0 txqueuelen:500 
 >           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
 > 
-> user@ubuntu:~/share/contiki-master/tools$ route
-> Kernel IP routing table
-> Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-> default         10.0.2.2        0.0.0.0         UG    100    0        0 eth0
-> 10.0.2.0        *               255.255.255.0   U     0      0        0 eth0
 > user@ubuntu:~/share/contiki-master/tools$ route -6
 > Kernel IPv6 routing table
 > Destination                    Next Hop                   Flag Met Ref Use If
