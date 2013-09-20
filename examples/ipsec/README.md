@@ -165,7 +165,7 @@ Copy the configuration files:
 
 Restart charon and associated systems:
 
-	sudo sh scripts/strongswan/reset\_ike\_ipsec.sh
+	sudo sh scripts/strongswan/reset_ike_ipsec.sh
 
 Strongswan should now be set up. If you want to know more about the configuration files, please see the section "IPsec without IKEv2 and other configurations".
 
