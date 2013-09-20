@@ -156,12 +156,15 @@ Strongswan is a popular IPsec implementation for the Linux kernel. While the act
 In this tutorial we are using instant Contiki 2.6 which is based upon Ubuntu, but any Debian-based system ought to work.
 
 Install Strongswan:	
+
 	sudo apt-get install strongswan
 
 Copy the configuration files:
+
 	cp scripts/strongswan/ipsec.conf scripts/strongswan/strongswan.conf scripts/strongswan/ipsec.secrets /etc/
 
 Restart charon and associated systems:
+
 	sudo sh scripts/strongswan/reset\_ike\_ipsec.sh
 
 Strongswan should now be set up. If you want to know more about the configuration files, please see the section "IPsec without IKEv2 and other configurations".
