@@ -79,17 +79,17 @@ Implements a subset of RFC 5996 and associated standards, but is not standards-c
   
 ### Major features not implemented ###
 * Cookie handling (the code is there, but it's not tested)
-* Only tunnel mode supported
+* Tunnel mode SA negotiation
 * EAP
-* No NAT support whatsoever, anywhere
-* No IPcomp support
-* Only IDs of type ID\_RFC822\_ADDR (e-mail address) are supported
-* No support for Certificates as IDs, nor for authentication
+* NAT support
+* IPcomp support
+* Only IDs of type ID\_RFC822\_ADDR (e-mail address) are supported (trivial to extend though)
+* Support for X.509 Certificates as IDs or means of authentication
 
 
 ### Basic features that ought to be implemented in IKEv2 ###
 * Deletion of Child and IKE SAs (Delete payload)
-* State machine Established can't create child SAs currently
+* State machine Established can't create child SAs currently (this is a straightforward extension though)
  
 Performance
 ===========
@@ -128,11 +128,14 @@ Even though Wismote can run MSP430-binaries compiled with GCC, this IPsec patch 
 Therefore, the recommended procedure is to check out this code in MS Windows, and execute the following in a Cygwin environment running on top of it (while in the directory examples/ipsec):
 	make TARGET=wismote
 
+(UPDATE: 20 September 2013: Alex Papanikolaou writes to say that as of now, there is a guide for building the msp430-gcc development version which features 20-bit instruction set support at http://wiki.contiki-os.org/doku.php?id=msp430x Please be warned that you may experience weird/unstable behaviour.)
+
 
 ### The Native Target ###
 When Contiki is compiled for the native target the output will be a binary that can be run as an ordinary Linux process. IP connectivity is provided by means of a tunnel.
 
 To begin compilation, execute while in the directory examples/ipsec:
+
 	make TARGET=native
 
 ### The u101-stm32l target (not tested) ###
@@ -150,13 +153,13 @@ Setting up Linux
 ----------------
 Strongswan is a popular IPsec implementation for the Linux kernel. While the actual encoding / decoding of IPsec packets takes place in the kernel's network stack, Strongswan's IKEv2 keying daemon _charon_ negotiates new SAs on behalf of the host according to a configured policy.
 
-In this tutorial we are using instant Contiki 2.5 which is based upon Ubuntu, but any Debian-based system ought to work.
+In this tutorial we are using instant Contiki 2.6 which is based upon Ubuntu, but any Debian-based system ought to work.
 
-1. Install Strongswan
+1. Install Strongswan:
 	sudo apt-get install strongswan
-2. Copy the configuration files
+2. Copy the configuration files:
 	cp scripts/strongswan/ipsec.conf scripts/strongswan/strongswan.conf scripts/strongswan/ipsec.secrets /etc/
-3. Restart charon and associated systems
+3. Restart charon and associated systems:
 	sudo sh scripts/strongswan/reset\_ike\_ipsec.sh
 
 Strongswan should now be set up. If you want to know more about the configuration files, please see the section "IPsec without IKEv2 and other configurations".
@@ -226,7 +229,7 @@ Upon starting the mote, you should see something like the following:
 	 0x8072c48: =>aaaa::302:304:506:708
 	 0x8072c68: =>fe80::302:304:506:708
 
-You should now be able to communicate over IPsec by using the NetCat utility to send the mote a UDP packet on port 1234. Type:
+You should now be able to communicate over IPsec by using the NetCat utility (provided by the Ubuntu package netcat-openbsd) to send the mote a UDP packet on port 1234. Type in another terminal:
 	
 	nc -u <the native mote's address> 1234
 
@@ -274,7 +277,7 @@ Prior to receiving the reply, you should see intensive activity on the console w
 
 ... and so on. This is the IKE negotiation's diagnostic output. At the end of it both hosts (the mote and the PC) should have two new SAs (one for each traffic direction), evidence of which is displayed in /var/log/syslog and the diagnotic output. Running _sudo setkey -D_ on the host will give you the details.
 
-If this doesn't work out for you, debugging can be tedious if you're not accustomed to Contiki and IPsec. I recommend your to read /var/log/syslog and make sure that charon's debug level is set sufficiently high in strongswan.conf (if you have used strongswan.conf from ipsec-example, it will be set accordingly). Other common problems are mis-set IP addresses in spd_conf.c or strongswan.conf. It can also be a good idea to run all reset scripts in scripts/ once more, just to make sure that everything really is ready to go.
+If this doesn't work out for you, debugging can be tedious if you're not accustomed to Contiki and IPsec. I recommend you to read /var/log/syslog and make sure that charon's debug level is set sufficiently high in strongswan.conf (if you have used strongswan.conf from ipsec-example, it will be set accordingly). Other common problems are mis-set IP addresses in spd_conf.c or strongswan.conf. It can also be a good idea to run all reset scripts in scripts/ once more, just to make sure that everything really is ready to go.
 
 Finally, this is what the tunnel interface looks like to me when the native mote is up and running. Please note the route to the tun0 interface in the second entry of the routing table.
 
@@ -359,6 +362,8 @@ TODO: Write something more
 About this implementation
 =========================
 This is a partial implementation of RFC 4301 (IPsec) and RFC 5996 (IKEv2) along with associated standards written by Vilhelm Jutvik (ville@imorgon.se) as his MS Thesis Project at [SICS](sics.se)). It's an extension / rework of Simon Duquennoy's (simonduq@sics.se) IPsec implementation (also a [SICS](sics.se) work [paper](http://www.simonduquennoy.net/papers/raza11securing-demo.pdf)). The ECC library is a port of TinyECC to Contiki, provided by Kasun Hewage (kasun.hewage@it.uu.se) under the directions of [SICS](sics.se).
+
+Thanks to Alex Papanikolaou who contacted me and gave valuable feedback on this README-file along with a small patch of improvements!
 
 Future work
 ===========
