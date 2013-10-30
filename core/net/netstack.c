@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: netstack.c,v 1.1 2010/02/18 23:15:26 adamdunkels Exp $
  */
 
 /**
@@ -47,5 +46,9 @@ netstack_init(void)
   NETSTACK_RDC.init();
   NETSTACK_MAC.init();
   NETSTACK_NETWORK.init();
+
+#ifdef NETSTACK_ENCRYPTION_INIT
+  NETSTACK_ENCRYPTION_INIT();
+#endif /* NETSTACK_ENCRYPTION_INIT */
 }
 /*---------------------------------------------------------------------------*/

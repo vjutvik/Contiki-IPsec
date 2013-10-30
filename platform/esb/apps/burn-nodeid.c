@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: burn-nodeid.c,v 1.3 2007/11/28 19:53:09 nifi Exp $
  */
 
 /**
@@ -38,7 +37,7 @@
  *         Adam Dunkels <adam@sics.se>
  */
 
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "contiki.h"
 #include "dev/esb-sensors.h"
 #include "dev/rs232.h"

@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: platform-conf.h,v 1.1 2010/08/24 16:26:38 joxe Exp $
  */
 
 /**
@@ -41,9 +40,12 @@
 
 /*
  * Definitions below are dictated by the hardware and not really
- * changeable!
+ * changeable
  */
-#define TYNDALL 1
+
+#ifndef WITH_LCD
+#define WITH_LCD 0
+#endif /* 0 */
 
 /* CPU target speed in Hz */
 #define F_CPU 8000000uL // 8MHz by default

@@ -36,7 +36,6 @@
  *
  * Author: Adam Dunkels <adam@sics.se>
  *
- * $Id: abc.c,v 1.20 2010/02/23 18:38:05 adamdunkels Exp $
  */
 
 /**
@@ -94,7 +93,9 @@ abc_input(struct channel *channel)
 	 rimeaddr_node_addr.u8[0],rimeaddr_node_addr.u8[1],
 	 channel->channelno);
 
-  c->u->recv(c);
+  if(c->u->recv) {
+    c->u->recv(c);
+  }
 }
 /*---------------------------------------------------------------------------*/
 void

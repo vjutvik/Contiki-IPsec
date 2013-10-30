@@ -30,7 +30,6 @@
  * 
  * Author: Oliver Schmidt <ol.sc@web.de>
  *
- * $Id: config.c,v 1.7 2010/09/29 21:48:54 oliverschmidt Exp $
  */
 
 #include <stdlib.h>
@@ -79,7 +78,7 @@ config_read(char *filename)
   }
 
   if(cfs_read(file, &config, sizeof(config)) < sizeof(config)
-					     - sizeof(config.ethernetcfg.name)) {
+                                             - sizeof(config.ethernetcfg.name)) {
     log_message(filename, ": No config file");
     error_exit();
   }

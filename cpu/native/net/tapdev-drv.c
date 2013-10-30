@@ -28,10 +28,11 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: tapdev-drv.c,v 1.6 2010/10/19 18:29:04 adamdunkels Exp $
  */
 
 #include "contiki-net.h"
+#include "net/uip.h"
+#include "net/uipopt.h"
 
 #if UIP_CONF_IPV6
 #include "tapdev6.h"
@@ -60,7 +61,6 @@ tapdev_output(void)
 static void
 pollhandler(void)
 {
-  process_poll(&tapdev_process);
   uip_len = tapdev_poll();
 
   if(uip_len > 0) {

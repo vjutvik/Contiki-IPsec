@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: example-rucb.c,v 1.7 2010/01/15 10:24:37 nifi Exp $
  */
 
 /**
@@ -105,7 +104,7 @@ const static struct rucb_callbacks rucb_call = {write_chunk, read_chunk,
 						NULL};
 static struct rucb_conn rucb;
 /*---------------------------------------------------------------------------*/
-#include "node-id.h"
+#include "sys/node-id.h"
 
 PROCESS_THREAD(example_rucb_process, ev, data)
 {

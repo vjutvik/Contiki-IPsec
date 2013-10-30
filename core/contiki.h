@@ -30,13 +30,13 @@
  *
  * Author: Adam Dunkels <adam@sics.se>
  *
- * $Id: contiki.h,v 1.6 2010/06/14 07:34:36 adamdunkels Exp $
  */
 #ifndef __CONTIKI_H__
 #define __CONTIKI_H__
 
 #include "contiki-version.h"
 #include "contiki-conf.h"
+#include "contiki-default-conf.h"
 
 #include "sys/process.h"
 #include "sys/autostart.h"

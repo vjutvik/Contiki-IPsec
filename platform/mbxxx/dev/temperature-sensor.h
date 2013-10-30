@@ -1,3 +1,8 @@
+/**
+ * \addtogroup mbxxx-platform
+ *
+ * @{
+ */
 /*
  * Copyright (c) 2010, STMicroelectronics.
  * All rights reserved.
@@ -29,7 +34,6 @@
  *
  * This file is part of the Contiki OS
  *
- * $Id: temperature-sensor.h,v 1.1 2010/10/25 09:03:39 salvopitru Exp $
  */
 /*---------------------------------------------------------------------------*/
 /**
@@ -60,3 +64,4 @@ extern const struct sensors_sensor temperature_sensor;
 #define TEMPERATURE_SENSOR "Temperature"
 
 #endif /* __TEMPERATURE_SENSOR_H__ */
+/** @} */

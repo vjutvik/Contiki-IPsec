@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: node-id.c,v 1.1 2007/03/23 09:59:08 nifi Exp $
  */
 
 /**
@@ -38,7 +37,7 @@
  *         Adam Dunkels <adam@sics.se>
  */
 
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "contiki-conf.h"
 #include "dev/xmem.h"
 

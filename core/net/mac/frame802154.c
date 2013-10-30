@@ -44,7 +44,6 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  $Id: frame802154.c,v 1.4 2010/02/18 21:00:28 adamdunkels Exp $
 */
 /*
  *  \brief This file is where the main functions that relate to frame
@@ -154,7 +153,7 @@ field_len(frame802154_t *p, field_length_t *flen)
  *
  *   \return The length of the frame header.
 */
-uint8_t
+int
 frame802154_hdrlen(frame802154_t *p)
 {
   field_length_t flen;
@@ -177,8 +176,8 @@ frame802154_hdrlen(frame802154_t *p)
  *   \return The length of the frame header or 0 if there was
  *   insufficient space in the buffer for the frame headers.
 */
-uint8_t
-frame802154_create(frame802154_t *p, uint8_t *buf, uint8_t buf_len)
+int
+frame802154_create(frame802154_t *p, uint8_t *buf, int buf_len)
 {
   int c;
   field_length_t flen;
@@ -237,7 +236,7 @@ frame802154_create(frame802154_t *p, uint8_t *buf, uint8_t buf_len)
 /*     pos += flen.aux_sec_len; */
   }
 
-  return pos;
+  return (int)pos;
 }
 /*----------------------------------------------------------------------------*/
 /**
@@ -249,12 +248,12 @@ frame802154_create(frame802154_t *p, uint8_t *buf, uint8_t buf_len)
  *   \param len The size of the input data
  *   \param pf The frame802154_t struct to store the parsed frame information.
  */
-uint8_t
-frame802154_parse(uint8_t *data, uint8_t len, frame802154_t *pf)
+int
+frame802154_parse(uint8_t *data, int len, frame802154_t *pf)
 {
   uint8_t *p;
   frame802154_fcf_t fcf;
-  uint8_t c;
+  int c;
 
   if(len < 3) {
     return 0;
@@ -346,7 +345,7 @@ frame802154_parse(uint8_t *data, uint8_t len, frame802154_t *pf)
   /* header length */
   c = p - data;
   /* payload length */
-  pf->payload_len = len - c;
+  pf->payload_len = (uint8_t)(0xff & (len - c));
   /* payload */
   pf->payload = p;
 

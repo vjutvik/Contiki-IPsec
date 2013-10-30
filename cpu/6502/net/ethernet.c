@@ -30,7 +30,6 @@
  *
  * Author: Oliver Schmidt <ol.sc@web.de>
  *
- * @(#)$Id: ethernet.c,v 1.7 2010/09/28 23:02:16 oliverschmidt Exp $
  */
 
 #include <modload.h>
@@ -74,7 +73,7 @@ ethernet_init(struct ethernet_config *config)
   byte = mod_load(&module_control);
   if(byte != MLOAD_OK) {
     log_message(config->name, byte == MLOAD_ERR_MEM? ": Out of memory":
-						     ": No module");
+                                                     ": No module");
     error_exit();
   }
 

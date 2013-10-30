@@ -28,10 +28,9 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: node-id.c,v 1.4 2009/08/24 15:44:45 nifi Exp $
  */
 
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "dev/infomem.h"
 
 uint16_t node_id = 0;

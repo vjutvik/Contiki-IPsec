@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: slip-bridge.c,v 1.6 2011/01/17 20:05:51 joxe Exp $
  */
 
 /**
@@ -119,6 +118,7 @@ output(void)
 }
 
 /*---------------------------------------------------------------------------*/
+#if !SLIP_BRIDGE_CONF_NO_PUTCHAR
 #undef putchar
 int
 putchar(int c)
@@ -146,6 +146,7 @@ putchar(int c)
   }
   return c;
 }
+#endif
 /*---------------------------------------------------------------------------*/
 const struct uip_fallback_interface rpl_interface = {
   init, output

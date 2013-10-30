@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: hello-world.c,v 1.1 2006/10/02 21:46:46 simonduq Exp $
  */
 
 /**
@@ -42,7 +41,7 @@
 #include "contiki-net.h"
 #include "uip.h"
 #include "net/rpl/rpl.h"
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "servreg-hack.h"
 
 #include "cfs/cfs.h"

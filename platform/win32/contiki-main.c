@@ -30,7 +30,6 @@
  * 
  * Author: Oliver Schmidt <ol.sc@web.de>
  *
- * $Id: contiki-main.c,v 1.21 2010/10/27 22:17:39 oliverschmidt Exp $
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -113,19 +112,19 @@ main(void)
 #if !UIP_CONF_IPV6
   {
     uip_ipaddr_t addr;
-    uip_ipaddr(&addr, 10,1,1,1);
+    uip_ipaddr(&addr, 192,168,0,111);
     uip_sethostaddr(&addr);
     log_message("IP Address:  ", inet_ntoa(*(struct in_addr*)&addr));
 
-    uip_ipaddr(&addr, 255,0,0,0);
+    uip_ipaddr(&addr, 255,255,255,0);
     uip_setnetmask(&addr);
     log_message("Subnet Mask: ", inet_ntoa(*(struct in_addr*)&addr));
 
-    uip_ipaddr(&addr, 10,1,1,100);
+    uip_ipaddr(&addr, 192,168,0,1);
     uip_setdraddr(&addr);
     log_message("Def. Router: ", inet_ntoa(*(struct in_addr*)&addr));
 
-    uip_ipaddr(&addr, 10,1,1,100);
+    uip_ipaddr(&addr, 192,168,0,1);
     resolv_conf(&addr);
     log_message("DNS Server:  ", inet_ntoa(*(struct in_addr*)&addr));
   }
@@ -160,11 +159,11 @@ main(void)
     /* Allow user-mode APC to execute. */
     SleepEx(10, TRUE);
 
-#if WITH_GUI
+#ifdef PLATFORM_BUILD
     if(console_resize()) {
 	ctk_restore();
     }
-#endif /* WITH_GUI */
+#endif /* PLATFORM_BUILD */
   }
 }
 /*-----------------------------------------------------------------------------------*/

@@ -53,7 +53,7 @@
 #include <limits.h>
 #include <string.h>
 
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
 #define UIP_IP_BUF                ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 #define UIP_EXT_BUF               ((struct uip_ext_hdr *)&uip_buf[uip_l2_l3_hdr_len])
 #define UIP_HBHO_BUF              ((struct uip_hbho_hdr *)&uip_buf[uip_l2_l3_hdr_len])
@@ -61,7 +61,8 @@
 #define UIP_EXT_HDR_OPT_BUF       ((struct uip_ext_hdr_opt *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset])
 #define UIP_EXT_HDR_OPT_PADN_BUF  ((struct uip_ext_hdr_opt_padn *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset])
 #define UIP_EXT_HDR_OPT_RPL_BUF   ((struct uip_ext_hdr_opt_rpl *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset])
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
+#if UIP_CONF_IPV6
 int
 rpl_verify_header(int uip_ext_opt_offset)
 {
@@ -74,17 +75,35 @@ rpl_verify_header(int uip_ext_opt_offset)
     return 1;
   }
 
-  if(UIP_EXT_HDR_OPT_RPL_BUF->flags & RPL_HDR_OPT_FWD_ERR) {
-    PRINTF("RPL: Forward error!\n");
-    /* We should try to repair it, not implemented for the moment */
-    return 2;
-  }
-
   instance = rpl_get_instance(UIP_EXT_HDR_OPT_RPL_BUF->instance);
   if(instance == NULL) {
     PRINTF("RPL: Unknown instance: %u\n",
            UIP_EXT_HDR_OPT_RPL_BUF->instance);
     return 1;
+  }
+
+  if(UIP_EXT_HDR_OPT_RPL_BUF->flags & RPL_HDR_OPT_FWD_ERR) {
+    /* We should try to repair it by removing the neighbor that caused
+       the packet to be forwareded in the first place. We drop any
+       routes that go through the neighbor that sent the packet to
+       us. */
+    uip_ds6_route_t *route;
+    route = uip_ds6_route_lookup(&UIP_IP_BUF->destipaddr);
+    if(route != NULL) {
+      uip_ds6_route_rm(route);
+
+      /* If we are the root and just needed to remove a DAO route,
+         chances are that the network needs to be repaired. The
+         rpl_repair_root() function will cause a global repair if we
+         happen to be the root node of the dag. */
+      PRINTF("RPL: initiate global repair\n");
+      rpl_repair_root(instance->instance_id);
+    }
+
+    /* Remove the forwarding error flag and return 0 to let the packet
+       be forwarded again. */
+    UIP_EXT_HDR_OPT_RPL_BUF->flags &= ~RPL_HDR_OPT_FWD_ERR;
+    return 0;
   }
 
   if(!instance->current_dag->joined) {
@@ -97,9 +116,14 @@ rpl_verify_header(int uip_ext_opt_offset)
     down = 1;
   }
 
-  PRINTF("RPL: Packet going %s\n", down == 1 ? "down" : "up");
-
   sender_closer = UIP_EXT_HDR_OPT_RPL_BUF->senderrank < instance->current_dag->rank;
+
+  PRINTF("RPL: Packet going %s, sender closer %d (%d < %d)\n", down == 1 ? "down" : "up",
+	 sender_closer,
+	 UIP_EXT_HDR_OPT_RPL_BUF->senderrank,
+	 instance->current_dag->rank
+	 );
+
   if((down && !sender_closer) || (!down && sender_closer)) {
     PRINTF("RPL: Loop detected - senderrank: %d my-rank: %d sender_closer: %d\n",
 	   UIP_EXT_HDR_OPT_RPL_BUF->senderrank, instance->current_dag->rank,
@@ -107,7 +131,9 @@ rpl_verify_header(int uip_ext_opt_offset)
     if(UIP_EXT_HDR_OPT_RPL_BUF->flags & RPL_HDR_OPT_RANK_ERR) {
       PRINTF("RPL: Rank error signalled in RPL option!\n");
       /* We should try to repair it, not implemented for the moment */
-      return 3;
+      rpl_reset_dio_timer(instance);
+      /* Forward the packet anyway. */
+      return 0;
     }
     PRINTF("RPL: Single error tolerated\n");
     UIP_EXT_HDR_OPT_RPL_BUF->flags |= RPL_HDR_OPT_RANK_ERR;
@@ -118,7 +144,7 @@ rpl_verify_header(int uip_ext_opt_offset)
 
   return 0;
 }
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
 static void
 set_rpl_opt(unsigned uip_ext_opt_offset)
 {
@@ -141,7 +167,7 @@ set_rpl_opt(unsigned uip_ext_opt_offset)
     UIP_IP_BUF->len[0]++;
   }
 }
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
 void
 rpl_update_header_empty(void)
 {
@@ -183,7 +209,33 @@ rpl_update_header_empty(void)
   switch(UIP_EXT_HDR_OPT_BUF->type) {
   case UIP_EXT_HDR_OPT_RPL:
     PRINTF("RPL: Updating RPL option\n");
-    UIP_EXT_HDR_OPT_RPL_BUF->senderrank=instance->current_dag->rank;
+    UIP_EXT_HDR_OPT_RPL_BUF->senderrank = instance->current_dag->rank;
+
+    /* Check the direction of the down flag, as per Section 11.2.2.3,
+       which states that if a packet is going down it should in
+       general not go back up again. If this happens, a
+       RPL_HDR_OPT_FWD_ERR should be flagged. */
+    if((UIP_EXT_HDR_OPT_RPL_BUF->flags & RPL_HDR_OPT_DOWN)) {
+      if(uip_ds6_route_lookup(&UIP_IP_BUF->destipaddr) == NULL) {
+        UIP_EXT_HDR_OPT_RPL_BUF->flags |= RPL_HDR_OPT_FWD_ERR;
+        PRINTF("RPL forwarding error\n");
+      }
+    } else {
+      /* Set the down extension flag correctly as described in Section
+         11.2 of RFC6550. If the packet progresses along a DAO route,
+         the down flag should be set. */
+      if(uip_ds6_route_lookup(&UIP_IP_BUF->destipaddr) == NULL) {
+        /* No route was found, so this packet will go towards the RPL
+           root. If so, we should not set the down flag. */
+        UIP_EXT_HDR_OPT_RPL_BUF->flags &= ~RPL_HDR_OPT_DOWN;
+        PRINTF("RPL option going up\n");
+      } else {
+        /* A DAO route was found so we set the down flag. */
+        UIP_EXT_HDR_OPT_RPL_BUF->flags |= RPL_HDR_OPT_DOWN;
+        PRINTF("RPL option going down\n");
+      }
+    }
+
     uip_ext_len = last_uip_ext_len;
     return;
   default:
@@ -192,7 +244,7 @@ rpl_update_header_empty(void)
     return;
   }
 }
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
 int
 rpl_update_header_final(uip_ipaddr_t *addr)
 {
@@ -230,14 +282,12 @@ rpl_update_header_final(uip_ipaddr_t *addr)
   }
   return 0;
 }
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
 void
 rpl_remove_header(void)
 {
-  int last_uip_ext_len;
   uint8_t temp_len;
 
-  last_uip_ext_len = uip_ext_len;
   uip_ext_len = 0;
 
   PRINTF("RPL: Verifying the presence of the RPL header option\n");
@@ -257,7 +307,7 @@ rpl_remove_header(void)
     PRINTF("RPL: No hop-by-hop Option found\n");
   }
 }
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
 uint8_t
 rpl_invert_header(void)
 {
@@ -292,4 +342,17 @@ rpl_invert_header(void)
     return 0;
   }
 }
-/************************************************************************/
+/*---------------------------------------------------------------------------*/
+void
+rpl_insert_header(void)
+{
+  uint8_t uip_ext_opt_offset;
+  if(default_instance != NULL) {
+    uip_ext_opt_offset = 2;
+    if(UIP_EXT_HDR_OPT_BUF->type == UIP_EXT_HDR_OPT_RPL) {
+      rpl_update_header_empty();
+    }
+  }
+}
+/*---------------------------------------------------------------------------*/
+#endif /* UIP_CONF_IPV6 */

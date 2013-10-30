@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: tapdev-drv.h,v 1.1 2007/05/20 21:32:24 oliverschmidt Exp $
  */
 
 #ifndef __TAPDEV_DRV_H__
@@ -39,5 +38,6 @@
 PROCESS_NAME(tapdev_process);
 
 uint8_t tapdev_output(void);
+int tapdev_fd(void);
 
 #endif /* __TAPDEV_DRV_H__ */

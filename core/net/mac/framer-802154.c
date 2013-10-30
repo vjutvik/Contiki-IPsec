@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: framer-802154.c,v 1.12 2010/06/14 19:19:16 adamdunkels Exp $
  */
 
 /**
@@ -91,7 +90,7 @@ static int
 create(void)
 {
   frame802154_t params;
-  uint8_t len;
+  int len;
 
   /* init to zeros */
   memset(&params, 0, sizeof(params));
@@ -174,8 +173,8 @@ create(void)
     frame802154_create(&params, packetbuf_hdrptr(), len);
 
     PRINTF("15.4-OUT: %2X", params.fcf.frame_type);
-    PRINTADDR(params.dest_addr.u8);
-    PRINTF("%u %u (%u)\n", len, packetbuf_datalen(), packetbuf_totlen());
+    PRINTADDR(params.dest_addr);
+    PRINTF("%d %u (%u)\n", len, packetbuf_datalen(), packetbuf_totlen());
 
     return len;
   } else {

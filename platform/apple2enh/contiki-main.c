@@ -30,7 +30,6 @@
  * 
  * Author: Oliver Schmidt <ol.sc@web.de>
  *
- * $Id: contiki-main.c,v 1.23 2010/10/27 22:17:39 oliverschmidt Exp $
  */
 
 #include "contiki-net.h"
@@ -46,15 +45,15 @@
 #endif /* WITH_GUI */
 
 #if WITH_DNS
-#define RESOLV_PROCESS &resolv_process,
+#define RESOLV_PROCESS ,&resolv_process
 #else /* WITH_DNS */
 #define RESOLV_PROCESS
 #endif /* WITH_DNS */
 
 PROCINIT(&etimer_process,
-	 CTK_PROCESS
-	 RESOLV_PROCESS
-	 &tcpip_process);
+         CTK_PROCESS
+         &tcpip_process
+         RESOLV_PROCESS);
 
 void clock_update(void);
 
@@ -102,7 +101,7 @@ main(void)
   autostart_start(autostart_processes);
 
   log_message("Contiki up and running ...", "");
-  
+
   while(1) {
 
     process_run();

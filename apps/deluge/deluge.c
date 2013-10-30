@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: deluge.c,v 1.10 2010/06/14 18:58:45 adamdunkels Exp $
  */
 
 /**
@@ -47,7 +46,7 @@
 #include "loader/elfloader.h"
 #include "lib/crc16.h"
 #include "lib/random.h"
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "deluge.h"
 
 #if NETSIM

@@ -1,3 +1,8 @@
+/**
+ * \addtogroup mbxxx-platform
+ *
+ * @{
+ */
 /*
  * Copyright (c) 2010, STMicroelectronics.
  * All rights reserved.
@@ -29,7 +34,6 @@
  *
  * This file is part of the Contiki OS
  *
- * $Id: acc-sensor.h,v 1.1 2010/10/25 09:03:39 salvopitru Exp $
  */
 /*---------------------------------------------------------------------------*/
 /**
@@ -76,3 +80,4 @@ extern const struct sensors_sensor acc_sensor;
 #define ACC_Z_AXIS    3
 
 #endif /* __ACC_SENSOR_H__ */
+/** @} */

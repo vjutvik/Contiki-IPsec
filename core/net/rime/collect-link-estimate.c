@@ -32,7 +32,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: collect-link-estimate.c,v 1.6 2011/01/09 21:14:22 adamdunkels Exp $
  */
 
 /**
@@ -63,6 +62,9 @@
 void
 collect_link_estimate_new(struct collect_link_estimate *le)
 {
+  if(le == NULL) {
+    return;
+  }
   le->num_estimates = 0;
   le->etx_accumulator = COLLECT_LINK_ESTIMATE_UNIT;
 }
@@ -70,6 +72,9 @@ collect_link_estimate_new(struct collect_link_estimate *le)
 void
 collect_link_estimate_update_tx(struct collect_link_estimate *le, uint8_t tx)
 {
+  if(le == NULL) {
+    return;
+  }
   if(tx == 0) {
     /*    printf("ERROR tx == 0\n");*/
     return;
@@ -96,6 +101,9 @@ void
 collect_link_estimate_update_tx_fail(struct collect_link_estimate *le,
                                      uint8_t tx)
 {
+  if(le == NULL) {
+    return;
+  }
   collect_link_estimate_update_tx(le, tx * 2);
 }
 /*---------------------------------------------------------------------------*/
@@ -108,6 +116,9 @@ collect_link_estimate_update_rx(struct collect_link_estimate *n)
 uint16_t
 collect_link_estimate(struct collect_link_estimate *le)
 {
+  if(le == NULL) {
+    return 0;
+  }
   if(le->num_estimates == 0) {
     return INITIAL_LINK_ESTIMATE * COLLECT_LINK_ESTIMATE_UNIT;
   }

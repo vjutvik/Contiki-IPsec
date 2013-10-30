@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: SkyMoteType.java,v 1.18 2010/03/14 19:45:04 fros4943 Exp $
  */
 
 package se.sics.cooja.mspmote;
@@ -203,6 +202,9 @@ public class SkyMoteType extends MspMoteType {
     return null;
   }
 
+  public Class<? extends MoteInterface>[] getDefaultMoteInterfaceClasses() {
+	  return getAllMoteInterfaceClasses();
+  }
   public Class<? extends MoteInterface>[] getAllMoteInterfaceClasses() {
     return new Class[] {
         Position.class,

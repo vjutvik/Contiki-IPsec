@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: contiki-conf.h,v 1.10 2010/03/18 20:11:54 dak664 Exp $
  */
 
 #ifndef __CONTIKI_CONF_H__
@@ -44,6 +43,10 @@
 
 #define CCIF
 #define CLIF
+
+#ifndef EEPROM_CONF_SIZE
+#define EEPROM_CONF_SIZE				1024
+#endif
 
 /* These names are deprecated, use C99 names. */
 typedef uint8_t   u8_t;
@@ -157,12 +160,11 @@ typedef unsigned short uip_stats_t;
 #define UIP_CONF_IPV6_REASSEMBLY      1
 //#define UIP_CONF_NETIF_MAX_ADDRESSES  5
 //#define UIP_CONF_ND6_MAX_PREFIXES     3
-//#define UIP_CONF_ND6_MAX_NEIGHBORS    40 
 //#define UIP_CONF_ND6_MAX_DEFROUTERS   2
-#define UIP_CONF_DS6_NBR_NBU     100
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     100
 #define UIP_CONF_DS6_DEFRT_NBU   2
 #define UIP_CONF_DS6_PREFIX_NBU  5
-#define UIP_CONF_DS6_ROUTE_NBU   100
+#define UIP_CONF_MAX_ROUTES   100
 #define UIP_CONF_DS6_ADDR_NBU    10
 #define UIP_CONF_DS6_MADDR_NBU   0
 #define UIP_CONF_DS6_AADDR_NBU   0

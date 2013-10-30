@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: shell-sky.c,v 1.17 2010/10/12 11:34:08 adamdunkels Exp $
  */
 
 /**
@@ -53,7 +52,7 @@
 #include "dev/sht11-sensor.h"
 #include "net/rime/timesynch.h"
 
-#include "node-id.h"
+#include "sys/node-id.h"
 
 #include <stdio.h>
 #include <string.h>

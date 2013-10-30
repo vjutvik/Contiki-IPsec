@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: test-deluge.c,v 1.3 2009/04/07 15:14:17 nvt-se Exp $
  */
 
 /**
@@ -41,7 +40,7 @@
 #include "contiki.h"
 #include "cfs/cfs.h"
 #include "deluge.h"
-#include "node-id.h"
+#include "sys/node-id.h"
 
 #include <stdio.h>
 #include <string.h>

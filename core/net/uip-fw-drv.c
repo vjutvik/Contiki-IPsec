@@ -30,10 +30,11 @@
  *
  * Author: Adam Dunkels <adam@sics.se>
  *
- * $Id: uip-fw-drv.c,v 1.4 2007/05/23 22:17:08 oliverschmidt Exp $
  */
 
 #include "net/uip-fw.h"
+
+#if !UIP_CONF_IPV6
 
 PROCESS(uip_fw_process, "IP forwarding");
 
@@ -49,3 +50,5 @@ PROCESS_THREAD(uip_fw_process, ev, data)
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+
+#endif /* UIP_CONF_IPV6 */

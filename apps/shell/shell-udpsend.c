@@ -30,7 +30,6 @@
  *
  * Author: Adam Dunkels <adam@sics.se>
  *
- * $Id: shell-udpsend.c,v 1.7 2010/10/19 18:29:03 adamdunkels Exp $
  */
 
 #include <string.h>
@@ -124,7 +123,7 @@ PROCESS_THREAD(shell_udpsend_process, ev, data)
     } else if(ev == resolv_event_found) {
       /* Either found a hostname, or not. */
       if((char *)data != NULL &&
-	 resolv_lookup((char *)data) != NULL) {
+	 resolv_lookup((char *)data, &ipaddr) == RESOLV_STATUS_CACHED) {
 	uip_ipaddr_copy(serveraddr, ipaddr);
 	telnet_connect(&s, server, serveraddr, nick);
       } else {

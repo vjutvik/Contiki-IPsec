@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: sicslowmac.c,v 1.8 2010/06/14 19:19:17 adamdunkels Exp $
  */
 
 
@@ -147,7 +146,11 @@ send_packet(mac_callback_t sent, void *ptr)
    * Set up the source address using only the long address mode for
    * phase 1.
    */
+#if NETSTACK_CONF_BRIDGE_MODE
+  rimeaddr_copy((rimeaddr_t *)&params.src_addr,packetbuf_addr(PACKETBUF_ADDR_SENDER));
+#else
   rimeaddr_copy((rimeaddr_t *)&params.src_addr, &rimeaddr_node_addr);
+#endif
 
   params.payload = packetbuf_dataptr();
   params.payload_len = packetbuf_datalen();
@@ -157,7 +160,7 @@ send_packet(mac_callback_t sent, void *ptr)
     frame802154_create(&params, packetbuf_hdrptr(), len);
 
     PRINTF("6MAC-UT: %2X", params.fcf.frame_type);
-    PRINTADDR(params.dest_addr.u8);
+    PRINTADDR(params.dest_addr);
     PRINTF("%u %u (%u)\n", len, packetbuf_datalen(), packetbuf_totlen());
 
     ret = NETSTACK_RADIO.send(packetbuf_hdrptr(), packetbuf_totlen());
@@ -204,12 +207,14 @@ input_packet(void)
       }
       if(!is_broadcast_addr(frame.fcf.dest_addr_mode, frame.dest_addr)) {
         packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, (rimeaddr_t *)&frame.dest_addr);
+#if !NETSTACK_CONF_BRIDGE_MODE
         if(!rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_RECEIVER),
                          &rimeaddr_node_addr)) {
           /* Not for this node */
           PRINTF("6MAC: not for us\n");
           return;
         }
+#endif
       }
     }
     packetbuf_set_addr(PACKETBUF_ADDR_SENDER, (rimeaddr_t *)&frame.src_addr);

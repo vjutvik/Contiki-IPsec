@@ -33,7 +33,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: mesh.c,v 1.20 2009/12/18 14:57:15 nvt-se Exp $
  */
 
 /**
@@ -127,11 +126,15 @@ found_route(struct route_discovery_conn *rdc, const rimeaddr_t *dest)
     c->queued_data = NULL;
 
     rt = route_lookup(dest);
-    if (rt != NULL) {
+    if(rt != NULL) {
       multihop_resend(&c->multihop, &rt->nexthop);
-      c->cb->sent(c);
+      if(c->cb->sent != NULL) {
+        c->cb->sent(c);
+      }
     } else {
-      c->cb->timedout(c);
+      if(c->cb->timedout != NULL) {
+        c->cb->timedout(c);
+      }
     }
   }
 }
@@ -192,8 +195,17 @@ mesh_send(struct mesh_conn *c, const rimeaddr_t *to)
     PRINTF("mesh_send: could not send\n");
     return 0;
   }
-  c->cb->sent(c);
+  if(c->cb->sent != NULL) {
+    c->cb->sent(c);
+  }
   return 1;
 }
 /*---------------------------------------------------------------------------*/
+int
+mesh_ready(struct mesh_conn *c)
+{
+  return (c->queued_data == NULL);
+}
+
+
 /** @} */

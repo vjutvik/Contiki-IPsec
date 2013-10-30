@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: mac.c,v 1.2 2010/02/23 18:49:58 adamdunkels Exp $
  */
 
 #include "net/mac/mac.h"
@@ -46,7 +45,7 @@ void
 mac_call_sent_callback(mac_callback_t sent, void *ptr, int status, int num_tx)
 {
   PRINTF("mac_callback_t %p ptr %p status %d num_tx %d\n",
-         sent, ptr, status, num_tx);
+         (void *)sent, ptr, status, num_tx);
   switch(status) {
   case MAC_TX_COLLISION:
     PRINTF("mac: collision after %d tx\n", num_tx);

@@ -381,7 +381,21 @@ public class Msp802154Radio extends Radio implements CustomDataRadio {
     }
     rssiLastCounter = 8;
   }
+  
+  
+  /* This will set the CORR-value of the CC2420
+   * 
+   * @see se.sics.cooja.interfaces.Radio#setLQI(int)
+   */
+  public void setLQI(int lqi){
+	  radio.setLQI(lqi);
+  }
 
+  public int getLQI(){
+	  return radio.getLQI();
+  }
+  
+  
   public Mote getMote() {
     return mote;
   }
@@ -408,5 +422,12 @@ public class Msp802154Radio extends Radio implements CustomDataRadio {
       return false;
     }
     return true;
+  }
+  
+  public boolean canReceiveFrom(CustomDataRadio radio) {
+    if (radio.getClass().equals(this.getClass())) {
+      return true;
+    }
+    return false;
   }
 }

@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: burn-nodeid.c,v 1.1 2010/08/24 16:26:38 joxe Exp $
  */
 
 /**
@@ -40,7 +39,7 @@
 
 #include "dev/leds.h"
 #include "dev/watchdog.h"
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "contiki.h"
 #include "sys/etimer.h"
 

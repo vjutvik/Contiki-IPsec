@@ -33,7 +33,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: packetbuf.c,v 1.1 2010/06/14 19:19:16 adamdunkels Exp $
  */
 
 /**
@@ -110,7 +109,7 @@ packetbuf_compact(void)
   if(packetbuf_is_reference()) {
     memcpy(&packetbuf[PACKETBUF_HDR_SIZE], packetbuf_reference_ptr(),
 	   packetbuf_datalen());
-  } else if (bufptr > 0) {
+  } else if(bufptr > 0) {
     len = packetbuf_datalen() + PACKETBUF_HDR_SIZE;
     for(i = PACKETBUF_HDR_SIZE; i < len; i++) {
       packetbuf[i] = packetbuf[bufptr + i];

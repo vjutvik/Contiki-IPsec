@@ -24,7 +24,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: Simulation.java,v 1.70 2011/01/13 19:05:09 adamdunkels Exp $
  */
 
 package se.sics.cooja;
@@ -60,7 +59,8 @@ public class Simulation extends Observable implements Runnable {
   /*private static long EVENT_COUNTER = 0;*/
 
   private Vector<Mote> motes = new Vector<Mote>();
-
+  private Vector<Mote> motesUninit = new Vector<Mote>();
+  
   private Vector<MoteType> moteTypes = new Vector<MoteType>();
 
   /* If true, run simulation at full speed */
@@ -659,7 +659,10 @@ public class Simulation extends Observable implements Runnable {
               availableMoteTypes,
               moteTypeClassName
           );
-          if (newClass != null && !newClass.equals(moteTypeClassName)) {
+          if (newClass == null) {
+            throw new MoteType.MoteTypeCreationException("No mote type class selected");
+          }
+          if (!newClass.equals(moteTypeClassName)) {
             logger.warn("Changing mote type class: " + moteTypeClassName + " -> " + newClass);
             moteTypeClassName = newClass;
           }
@@ -820,6 +823,7 @@ public class Simulation extends Observable implements Runnable {
         }
 
         motes.add(mote);
+        motesUninit.remove(mote);
         currentRadioMedium.registerMote(mote, Simulation.this);
 
         /* Notify mote interfaces that node was added */
@@ -839,6 +843,9 @@ public class Simulation extends Observable implements Runnable {
       /* Add mote from simulation thread */
       invokeSimulationThread(addMote);
     }
+    //Add to list of uninitialized motes
+    motesUninit.add(mote);
+    
   }
 
   /**
@@ -870,6 +877,24 @@ public class Simulation extends Observable implements Runnable {
   }
 
   /**
+   * Returns uninitialised simulation mote with with given ID.
+   * 
+   * @param id ID
+   * @return Mote or null
+   * @see Mote#getID()
+   */
+  public Mote getMoteWithIDUninit(int id) {
+    for (Mote m: motesUninit) {
+      if (m.getID() == id) {
+        return m;
+      }
+    }
+    return null;
+  }
+
+
+
+  /**
    * Returns number of motes in this simulation.
    *
    * @return Number of motes
@@ -888,6 +913,16 @@ public class Simulation extends Observable implements Runnable {
     motes.toArray(arr);
     return arr;
   }
+
+  /**
+   * Returns uninitialised motes
+   *
+   * @return Motes
+   */
+  public Mote[] getMotesUninit() {
+    return motesUninit.toArray(new Mote[motesUninit.size()]);
+  }
+
 
   /**
    * Returns all mote types in simulation.
@@ -957,7 +992,7 @@ public class Simulation extends Observable implements Runnable {
    * @param newSpeedLimit
    */
   public void setSpeedLimit(final Double newSpeedLimit) {
-    invokeSimulationThread(new Runnable() {
+    Runnable r = new Runnable() {
       public void run() {
         if (newSpeedLimit == null) {
           speedLimitNone = true;
@@ -976,7 +1011,14 @@ public class Simulation extends Observable implements Runnable {
         Simulation.this.setChanged();
         Simulation.this.notifyObservers(this);
       }
-    });
+    };
+    if (!isRunning()) {
+    	/* Simulation is stopped, change speed immediately */
+    	r.run();
+    } else {
+    	/* Change speed from simulation thread */
+    	invokeSimulationThread(r);
+    }
   }
 
   /**
@@ -1072,9 +1114,6 @@ public class Simulation extends Observable implements Runnable {
    * @return True if simulation is runnable
    */
   public boolean isRunnable() {
-    if (motes.isEmpty()) {
-      return false;
-    }
     return isRunning || hasPollRequests || eventQueue.peekFirst() != null;
   }
 

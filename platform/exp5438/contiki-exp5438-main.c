@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#)$Id: contiki-z1-main.c,v 1.4 2010/08/26 22:08:11 nifi Exp $
  */
 
 #include "contiki.h"
@@ -51,7 +50,7 @@
 #include "sys/autostart.h"
 #include "sys/profile.h"
 
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "lcd.h"
 #include "duty-cycle-scroller.h"
 
@@ -67,6 +66,8 @@
 #else
 #define PRINTF(...)
 #endif
+
+extern unsigned char node_mac[8];
 
 //SENSORS(&button_sensor);
 /*---------------------------------------------------------------------------*/

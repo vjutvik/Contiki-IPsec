@@ -30,7 +30,6 @@
  * 
  * Author: Oliver Schmidt <ol.sc@web.de>
  *
- * $Id: ctk-mouse.c,v 1.3 2009/10/18 09:33:08 oliverschmidt Exp $
  */
 
 #include <mouse.h>
@@ -59,9 +58,9 @@ ctk_mouse_init(void)
     if(okay) {
       okay = mouse_install(&mouse_def_callbacks, module_control.module) == MOUSE_ERR_OK;
       if(okay) {
-	atexit((void (*)(void))mouse_uninstall);
+        atexit((void (*)(void))mouse_uninstall);
       } else {
-	mod_free(module_control.module);
+        mod_free(module_control.module);
       }
     }
     cfs_close(module_control.callerdata);

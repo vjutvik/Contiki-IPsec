@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: MspCompileDialog.java,v 1.2 2010/03/08 14:26:12 fros4943 Exp $
  */
 
 package se.sics.cooja.mspmote;
@@ -72,8 +71,11 @@ public class MspCompileDialog extends AbstractCompileDialog {
     addCompilationTipsTab(tabbedPane);
   }
 
+  public Class<? extends MoteInterface>[] getAllMoteInterfaces() {
+	  return ((MspMoteType)moteType).getAllMoteInterfaceClasses();
+  }
   public Class<? extends MoteInterface>[] getDefaultMoteInterfaces() {
-    return ((MspMoteType)moteType).getAllMoteInterfaceClasses();
+	  return ((MspMoteType)moteType).getDefaultMoteInterfaceClasses();
   }
 
   private void addCompilationTipsTab(JTabbedPane parent) {

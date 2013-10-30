@@ -184,6 +184,10 @@ public abstract class AbstractCompileDialog extends JDialog {
       public void actionPerformed(ActionEvent e) {
         JFileChooser fc = new JFileChooser();
 
+        File fp = new File(contikiField.getText());
+        if (fp.exists() && fp.isFile()) {
+            lastFile = fp;
+        }
         if (lastFile == null) {
           String path = GUI.getExternalToolsSetting("COMPILE_LAST_FILE", null);
           if (path != null) {
@@ -252,6 +256,12 @@ public abstract class AbstractCompileDialog extends JDialog {
 
     topPanel.add(sourcePanel);
 
+    
+    Action cancelAction = new AbstractAction("Cancel") {
+      public void actionPerformed(ActionEvent e) {
+        AbstractCompileDialog.this.dispose();
+      }
+    };
     Action compileAction = new AbstractAction("Compile") {
     	private static final long serialVersionUID = 1L;
     	public void actionPerformed(ActionEvent e) {
@@ -341,6 +351,41 @@ public abstract class AbstractCompileDialog extends JDialog {
       }
     });
 
+    descriptionField.requestFocus();
+    descriptionField.select(0, descriptionField.getText().length());
+
+    /* Add listener only after restoring old config */
+    contikiField.getDocument().addDocumentListener(contikiFieldListener);
+
+    /* Final touches: respect window size, focus on description etc */
+    Rectangle maxSize = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+    if (maxSize != null &&
+        (getSize().getWidth() > maxSize.getWidth() || getSize().getHeight() > maxSize.getHeight())) {
+      Dimension newSize = new Dimension();
+      newSize.height = Math.min((int) maxSize.getHeight(), (int) getSize().getHeight());
+      newSize.width = Math.min((int) maxSize.getWidth(), (int) getSize().getWidth());
+      /*logger.info("Resizing dialog: " + myDialog.getSize() + " -> " + newSize);*/
+      setSize(newSize);
+    }
+
+    /* Recompile at Ctrl+R */
+    InputMap inputMap = getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, KeyEvent.CTRL_DOWN_MASK, false), "recompile");
+    inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0, false), "dispose");
+    getRootPane().getActionMap().put("recompile", compileAction);
+    getRootPane().getActionMap().put("dispose", cancelAction);
+
+    pack();
+    setLocationRelativeTo(parent);
+    
+    new Thread() {
+      public void run() {
+        tryRestoreMoteType();
+      };
+    }.start();
+  }
+
+  private void tryRestoreMoteType() { 
     /* Restore old configuration if mote type is already configured */
     boolean restoredDialogState = false;
     if (moteType != null) {
@@ -368,7 +413,7 @@ public abstract class AbstractCompileDialog extends JDialog {
         ((JCheckBox) c).setSelected(false);
       }
       if (moteType.getMoteInterfaceClasses() != null) {
-        for (Class<? extends MoteInterface> intfClass: getDefaultMoteInterfaces()) {
+        for (Class<? extends MoteInterface> intfClass: getAllMoteInterfaces()) {
           addMoteInterface(intfClass, false);
         }
         for (Class<? extends MoteInterface> intf: moteType.getMoteInterfaceClasses()) {
@@ -376,6 +421,9 @@ public abstract class AbstractCompileDialog extends JDialog {
         }
       } else {
         /* Select default mote interfaces */
+        for (Class<? extends MoteInterface> intfClass: getAllMoteInterfaces()) {
+          addMoteInterface(intfClass, false);
+        }
         for (Class<? extends MoteInterface> intfClass: getDefaultMoteInterfaces()) {
           addMoteInterface(intfClass, true);
         }
@@ -383,39 +431,14 @@ public abstract class AbstractCompileDialog extends JDialog {
 
       /* Restore compile commands */
       if (moteType.getCompileCommands() != null) {
-      	setCompileCommands(moteType.getCompileCommands());
-      	setDialogState(DialogState.AWAITING_COMPILATION);
+        setCompileCommands(moteType.getCompileCommands());
+        setDialogState(DialogState.AWAITING_COMPILATION);
         restoredDialogState = true;
       }
     }
     if (!restoredDialogState) {
       setDialogState(DialogState.NO_SELECTION);
     }
-
-    descriptionField.requestFocus();
-    descriptionField.select(0, descriptionField.getText().length());
-
-    /* Add listener only after restoring old config */
-    contikiField.getDocument().addDocumentListener(contikiFieldListener);
-
-    /* Final touches: respect window size, focus on description etc */
-    Rectangle maxSize = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-    if (maxSize != null &&
-        (getSize().getWidth() > maxSize.getWidth() || getSize().getHeight() > maxSize.getHeight())) {
-      Dimension newSize = new Dimension();
-      newSize.height = Math.min((int) maxSize.getHeight(), (int) getSize().getHeight());
-      newSize.width = Math.min((int) maxSize.getWidth(), (int) getSize().getWidth());
-      /*logger.info("Resizing dialog: " + myDialog.getSize() + " -> " + newSize);*/
-      setSize(newSize);
-    }
-
-    /* Recompile at Ctrl+R */
-    InputMap inputMap = getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-    inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, KeyEvent.CTRL_DOWN_MASK, false), "recompile");
-    getRootPane().getActionMap().put("recompile", compileAction);
-
-    pack();
-    setLocationRelativeTo(parent);
   }
 
   /**
@@ -465,11 +488,15 @@ public abstract class AbstractCompileDialog extends JDialog {
       throw new Exception("No compile commands specified");
     }
 
-    SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-		    setDialogState(DialogState.IS_COMPILING);
-			}
-		});
+    if (SwingUtilities.isEventDispatchThread()) {
+      setDialogState(DialogState.IS_COMPILING);
+    } else {
+      SwingUtilities.invokeAndWait(new Runnable() {
+        public void run() {
+          setDialogState(DialogState.IS_COMPILING);
+        }
+      });
+    }
     createNewCompilationTab(taskOutput);
 
     /* Add abort compilation menu item */
@@ -535,6 +562,7 @@ public abstract class AbstractCompileDialog extends JDialog {
             );
           } catch (Exception ex) {
             logger.fatal("Exception when compiling: " + ex.getMessage());
+            taskOutput.addMessage(ex.getMessage(), MessageList.ERROR);
             ex.printStackTrace();
             compilationFailureAction.actionPerformed(null);
           }
@@ -708,12 +736,13 @@ public abstract class AbstractCompileDialog extends JDialog {
   };
 
   public abstract Class<? extends MoteInterface>[] getDefaultMoteInterfaces();
+  public abstract Class<? extends MoteInterface>[] getAllMoteInterfaces();
 
   /**
    * @return Currently selected mote interface classes
    */
   public Class<? extends MoteInterface>[] getSelectedMoteInterfaceClasses() {
-    ArrayList<Class<? extends MoteInterface>> selected = new ArrayList();
+    ArrayList<Class<? extends MoteInterface>> selected = new ArrayList<Class<? extends MoteInterface>>();
 
     for (Component c : moteIntfBox.getComponents()) {
       if (!(c instanceof JCheckBox)) {
@@ -736,8 +765,7 @@ public abstract class AbstractCompileDialog extends JDialog {
     }
 
     Class<? extends MoteInterface>[] arr = new Class[selected.size()];
-    selected.toArray(arr);
-    return arr;
+    return selected.toArray(arr);
   }
 
   /**

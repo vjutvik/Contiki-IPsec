@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: test-abc.c,v 1.5 2010/02/05 11:52:37 nvt-se Exp $
  */
 
 /**
@@ -40,7 +39,7 @@
 
 #include "contiki.h"
 #include "net/rime.h"
-#include "node-id.h"
+#include "sys/node-id.h"
 
 #include <stdio.h>
 

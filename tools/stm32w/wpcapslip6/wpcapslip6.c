@@ -30,7 +30,6 @@
 *
 * This file is part of the uIP TCP/IP stack.
 *
-* $Id: wpcapslip6.c,v 1.3 2011/01/19 09:22:23 salvopitru Exp $
 */
 
  /**
@@ -1322,7 +1321,7 @@ main(int argc, char **argv)
 			tv.tv_usec = 10;
 			ret = select(maxfd + 1, &rset, &wset, NULL, &tv);
 		}
-		if(ret == -1 && errno != EINTR) {
+		if(ret == -1 && errno != EINTR && errno != EAGAIN) {
 			err(1, "select");
 		}
 		else if(ret > 0) {

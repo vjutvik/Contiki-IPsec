@@ -1,3 +1,8 @@
+/**
+ * \addtogroup mbxxx-platform
+ *
+ * @{
+ */
 /*
  * Copyright (c) 2010, STMicroelectronics.
  * All rights reserved.
@@ -28,14 +33,13 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: shell-sensors.c,v 1.1 2010/10/25 09:03:39 salvopitru Exp $
  */
  
  /**
  * \file
- *         Shell function for temp and acc sensors.
+ *          Shell function for temp and acc sensors.
  * \author
- *         Salvatore Pitrulli <salvopitru@users.sourceforge.net>
+ *          Salvatore Pitrulli <salvopitru@users.sourceforge.net>
  */
 
 #include <string.h>
@@ -95,3 +99,4 @@ shell_sensors_init(void)
   shell_register_command(&sensors_command);
 }
 /*---------------------------------------------------------------------------*/
+/** @} */

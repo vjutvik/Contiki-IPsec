@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: shell-text.c,v 1.7 2010/09/13 13:29:47 adamdunkels Exp $
  */
 
 /**
@@ -47,6 +46,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __CC65__
+#define HAVE_ALLOCA 0
+#else
+#define HAVE_ALLOCA 1
+#endif
+
 #define DEBUG 0
 #if DEBUG
 #include <stdio.h>
@@ -56,6 +61,7 @@
 #endif
 
 /*---------------------------------------------------------------------------*/
+#if HAVE_ALLOCA
 PROCESS(shell_bin2hex_process, "bin2hex");
 SHELL_COMMAND(bin2hex_command,
 	      "bin2hex",
@@ -71,12 +77,14 @@ SHELL_COMMAND(crc_command,
 	      "crc",
 	      "crc: append per-block crc",
 	      &shell_crc_process);
+#endif /* HAVE_ALLOCA */
 PROCESS(shell_crcvalidate_process, "crc-v");
 SHELL_COMMAND(crcvalidate_command,
 	      "crc-v",
 	      "crc-v: verify crc and output if valid",
 	      &shell_crcvalidate_process);
 /*---------------------------------------------------------------------------*/
+#if HAVE_ALLOCA
 static unsigned char
 fromhexchar(unsigned char c)
 {
@@ -222,6 +230,7 @@ PROCESS_THREAD(shell_crc_process, ev, data)
 
   PROCESS_END();
 }
+#endif /* HAVE_ALLOCA */
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(shell_crcvalidate_process, ev, data)
 {
@@ -290,9 +299,11 @@ PROCESS_THREAD(shell_crcvalidate_process, ev, data)
 void
 shell_crc_init(void)
 {
+#if HAVE_ALLOCA
   shell_register_command(&bin2hex_command);
   shell_register_command(&hex2bin_command);
   shell_register_command(&crc_command);
+#endif /* HAVE_ALLOCA */
   shell_register_command(&crcvalidate_command);
 }
 /*---------------------------------------------------------------------------*/

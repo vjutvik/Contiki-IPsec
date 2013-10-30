@@ -26,7 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#)$Id: contiki-z1-main.c,v 1.4 2010/08/26 22:08:11 nifi Exp $
  */
 
 #include <stdio.h>
@@ -54,7 +53,7 @@
 
 #include "net/rime.h"
 
-#include "node-id.h"
+#include "sys/node-id.h"
 #include "cfs-coffee-arch.h"
 #include "cfs/cfs-coffee.h"
 #include "sys/autostart.h"
@@ -67,6 +66,7 @@
 
 SENSORS(&button_sensor);
 
+extern unsigned char node_mac[8];
 
 #if DCOSYNCH_CONF_ENABLED
 static struct timer mgt_timer;

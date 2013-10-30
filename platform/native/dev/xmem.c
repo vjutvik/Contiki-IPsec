@@ -30,7 +30,6 @@
  *
  * Author: Adam Dunkels <adam@sics.se>
  *
- * $Id: xmem.c,v 1.2 2008/07/09 09:37:50 adamdunkels Exp $
  */
 
 #include "contiki-conf.h"
@@ -57,9 +56,9 @@ xmem_pwrite(const void *buf, int size, unsigned long offset)
   lseek(f, addr, SEEK_SET);
   write(f, buf, size);
   close(f);*/
-  
+
   /*  printf("xmem_write(offset 0x%02x, buf %p, size %l);\n", offset, buf, size);*/
-  
+
   memcpy(&xmem[offset], buf, size);
   return size;
 }

@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: leds-arch.c,v 1.1 2006/06/17 22:55:44 adamdunkels Exp $
  */
 
 /**
@@ -38,6 +37,7 @@
  *         Adam Dunkels <adam@sics.se>
  */
 
+#include <stdio.h>
 #include "dev/leds.h"
 static unsigned char leds;
 /*---------------------------------------------------------------------------*/
@@ -56,6 +56,15 @@ leds_arch_get(void)
 void
 leds_arch_set(unsigned char l)
 {
+  int i;
+
+  for(i = 0; i < 8 && ((1 << i) & LEDS_ALL); i++) {
+    if(((1 << i) & leds) && !((1 << i) & l)) {
+      printf("LED %d OFF\n", i);
+    } else if(!((1 << i) & leds) && ((1 << i) & l)) {
+      printf("LED %d ON\n", i);
+    }
+  }
   leds = l;
 }
 /*---------------------------------------------------------------------------*/

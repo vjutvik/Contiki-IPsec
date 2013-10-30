@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: elfloader.c,v 1.10 2009/02/27 14:28:02 nvt-se Exp $
  */
 
 #include "contiki.h"
@@ -193,6 +192,8 @@ find_local_symbol(int fd, const char *symbol,
 	  sect = &bss;
 	} else if(s.st_shndx == data.number) {
 	  sect = &data;
+  } else if(s.st_shndx == rodata.number) {
+    sect = &rodata;
 	} else if(s.st_shndx == text.number) {
 	  sect = &text;
 	} else {

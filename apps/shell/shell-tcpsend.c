@@ -30,7 +30,6 @@
  *
  * Author: Adam Dunkels <adam@sics.se>
  *
- * $Id: shell-tcpsend.c,v 1.5 2010/05/31 15:22:08 nifi Exp $
  */
 
 #include <string.h>
@@ -174,7 +173,7 @@ PROCESS_THREAD(shell_tcpsend_process, ev, data)
     } else if(ev == resolv_event_found) {
       /* Either found a hostname, or not. */
       if((char *)data != NULL &&
-	 resolv_lookup((char *)data) != NULL) {
+	 resolv_lookup((char *)data, &ipaddr) == RESOLV_STATUS_CACHED) {
 	uip_ipaddr_copy(serveraddr, ipaddr);
 	telnet_connect(&s, server, serveraddr, nick);
       } else {

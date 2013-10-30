@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: contiki-esb.h,v 1.6 2010/03/02 22:40:39 nifi Exp $
  */
 #ifndef __CONTIKI_ESB_H__
 #define __CONTIKI_ESB_H__
@@ -47,7 +46,7 @@
 #include "dev/serial-line.h"
 #include "dev/slip.h"
 
-#include "node-id.h"
+#include "sys/node-id.h"
 
 #include "dev/vib-sensor.h"
 #include "dev/pir-sensor.h"
@@ -64,7 +63,7 @@
 
 #include "dev/leds.h"
 
-#include "node-id.h"
+#include "sys/node-id.h"
 
 void msp430_cpu_init(void);
 void init_lowlevel(void);

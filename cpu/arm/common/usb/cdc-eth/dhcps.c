@@ -29,7 +29,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: dhcps.c,v 1.2 2010/10/19 18:29:04 adamdunkels Exp $
  */
 
 #include <stdio.h>
@@ -299,7 +298,7 @@ create_msg(CC_REGISTER_ARG struct dhcp_msg *m)
   m->op = DHCP_REPLY;
   /* m->htype = DHCP_HTYPE_ETHERNET; */
 /*   m->hlen = DHCP_HLEN_ETHERNET; */
-/*   memcpy(m->chaddr, &uip_ethaddr,DHCP_HLEN_ETHERNET); */
+/*   memcpy(m->chaddr, &uip_lladdr,DHCP_HLEN_ETHERNET); */
   m->hops = 0;
   m->secs = 0;
   memcpy(m->siaddr, &uip_hostaddr, 4);

@@ -29,7 +29,6 @@
  *
  * This file is part of the Contiki desktop environment
  *
- * $Id: simpletelnet.c,v 1.7 2010/10/19 18:29:03 adamdunkels Exp $
  *
  */
 
@@ -164,8 +163,7 @@ connect(void)
   addrptr = &addr;
 #if UIP_UDP
   if(uiplib_ipaddrconv(telnethost, &addr) == 0) {
-    addrptr = resolv_lookup(telnethost);
-    if(addrptr == NULL) {
+    if(resolv_lookup(telnethost, &addrptr) == RESOLV_STATUS_UNCACHED) {
       resolv_query(telnethost);
       show("Resolving host...");
       return;
@@ -253,7 +251,7 @@ PROCESS_THREAD(simpletelnet_process, ev, data)
 #if UIP_UDP
     } else if(ev == resolv_event_found) {
       if(strcmp(data, telnethost) == 0) {
-	if(resolv_lookup(telnethost) != NULL) {
+	if(resolv_lookup(telnethost, NULL) == RESOLV_STATUS_CACHED) {
 	  connect();
 	} else {
 	  show("Host not found");

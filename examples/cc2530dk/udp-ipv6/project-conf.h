@@ -28,7 +28,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id$
  */
 
 /**
@@ -45,5 +44,6 @@
 
 #define BUTTON_SENSOR_CONF_ON 1
 #define UIP_CONF_ICMP6        1
+#define RIMESTATS_CONF_ENABLED 1
 
 #endif /* PROJECT_CONF_H_ */

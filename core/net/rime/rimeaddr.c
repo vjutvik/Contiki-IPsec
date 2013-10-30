@@ -33,7 +33,6 @@
  *
  * This file is part of the Contiki operating system.
  *
- * $Id: rimeaddr.c,v 1.9 2008/11/30 18:26:57 adamdunkels Exp $
  */
 
 /**
@@ -44,6 +43,7 @@
  */
 
 #include "net/rime/rimeaddr.h"
+#include <string.h>
 
 rimeaddr_t rimeaddr_node_addr;
 #if RIMEADDR_SIZE == 2
@@ -59,22 +59,13 @@ const rimeaddr_t rimeaddr_null = { { 0, 0, 0, 0, 0, 0, 0, 0 } };
 void
 rimeaddr_copy(rimeaddr_t *dest, const rimeaddr_t *src)
 {
-  uint8_t i;
-  for(i = 0; i < RIMEADDR_SIZE; i++) {
-    dest->u8[i] = src->u8[i];
-  }
+	memcpy(dest, src, RIMEADDR_SIZE);
 }
 /*---------------------------------------------------------------------------*/
 int
 rimeaddr_cmp(const rimeaddr_t *addr1, const rimeaddr_t *addr2)
 {
-  uint8_t i;
-  for(i = 0; i < RIMEADDR_SIZE; i++) {
-    if(addr1->u8[i] != addr2->u8[i]) {
-      return 0;
-    }
-  }
-  return 1;
+	return (memcmp(addr1, addr2, RIMEADDR_SIZE) == 0);
 }
 /*---------------------------------------------------------------------------*/
 void
