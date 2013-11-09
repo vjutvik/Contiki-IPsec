@@ -153,7 +153,7 @@ Setting up Linux
 ----------------
 Strongswan is a popular IPsec implementation for the Linux kernel. While the actual encoding / decoding of IPsec packets takes place in the kernel's network stack, Strongswan's IKEv2 keying daemon _charon_ negotiates new SAs on behalf of the host according to a configured policy.
 
-In this tutorial we are using instant Contiki 2.6 which is based upon Ubuntu, but any Debian-based system ought to work.
+In this tutorial we are using instant Contiki 2.6 which is based upon Ubuntu, but any Debian-based system ought to work with these instructions.
 
 Install Strongswan:	
 
@@ -161,7 +161,7 @@ Install Strongswan:
 
 Copy the configuration files:
 
-	cp scripts/strongswan/ipsec.conf scripts/strongswan/strongswan.conf scripts/strongswan/ipsec.secrets /etc/
+	sudo cp scripts/strongswan/ipsec.conf scripts/strongswan/strongswan.conf scripts/strongswan/ipsec.secrets /etc/
 
 Restart charon and associated systems:
 

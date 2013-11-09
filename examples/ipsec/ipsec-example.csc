@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <simconf>
-  <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/mrm</project>
-  <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/mspsim</project>
-  <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/avrora</project>
-  <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/serial_socket</project>
-  <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/collect-view</project>
-  <project EXPORT="discard">[CONTIKI_DIR]/tools/cooja/apps/powertracker</project>
+  <project EXPORT="discard">[APPS_DIR]/mrm</project>
+  <project EXPORT="discard">[APPS_DIR]/mspsim</project>
+  <project EXPORT="discard">[APPS_DIR]/avrora</project>
+  <project EXPORT="discard">[APPS_DIR]/serial_socket</project>
+  <project EXPORT="discard">[APPS_DIR]/collect-view</project>
+  <project EXPORT="discard">[APPS_DIR]/powertracker</project>
   <simulation>
     <title>IPsec Example</title>
     <speedlimit>1.0</speedlimit>
@@ -89,7 +89,7 @@
   <plugin>
     se.sics.cooja.plugins.SimControl
     <width>280</width>
-    <z>3</z>
+    <z>1</z>
     <height>160</height>
     <location_x>15</location_x>
     <location_y>516</location_y>
@@ -107,7 +107,7 @@
       <viewport>8.170407035136911 0.0 0.0 8.170407035136911 -570.6979795599264 -66.05450565206408</viewport>
     </plugin_config>
     <width>357</width>
-    <z>1</z>
+    <z>2</z>
     <height>402</height>
     <location_x>1</location_x>
     <location_y>1</location_y>
@@ -116,11 +116,12 @@
     se.sics.cooja.plugins.LogListener
     <plugin_config>
       <filter />
+      <formatted_time />
       <coloring />
     </plugin_config>
-    <width>911</width>
+    <width>891</width>
     <z>0</z>
-    <height>938</height>
+    <height>700</height>
     <location_x>362</location_x>
     <location_y>2</location_y>
   </plugin>
@@ -128,7 +129,7 @@
     SerialSocketServer
     <mote_arg>0</mote_arg>
     <width>347</width>
-    <z>2</z>
+    <z>3</z>
     <height>102</height>
     <location_x>10</location_x>
     <location_y>407</location_y>

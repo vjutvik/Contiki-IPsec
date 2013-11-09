@@ -180,13 +180,52 @@ PROJECT_OBJECTFILES += ${addprefix $(OBJECTDIR)/,$(CONTIKI_TARGET_MAIN:.c=.o)}
 %.firmware:	%.${TARGET}
 	mv $< $@
 
+
+# For MSPGCC 4.7.2 start
+# include $(CONTIKI)/cpu/msp430/Makefile.msp430
+# 
+# 	ifdef IAR
+# 	 	LDFLAGSNO += -xm "$(IAR_PATH)/lib/dlib/dl430xsfn.r43" -f "$(IAR_PATH)/config/lnk430f5437.xcl"
+# 	 	LDFLAGS += $(LDFLAGSNO) -Felf -yn
+# else # IAR
+# 
+# 	ifndef MSPGCC_VERSION
+# 		MSPGCC_VERSION := ${shell $(CC) -dumpversion}
+# 	endif
+# 
+# 	ifneq (,$(findstring 4.7.,$(MSPGCC_VERSION)))
+# 	 # 20 bits flags for compilation (supported from mspgcc 4.7.0)
+# 	  CFLAGS += -mmemory-model=large -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+# 	  LDFLAGS += -mmemory-model=large -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+# 	endif
+# 
+# endif # IAR
+# For MSPGCC 4.7.2 end
+
+# Old MSPGCC start
 ifdef IAR
+$(info Using IAR)
 %.ihex: %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a
 	$(LD) $(LDFLAGSNO) -Fintel-extended $(TARGET_STARTFILES) ${filter-out %.a,$^} ${filter %.a,$^} $(TARGET_LIBFILES) -o $@
 else
+$(info IAR not defined. Using MSPGCC.)
+
+ifndef MSPGCC_VERSION
+	MSPGCC_VERSION := ${shell $(CC) -dumpversion}
+endif
+
+ifneq (,$(findstring 4.7.,$(MSPGCC_VERSION)))
+	# 20 bits flags for compilation (supported from mspgcc 4.7.0)
+	CFLAGS += -mmemory-model=large -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+	LDFLAGS += -mmemory-model=large -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+endif
+
 %.ihex: %.$(TARGET)
 	$(OBJCOPY) $^ -O ihex $@
 endif
+# Old MSPGCC end
+
+
 
 %.mspsim:	%.${TARGET}
 	java -jar ${CONTIKI}/tools/mspsim/mspsim.jar -platform=${TARGET} $<
