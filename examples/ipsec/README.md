@@ -97,6 +97,9 @@ This IPsec patch can be divided into two major components: IPsec base (static ke
 
 Both components have been tested on an emulated (Cooja running MSPsim) Wismote (16 MHz MSP430x CPU) as well as a Linux native process (the native target). In testing, a complete IKEv2 handshake between the emulated Wismote (100% emulation speed) and a Linux PC using a 192 bit ECC key took 10 seconds.
 
+If you are looking for IPsec functionality with the smallest possible memory footprint, you can use Simon Duquennoy's implementation which you will find at https://github.com/tecip-nes/contiki-tres/wiki/Building-the-latest-version-of-mspgcc
+It's more limited than this implementation, e.g. you can only use one static key, but it's known to work well.
+
 
 Quick Demonstration Setup of IPsec and IKEv2
 ============================================
@@ -340,8 +343,7 @@ This guide outlines an experiment where Wismote (emulated in Cooja) performs a h
 
 First, make sure that you are using MSPGCC 4.7.2 or later as 4.7.0 will cause memory corruption. Also, check that UIP\_CONF\_BUFFER\_SIZE is at least 400 B large or packets may be silently dropped.
 
-Procedure
----------
+Procedure:
 
 Compile the border router mote in examples/ipv6/rpl-border-router:
 
