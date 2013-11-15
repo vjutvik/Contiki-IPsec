@@ -93,12 +93,13 @@
 /*---------------------------------------------------------------------------*/
 
 // IPsec stuff start
-#define IPSECDBG_PRINTF(...) 	// PRINTF(__VA_ARGS__)
-#define MEMPRINT(...) 				// MEMPRINTF(__VA_ARGS__)
-
+// #define IPSECDBG_PRINTF(__VA_ARGS__) printf(__VA_ARGS__)
+// #define MEMPRINT(__VA_ARGS__) meprint(__VA_ARGS__)
+#define IPSECDBG_PRINTF(...) 
+#define MEMPRINT(...) 
 // IPsec stuff ends
 
-#define DEBUG DEBUG_PRINT //DEBUG_NONE
+#define DEBUG DEBUG_NONE  // DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #if UIP_CONF_IPV6_RPL
@@ -432,7 +433,7 @@ uip_init(void)
   #if WITH_IPSEC
   spd_conf_init();
   sad_init();
-  PRINTF(IPSEC "SAD and SPD initialized\n");
+  IPSECDBG_PRINTF(IPSEC "SAD and SPD initialized\n");
   #endif
 
 #if UIP_TCP
@@ -461,7 +462,7 @@ uip_init(void)
     */
   #if WITH_IPSEC_IKE
   ike_init();
-  PRINTF(IPSEC "IKEv2 service initialized\n");
+  IPSECDBG_PRINTF(IPSEC "IKEv2 service initialized\n");
   #endif
 }
 /*---------------------------------------------------------------------------*/
@@ -1260,7 +1261,7 @@ uip_process(uint8_t flag)
 #endif /* UIP_CONF_ROUTER */
 	{
 	#if WITH_IPSEC
-	PRINTF("INCOMING IPsec PACKET PROCESSING\n");
+	IPSECDBG_PRINTF("INCOMING IPsec PACKET PROCESSING\n");
 	
 	  /**
 	    * IPsec: Processing of incoming packets
@@ -1281,7 +1282,7 @@ uip_process(uint8_t flag)
 	#endif /* End of WITH_IPSEC */
 	
 	  while(1) {
-	    PRINTF("Proc hdr %hu\n", *uip_next_hdr);
+	    IPSECDBG_PRINTF("Proc hdr %hu\n", *uip_next_hdr);
 	   
 	    switch(*uip_next_hdr){
 	     
@@ -1338,7 +1339,7 @@ uip_process(uint8_t flag)
 	      	    * implementation more sensitive to DoS attacks.
 	      	    * 
 	      	    */
-	      	  PRINTF(IPSEC "Processing incoming ESP header\n");
+	      	  IPSECDBG_PRINTF(IPSEC "Processing incoming ESP header\n");
 	      	
 	      	#if UIP_CONF_IPV6_CHECKS
 	      	  /* If we've seen one ESP header already, drop. */
@@ -1354,11 +1355,11 @@ uip_process(uint8_t flag)
 	      	  // The packet is protected. Follow step 3a p. 61 in the RFC.
 	      	
 	      	  // No network-to-host conversion of the SPI as we store our SPIs in network byte order internally
-	      	  //PRINTF("uIP6 SPI %u esp_header %x uip_buf %x UIP_ESP_BUF %x\n", esp_header->spi, esp_header, &uip_buf, UIP_ESP_BUF);
-	      	  PRINTF(IPSEC "ESP: SPI %x Sequence no %u\n", uip_ntohl(esp_header->spi), uip_ntohl(esp_header->seqno));
+	      	  //IPSECDBG_PRINTF("uIP6 SPI %u esp_header %x uip_buf %x UIP_ESP_BUF %x\n", esp_header->spi, esp_header, &uip_buf, UIP_ESP_BUF);
+	      	  IPSECDBG_PRINTF(IPSEC "ESP: SPI %x Sequence no %u\n", uip_ntohl(esp_header->spi), uip_ntohl(esp_header->seqno));
 	      	  if ((sad_entry = sad_get_incoming_entry(esp_header->spi)) == NULL) {
 	      	    // Protected packets whose SAD entry we cannot find must be discarded according to the RFC.
-	      	    PRINTF(IPSEC "Dropping incoming protected packet because of missing SAD entry\n");
+	      	    IPSECDBG_PRINTF(IPSEC "Dropping incoming protected packet because of missing SAD entry\n");
 	      	    goto drop;
 	      	  }
 	      	
@@ -1370,7 +1371,7 @@ uip_process(uint8_t flag)
 	      	
 	      	  // auth_data_len = Packet buffer - (lower layers + IP Header length) - length of extension headers - ICV size
 	      	  uint16_t auth_data_len = uip_len - UIP_LLIPH_LEN - uip_ext_len - icvlen; 
-	      	  //PRINTF("auth data len: %u uip_ext_len: %u\n", auth_data_len, uip_ext_len);
+	      	  //IPSECDBG_PRINTF("auth data len: %u uip_ext_len: %u\n", auth_data_len, uip_ext_len);
 	      	  
 	      	  // Prepare encryption data
 	      	  encr_data_t encr_data;
@@ -1388,7 +1389,7 @@ uip_process(uint8_t flag)
 	      	
 	      	  // Confidentiality
 	      	  
-	      	  PRINTF("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
+	      	  IPSECDBG_PRINTF("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
 	      	  MEMPRINT("", esp_header, 100);
 	      	  encr_data.type = sad_entry->sa.encr;
 	      	  encr_data.keymat = &sad_entry->sa.sk_e[0];
@@ -1406,15 +1407,15 @@ uip_process(uint8_t flag)
 	      	    * Verify ICV
 	      	    */
 	      	    /*
-	      	  PRINTF("ICV: Computed\n");
+	      	  IPSECDBG_PRINTF("ICV: Computed\n");
 	      	  MEMPRINT(&encr_data.icv, sizeof(encr_data.icv));
-	      	  PRINTF("ICV: From ESP header\n");
+	      	  IPSECDBG_PRINTF("ICV: From ESP header\n");
 	      	  MEMPRINT((uint8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
-	      	  PRINTF("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
+	      	  IPSECDBG_PRINTF("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
 	      	  */
 	      	
 	      	  if (memcmp((uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv))) {
-	      	    PRINTF("IPsec: ICV mismatch, dropping packet.\n");
+	      	    IPSECDBG_PRINTF("IPsec: ICV mismatch, dropping packet.\n");
 	      	    goto drop;
 	      	  }
 	      	
@@ -1422,7 +1423,7 @@ uip_process(uint8_t flag)
 	      	    * Replay protection (dynamic SAs only!)
 	      	    */
 	      	  if (SAD_ENTRY_IS_DYNAMIC(sad_entry) && sad_incoming_replay(sad_entry, uip_ntohl(esp_header->seqno))) {          
-	      	    PRINTF(IPSEC "Error: This packet is a replay\n");
+	      	    IPSECDBG_PRINTF(IPSEC "Error: This packet is a replay\n");
 	      	    goto drop;
 	      	  }
 	      	
@@ -1443,7 +1444,7 @@ uip_process(uint8_t flag)
 						uip_ext_len += esp_pre_hdr;
 						uip_ext_end_len = esp_post_hdr;
 		
-	      	  PRINTF(IPSEC "ESP: padlen %hhu nh %hhu uip_ext_len %hhu uip_ext_end_len %hhu\n", encr_data.padlen, *uip_next_hdr, uip_ext_len, uip_ext_end_len);
+	      	  IPSECDBG_PRINTF(IPSEC "ESP: padlen %hhu nh %hhu uip_ext_len %hhu uip_ext_end_len %hhu\n", encr_data.padlen, *uip_next_hdr, uip_ext_len, uip_ext_end_len);
 					}
 	      	break;
 	#endif /* WITH_IPSEC_ESP */
@@ -2557,14 +2558,14 @@ uip_process(uint8_t flag)
  
 	{
 #if WITH_IPSEC
-		PRINTF("OUTGOING IPsec PACKET PROCESSING\n");
+		IPSECDBG_PRINTF("OUTGOING IPsec PACKET PROCESSING\n");
 
   	// Protect packets that are sourced from us, not ones routed on the behalf of others
   	if(! uip_ds6_is_my_addr(&UIP_IP_BUF->srcipaddr)) {
-  	  PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
+  	  IPSECDBG_PRINTF(IPSEC "This outgoing packet is being forwarded. Bypassing IPsec stack.");
   	  goto bypass;
   	}
-		//PRINTF("Outgoing packet dump:\n");
+		//IPSECDBG_PRINTF("Outgoing packet dump:\n");
 		//MEMPRINT((uint8_t *) UIP_IP_BUF, 200);
   	
   	// Fetch applicable SA
@@ -2588,8 +2589,8 @@ uip_process(uint8_t flag)
   	    case SPD_ACTION_PROTECT:
   	    // Traffic of this type must be protected, but no SA for this traffic have been established yet.
   	    // Try to negotiate one and drop the triggering packet in the meantime (in accordance with RFC 4301)
-  	    //#if WITH_IPSEC_IKE
-  	    PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
+  	    #if WITH_IPSEC_IKE
+  	    IPSECDBG_PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found." \
   	      " Dropping this packet and invoking the IKEv2 service for SA negotiation.\n");
   	
   	    ike_arg_packet_tag = packet_tag;
@@ -2597,11 +2598,10 @@ uip_process(uint8_t flag)
   	    //void *argv[2] = { &packet_tag, spd_entry };
   	    // This asynchronous call will be processed after uip_process() has finished
   	    process_post(&ike2_service, ike_negotiate_event, (void *) spd_entry);
-  	    
-  	    //#else
-  	    // FIX: Broken #if parsing
-  	    // PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet."
-  	    
+  	    #else
+				IPSECDBG_PRINTF(IPSEC "SPD: Outgoing packet targeted for PROTECT, but no SAD entry could be found. Dropping packet.");
+  	    #endif
+
   	    /**
   	      * RFC 4301 grants us the permission to drop the packet triggering an IKE handshake
   	      * 
@@ -2616,11 +2616,11 @@ uip_process(uint8_t flag)
   	    goto drop;
   	    
   	    case SPD_ACTION_BYPASS:
-  	    PRINTF(IPSEC "SPD: Outgoing packet targeted for BYPASS\n");
+  	    IPSECDBG_PRINTF(IPSEC "SPD: Outgoing packet targeted for BYPASS\n");
   	    goto bypass;
   	
   	    case SPD_ACTION_DISCARD:
-  	    PRINTF(IPSEC "SPD: Outgoing packet targeted for DISCARD\n");
+  	    IPSECDBG_PRINTF(IPSEC "SPD: Outgoing packet targeted for DISCARD\n");
   	    goto drop;
   	  }
   	}

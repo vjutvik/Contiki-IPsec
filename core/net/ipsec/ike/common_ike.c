@@ -1443,7 +1443,7 @@ void ike_statem_finalize_sk(payload_arg_t *payload_arg, ike_payload_generic_hdr_
   uint32_t msg_len = payload_arg->start - msg_buf;
   PRINTF("msg_len: %u\n", msg_len);
   ((ike_payload_ike_hdr_t *) msg_buf)->len = uip_htonl(msg_len);
-  printf("sk_genpayloadhdr->len: %u data_len: %u\n", uip_ntohs(sk_genpayloadhdr->len), data_len);
+  PRINTF("sk_genpayloadhdr->len: %u data_len: %u\n", uip_ntohs(sk_genpayloadhdr->len), data_len);
     
   // Integrity
   if (payload_arg->session->sa.integ) {

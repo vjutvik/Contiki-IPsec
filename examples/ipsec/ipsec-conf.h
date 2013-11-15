@@ -9,8 +9,8 @@
 
 #ifdef UIP_CONF_BUFFER_SIZE
 #undef UIP_CONF_BUFFER_SIZE
-#endif 
-#define UIP_CONF_BUFFER_SIZE	800
+#endif
+#define UIP_CONF_BUFFER_SIZE	800 // This option can be set in various platform specific header files as well
 
 #ifdef SICSLOWPAN_CONF_FRAG
 #undef SICSLOWPAN_CONF_FRAG
@@ -22,7 +22,7 @@
 #define UIP_CONF_IPV6 				1
   
 /* IPsec configuration */
-/* AH and ESP can be enabled/disabled independently */
+/* Enabling ESP is equal to enabling to IPsec. Note that AH is not supported! */
 #define WITH_CONF_IPSEC_ESP             1
 
 /* The IKE subsystem is optional if the SAs are manually configured */
@@ -50,8 +50,8 @@
 	* TODO: Remove the IPSEC_CONF -identifiers below once asserted it's safe 
 	*/
 /* Configuring a cipher block mode of operation (encryption/decryption) */
-#define IPSEC_CONF_BLOCK aesctr
+//#define IPSEC_CONF_BLOCK aesctr
 /* Configuring a cipher block MAC mode of operation (authentication) */
-#define IPSEC_CONF_MAC aesxcbc_mac
+//#define IPSEC_CONF_MAC aesxcbc_mac
 
 #endif

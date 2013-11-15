@@ -191,7 +191,11 @@ spd_entry_t spd_table[SPD_ENTRIES] =
         set_any_peer_port()
       },
       .proc_action = SPD_ACTION_PROTECT,
+#if WITH_IPSEC_IKE
       .offer = my_ah_esp_proposal
+#else
+			.offer = NULL
+#endif
     },
 
     // BYPASS all ICMP6 traffic in order to make RPL auto configuration possible

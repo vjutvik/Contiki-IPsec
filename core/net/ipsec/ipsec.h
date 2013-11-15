@@ -52,8 +52,10 @@
 
 /**
 	* IPsec / IKEv2 debug configuration options are set here!
+	*
+	* There are more debuging options in uip6.c
 	*/
-#define DEBUG 1
+#define DEBUG 0
 
 #if DEBUG
 #include <stdio.h>
