@@ -55,7 +55,7 @@
 	*
 	* There are more debuging options in uip6.c
 	*/
-#define DEBUG 0
+#define DEBUG 1
 
 #if DEBUG
 #include <stdio.h>

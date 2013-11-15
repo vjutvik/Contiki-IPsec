@@ -93,13 +93,15 @@
 /*---------------------------------------------------------------------------*/
 
 // IPsec stuff start
-// #define IPSECDBG_PRINTF(__VA_ARGS__) printf(__VA_ARGS__)
-// #define MEMPRINT(__VA_ARGS__) meprint(__VA_ARGS__)
-#define IPSECDBG_PRINTF(...) 
-#define MEMPRINT(...) 
+#define IPSECDBG_PRINTF(...) printf(__VA_ARGS__)
+#define MEMPRINT(...) memprint(__VA_ARGS__)
+// #define IPSECDBG_PRINTF(...) 
+// #define MEMPRINT(...) 
 // IPsec stuff ends
 
-#define DEBUG DEBUG_NONE  // DEBUG_PRINT
+//#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
+
 #include "net/uip-debug.h"
 
 #if UIP_CONF_IPV6_RPL
@@ -382,7 +384,7 @@ upper_layer_chksum(uint8_t proto)
   
 	upper_layer_len = (((uint16_t)(UIP_IP_BUF->len[0]) << 8) + UIP_IP_BUF->len[1]);
   
-	MEMPRINT("Mem starting after IPH\n", &uip_buf[UIP_IPH_LEN + UIP_LLH_LEN], upper_layer_len);
+	//MEMPRINT("Mem starting after IPH\n", &uip_buf[UIP_IPH_LEN + UIP_LLH_LEN], upper_layer_len);
   
   IPSECDBG_PRINTF("Upper layer checksum len: %d from: %d, proto: %u\n", upper_layer_len,
 	  UIP_IPH_LEN + UIP_LLH_LEN, proto);
