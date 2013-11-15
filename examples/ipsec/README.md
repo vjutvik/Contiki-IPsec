@@ -91,9 +91,12 @@ Implements a subset of RFC 5996 and associated standards, but is not standards-c
 * Deletion of Child and IKE SAs (Delete payload)
 * State machine Established can't create child SAs currently (this is a straightforward extension though)
  
-Performance
-===========
-Todo: Information about Memory and CPU
+Performance / Hardware requirements
+===================================
+This IPsec patch can be divided into two major components: IPsec base (static keying only) and dynamic keying (IKEv2 service). The system can be configured with both or only the first. Using IPsec base only consumes approximately 8 kB of ROM. Adding dynamic keying on top of that brings the total ROM requirement to approximately 26,5 kB. This includes the library for asymmetric encryption.
+
+Both components have been tested on an emulated (Cooja running MSPsim) Wismote (16 MHz MSP430x CPU) as well as a Linux native process (the native target). In testing, a complete IKEv2 handshake between the emulated Wismote (100% emulation speed) and a Linux PC using a 192 bit ECC key took 10 seconds.
+
 
 Quick Demonstration Setup of IPsec and IKEv2
 ============================================
@@ -128,7 +131,9 @@ Even though Wismote can run MSP430-binaries compiled with GCC, this IPsec patch 
 Therefore, the recommended procedure is to check out this code in MS Windows, and execute the following in a Cygwin environment running on top of it (while in the directory examples/ipsec):
 	make TARGET=wismote
 
-(UPDATE: 20 September 2013: Alex Papanikolaou writes to say that as of now, there is a guide for building the msp430-gcc development version which features 20-bit instruction set support at http://wiki.contiki-os.org/doku.php?id=msp430x Please be warned that you may experience weird/unstable behaviour.)
+(UPDATE: 20 September 2013: Alex Papanikolaou writes to say that as of now, there is a guide for building the msp430-gcc development version (4.7.0) which features 20-bit instruction set support at http://wiki.contiki-os.org/doku.php?id=msp430x Please be warned that you may experience weird/unstable behaviour.)
+
+(UPDATE 2: 15 November 2013: Niclas Finne writes to alert me that _the 4.7.0 version of MSPgcc that is included in the latest Instant Contiki is quite broken_. The author have had much success with 4.7.2 and therefore suggests that you use that instead, preferably by using the following script (supplied by Real-Time Networks research group, Scuola Superiore Sant'Anna): https://github.com/tecip-nes/contiki-tres/wiki/Building-the-latest-version-of-mspgcc))
 
 
 ### The Native Target ###
@@ -331,9 +336,117 @@ Finally, this is what the tunnel interface looks like to me when the native mote
 	
 
 ### Testing with Cooja ###
-TODO
-Contact ville@imorgon.se for instructions
+This guide outlines an experiment where Wismote (emulated in Cooja) performs a handshake with a Linux PC running the Strongswan IKEv2 service. The Linux PC will initiate the handshake, but the Wismote can do so as well. Another emulated mote in Cooja acts as a border router and forwards the packets between the PC and the IKEv2 mote.
 
+First, make sure that you are using MSPGCC 4.7.2 or later as 4.7.0 will cause memory corruption. Also, check that UIP\_CONF\_BUFFER\_SIZE is at least 400 B large or packets may be silently dropped.
+
+Procedure
+---------
+
+Compile the border router mote in examples/ipv6/rpl-border-router:
+
+	make TARGET=wismote 
+
+Compile the IPsec mote in examples/ipsec:
+
+	make TARGET=wismote 
+
+Start Cooja with the supplied simulation environment. It will use the RPL border router mote and the IPsec mote as compiled above (in examples/ipsec):
+
+	make TARGET=cooja ipsec-example.csc
+
+Wait till Cooja has loaded the CSC-file and then, in examples/ipv6/rpl-border-router:
+
+	make TARGET=cooja connect-router-cooja
+
+Enter any root password if necessary. Now, in Cooja, press the simulation start button.
+
+In the terminal running the border router, you should now see something like:
+
+	slip connected to ``127.0.0.1:60001''
+	opened tun device ``/dev/tun0''
+	ifconfig tun0 inet `hostname` up
+	ifconfig tun0 add aaaa::1/64
+	ifconfig tun0 add fe80::0:0:0:1/64
+	ifconfig tun0
+	
+	tun0      Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+	          inet addr:127.0.1.1  P-t-P:127.0.1.1  Mask:255.255.255.255
+	          inet6 addr: fe80::1/64 Scope:Link
+	          inet6 addr: aaaa::1/64 Scope:Global
+	          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1500  Metric:1
+	          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+	          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+	          collisions:0 txqueuelen:500 
+	          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+
+There should now be a network connection between the motes and the PC. You should get a response from the IPsec node by issuing:
+
+	ping6 aaaa::200:0:0:2
+
+Prepare the Strongswan service by installing the configuration files and reseting it, as explained in the previous example that used the native target. You should now be ready to attempt a handshake.
+
+It is suggested that you leave a terminal window open with a tail of syslog so that you can see what's going on:
+	
+	sudo tail -f /var/log/syslog
+
+Send a UDP packet:
+
+	nc -u aaaa::200:0:0:2 1234
+
+This will initiate the negotiation and after some time (can take a minute if your Virtual Machine is slow, as is the case for me) you should see something like the following in syslog:
+
+	.
+	.
+	. (Sending IKE_SA_INIT request)
+	Nov 15 14:56:11 instant-contiki charon: 15[ENC] generating IKE_SA_INIT request 0 [ SA KE No N(NATD_S_IP) N(NATD_D_IP) ]
+	Nov 15 14:56:11 instant-contiki charon: 15[NET] sending packet: from aaaa::1[500] to aaaa::200:0:0:2[500]
+ 	.
+	.
+	. (Receiving IKE_SA_INIT response)
+	Nov 15 14:57:05 instant-contiki charon: 01[NET] received packet: from aaaa::200:0:0:2[500] to aaaa::1[500]
+	Nov 15 14:57:05 instant-contiki charon: 01[ENC] parsed IKE_SA_INIT response 0 [ SA KE No ]
+	Nov 15 14:57:05 instant-contiki charon: 01[CFG] selecting proposal:
+	Nov 15 14:57:05 instant-contiki charon: 01[CFG]   proposal matches
+	Nov 15 14:57:05 instant-contiki charon: 01[CFG] received proposals: IKE:AES_CTR_128/AES_XCBC_96/PRF_HMAC_SHA1/E
+	CP_192
+	Nov 15 14:57:05 instant-contiki charon: 01[CFG] configured proposals: IKE:AES_CTR_128/AES_XCBC_96/HMAC_SHA1_96/
+	PRF_AES128_XCBC/PRF_HMAC_SHA1/ECP_192
+	Nov 15 14:57:05 instant-contiki charon: 01[CFG] selected proposal: IKE:AES_CTR_128/AES_XCBC_96/PRF_HMAC_SHA1/EC
+	P_192
+	Nov 15 14:57:05 instant-contiki charon: 01[IKE] shared Diffie Hellman secret => 24 bytes @ 0xb7806348
+	Nov 15 14:57:05 instant-contiki charon: 01[IKE]    0: 70 83 79 30 DF 96 AB 63 64 C7 5C 6B 47 27 CF EB  p.y0...cd.\kG'..
+	Nov 15 14:57:05 instant-contiki charon: 01[IKE]   16: 09 C3 F7 51 8B 9D FB 37	.
+	.
+	.
+	. (Sending IKE_AUTH request)
+	Nov 15 14:57:05 instant-contiki charon: 01[KNL] got SPI c4c32caa for reqid {2}
+	Nov 15 14:57:05 instant-contiki charon: 01[ENC] generating IKE_AUTH request 1 [ IDi N(INIT_CONTACT) AUTH N(USE_TRANSP) SA TSi TSr N(EAP_ONLY) ]
+	Nov 15 14:57:05 instant-contiki charon: 01[NET] sending packet: from aaaa::1[500] to aaaa::200:0:0:2[500]
+	.
+	.
+	. (IKE SA established)
+	Nov 15 14:57:34 instant-contiki charon: 11[IKE]   16: 98 D3 FB A6                                      ....
+	Nov 15 14:57:34 instant-contiki charon: 11[IKE] authentication of 'ville@sics.se   ' with pre-shared key succes
+	sful
+	Nov 15 14:57:34 instant-contiki charon: 11[IKE] IKE_SA cooja_host-host[1] established between aaaa::1[strongswa
+	n]...aaaa::200:0:0:2[ville@sics.se   ]
+	Nov 15 14:57:34 instant-contiki charon: 11[IKE] IKE_SA cooja_host-host[1] state change: CONNECTING => ESTABLISH
+	ED
+	.
+	.
+	. (Receving IKE_AUTH response)
+	Nov 15 14:57:34 instant-contiki charon: 11[NET] received packet: from aaaa::200:0:0:2[500] to aaaa::1[500]
+	Nov 15 14:57:34 instant-contiki charon: 11[ENC] parsed IKE_AUTH response 1 [ IDr AUTH N(USE_TRANSP) SA TSi TSr ]
+	Nov 15 14:57:34 instant-contiki charon: 11[IKE] received USE_TRANSPORT_MODE notify
+	.
+	.
+	. (Child SA:s established)
+	Nov 15 14:57:37 instant-contiki charon: 11[IKE] CHILD_SA cooja_host-host{2} established with SPIs c4c32caa_i e8 030000_o and TS aaaa::1/128 === aaaa::200:0:0:2/128 
+	
+
+You can now enter more data into nc (netcat) and the IPsec mote should echo it back, but with the value of each byte incremented by one (e.g. 1234 => 2345).
 
 IPsec without IKEv2
 ===================
@@ -362,7 +475,13 @@ Fault tracing
 =============
 Here follows a couple of suggestions of what to do when things don't go as expected. It's given under the presumption that the reader is accustomed to debugging in Contiki.
 
-TODO: Write something more
+* If you are using MSPGCC, please check that you're using 4.7.2 or above. 4.7.0 is known to cause crashes.
+* Assert that you're using Instant Contiki 2.6.1 which is known to work.
+* Are your IP packet buffers large enough? If not, your Contiki nodes will silently drop your large IKEv2 packets. Check the UIP\_CONF\_BUFFER\_SIZE define and please note that it can be overridden in various platform specific header files. Choose at least 800 bytes if you're uncertain of an ok size. (However, you should be able to squeeze it down towards 300 B if you've set up Strongswan correctly.)
+* Use the Wireshark network debug utility. It's great to know what's going on in the network.
+* If you're uncertain what compilation flags the build process is giving to the compiler, try adding V=1 to the make command for more verbosity.
+
+Debuging options can be set in uip6.c and ipsec.h.
 
 About this implementation
 =========================
