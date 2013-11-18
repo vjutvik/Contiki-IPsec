@@ -101,7 +101,7 @@ uint8_t ike_statem_state_initrespwait(ike_statem_session_t *session)
     
   return 1;
 
-  // This ends the INIT exchange. Borth parties has now negotiated the IKE SA's parameters and created a common DH secret.
+  // This ends the INIT exchange. Borth parties have now negotiated the IKE SA's parameters and created a common DH secret.
   // We will now proceed with the AUTH exchange.
 }
 
