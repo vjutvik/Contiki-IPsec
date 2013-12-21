@@ -212,7 +212,7 @@ void ike_statem_send_single_notify(ike_statem_session_t *session, notify_msg_typ
   if (!type)
     return;
 
-  PRINTF(IPSEC_IKE "Sending single notification to peer of type %hhu\n", type);
+  PRINTF(IPSEC_IKE "Sending single notification to peer of type %u\n", type);
 
   ike_payload_ike_hdr_t *old_ike_hdr = (ike_payload_ike_hdr_t *) msg_buf;
   uint8_t protect = old_ike_hdr->exchange_type == IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_IKE_AUTH || old_ike_hdr->exchange_type == IKE_PAYLOADFIELD_IKEHDR_EXCHTYPE_CREATE_CHILD_SA;
@@ -326,7 +326,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
     const ike_payload_generic_hdr_t *genpayloadhdr = (const ike_payload_generic_hdr_t *) ptr;
     const uint8_t *payload_start = (uint8_t *) genpayloadhdr + sizeof(ike_payload_generic_hdr_t);
     
-    PRINTF("Next payload is %hhu, %hu bytes remaining\n", payload_type, uip_datalen() - (ptr - msg_buf));
+    PRINTF("Next payload is %u, %u bytes remaining\n", payload_type, uip_datalen() - (ptr - msg_buf));
     switch (payload_type) {
       case IKE_PAYLOAD_SK:
       if ((end -= ike_statem_unpack_sk(session, (ike_payload_generic_hdr_t *) genpayloadhdr)) == 0) {
@@ -358,7 +358,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
       PRINTF("auth_payload: %p\n", auth_payload);
       
       if (auth_payload->auth_type != IKE_AUTH_SHARED_KEY_MIC) {
-        PRINTF(IPSEC_IKE_ERROR "Peer using authentication type %hhu instead of pre-shared key authentication\n", auth_payload->auth_type);
+        PRINTF(IPSEC_IKE_ERROR "Peer using authentication type %u instead of pre-shared key authentication\n", auth_payload->auth_type);
         fail_notify_type = IKE_PAYLOAD_NOTIFY_AUTHENTICATION_FAILED;
         goto fail;
       }
@@ -405,7 +405,7 @@ state_return_t ike_statem_parse_auth_msg(ike_statem_session_t *session)
         goto fail;
       }
       else
-        PRINTF(IPSEC_IKE "Ignoring unknown non-critical payload of type %hhu\n", payload_type);
+        PRINTF(IPSEC_IKE "Ignoring unknown non-critical payload of type %u\n", payload_type);
       // Info: Ignored unknown payload
     }
 
@@ -619,7 +619,7 @@ transition_return_t ike_statem_send_auth_msg(ike_statem_session_t *session, payl
     *
     * Read more at "2.9.  Traffic Selector Negotiation" p. 40
     */
-  PRINTF("Peer port 7890: %hu\n", ts_instance_addr_set->peer_port_from);
+  PRINTF("Peer port 7890: %u\n", ts_instance_addr_set->peer_port_from);
   ike_statem_write_tsitsr(payload_arg, ts_instance_addr_set);
 
   // Protect the SK payload. Write trailing fields.
@@ -737,7 +737,7 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
         // DH group not assigned because we've not yet processed the SA payload
         // Store a not of this for later SA processing.
         ke_dh_group = uip_ntohs(ke_payload->dh_group_num);
-        PRINTF(IPSEC_IKE "KE payload: Using group DH no. %hhu\n", ke_dh_group);
+        PRINTF(IPSEC_IKE "KE payload: Using group DH no. %u\n", ke_dh_group);
       }
       else {
         // DH group has been assigned since we've already processed the SA
@@ -745,7 +745,7 @@ state_return_t ike_statem_parse_sa_init_msg(ike_statem_session_t *session, ike_p
           PRINTF(IPSEC_IKE_ERROR "DH group of the accepted proposal doesn't match that of the KE's.\n");
           return 0;
         }
-        PRINTF(IPSEC_IKE "KE payload: Using DH group no. %hhu\n", session->sa.dh);
+        PRINTF(IPSEC_IKE "KE payload: Using DH group no. %u\n", session->sa.dh);
       }
       
       // Store the address to the beginning of the peer's public key
@@ -829,7 +829,7 @@ void ike_statem_write_sa_payload(payload_arg_t *payload_arg, const spd_proposal_
   uint8_t n = 0;
   uint8_t proposal_number = 1;
   do {  // Loop over the offer's tuples
-//    PRINTF("WRITE_SA_PAYLOAD: Offer type: %hu\n", offer[n].type);
+//    PRINTF("WRITE_SA_PAYLOAD: Offer type: %u\n", offer[n].type);
     switch(offer[n].type) {
         
       case SA_CTRL_NEW_PROPOSAL:
@@ -1194,7 +1194,7 @@ uint16_t ike_statem_get_authdata(ike_statem_session_t *session, const uint8_t my
     *
     */
   uint8_t type = 2 * (IKE_STATEM_IS_INITIATOR(session) > 0) + myauth;
-  PRINTF("Type is %hhu, initiator: %hhu\n", type, IKE_STATEM_IS_INITIATOR(session));
+  PRINTF("Type is %u, initiator: %u\n", type, IKE_STATEM_IS_INITIATOR(session));
   
   // Pack RealMessage*
   PRINTF("RealMessage1: ");
@@ -1973,7 +1973,7 @@ uint8_t selector_is_superset_of_tspair(const ipsec_addr_set_t *selector, ike_ts_
         a_is_in_closed_interval_bc(uip_ntohs(ts_peer->end_port), selector->peer_port_from, selector->peer_port_to)
         ))
     return 0;
-  PRINTF("port ok nl: ts_me->proto %hhu  selector->nextlayer_proto %hhu\n", ts_me->proto,  selector->nextlayer_proto);
+  PRINTF("port ok nl: ts_me->proto %u  selector->nextlayer_proto %u\n", ts_me->proto,  selector->nextlayer_proto);
   
   // Protocol (this assumes that ts_mee and ts_peer use the same proto, which they should)
   if (ts_me->proto != selector->nextlayer_proto &&

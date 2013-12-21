@@ -197,7 +197,7 @@ PROCESS_THREAD(ike2_service, ev, data)
 		u16_t sec = elapsed / CLOCK_SECOND;
 		u16_t parts = elapsed % CLOCK_SECOND;
 		u16_t clock_second = CLOCK_SECOND;
-		PRINTF(IPSEC_IKE "Time required %hu sec, %hu parts (CLOCK_SECOND is %hu)\n", sec, parts, clock_second);
+		PRINTF(IPSEC_IKE "Time required %u sec, %u parts (CLOCK_SECOND is %u)\n", sec, parts, clock_second);
 		#endif
 
 		#if IPSEC_MEM_STATS

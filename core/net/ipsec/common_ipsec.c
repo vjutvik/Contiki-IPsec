@@ -56,7 +56,7 @@ void memprint(uint8_t *ptr, const uint16_t len)
     printf("%p (%4u) ", (uint8_t *) ptr + r * 16, r * 16);
     for (s = 0; s < 4; ++s) { // Group
       for (t = 0; t < 4; ++t)
-        printf("%.2hx", ptr[r * 16 + s * 4 + t]);
+        printf("%.2x", ptr[r * 16 + s * 4 + t]);
       printf(" ");
     }
     printf("\n");

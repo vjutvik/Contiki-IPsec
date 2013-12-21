@@ -103,7 +103,7 @@ tcpip_handler(void)
     for(i = 0; i < datalen; i++) {
       printf("%c", ++data[i]);
     }
-		printf("\"\n(length %hu)\n", datalen);
+		printf("\"\n(length %u)\n", datalen);
 
     
 	  uint32_t cpu = energest_type_time(ENERGEST_TYPE_CPU);

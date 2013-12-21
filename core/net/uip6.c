@@ -1284,7 +1284,7 @@ uip_process(uint8_t flag)
 	#endif /* End of WITH_IPSEC */
 	
 	  while(1) {
-	    IPSECDBG_PRINTF("Proc hdr %hu\n", *uip_next_hdr);
+	    IPSECDBG_PRINTF("Proc hdr %u\n", *uip_next_hdr);
 	   
 	    switch(*uip_next_hdr){
 	     
@@ -1391,7 +1391,7 @@ uip_process(uint8_t flag)
 	      	
 	      	  // Confidentiality
 	      	  
-	      	  IPSECDBG_PRINTF("Before unpack, uip_ext_len %hhu\n", uip_ext_len);
+	      	  IPSECDBG_PRINTF("Before unpack, uip_ext_len %u\n", uip_ext_len);
 	      	  MEMPRINT("", esp_header, 100);
 	      	  encr_data.type = sad_entry->sa.encr;
 	      	  encr_data.keymat = &sad_entry->sa.sk_e[0];
@@ -1413,7 +1413,7 @@ uip_process(uint8_t flag)
 	      	  MEMPRINT(&encr_data.icv, sizeof(encr_data.icv));
 	      	  IPSECDBG_PRINTF("ICV: From ESP header\n");
 	      	  MEMPRINT((uint8_t *) esp_header + auth_data_len, sizeof(encr_data.icv));
-	      	  IPSECDBG_PRINTF("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %hu\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
+	      	  IPSECDBG_PRINTF("esp_header + auth_data_len: %p &encr_data.icv: %p sizeof(encr_data.icv): %u\n", (uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv));
 	      	  */
 	      	
 	      	  if (memcmp((uint8_t *) esp_header + auth_data_len, &encr_data.icv, sizeof(encr_data.icv))) {
@@ -1446,7 +1446,7 @@ uip_process(uint8_t flag)
 						uip_ext_len += esp_pre_hdr;
 						uip_ext_end_len = esp_post_hdr;
 		
-	      	  IPSECDBG_PRINTF(IPSEC "ESP: padlen %hhu nh %hhu uip_ext_len %hhu uip_ext_end_len %hhu\n", encr_data.padlen, *uip_next_hdr, uip_ext_len, uip_ext_end_len);
+	      	  IPSECDBG_PRINTF(IPSEC "ESP: padlen %u nh %u uip_ext_len %u uip_ext_end_len %u\n", encr_data.padlen, *uip_next_hdr, uip_ext_len, uip_ext_end_len);
 					}
 	      	break;
 	#endif /* WITH_IPSEC_ESP */
@@ -2680,7 +2680,7 @@ uip_process(uint8_t flag)
   	    * In addition to that we have: ESP header + IV + Padding + Padding length field + Next header field
   	    */
   	  data_len += sizeof(struct uip_esp_header) + ivlen + encr_data.padlen + 2;
-  	  IPSECDBG_PRINTF("encr_data.padlen: %hu data_len: %u\n", encr_data.padlen, data_len);
+  	  IPSECDBG_PRINTF("encr_data.padlen: %u data_len: %u\n", encr_data.padlen, data_len);
   	  
   	  /**
   	    * Integrity

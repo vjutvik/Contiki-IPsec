@@ -77,9 +77,9 @@
   do {                                                              \
     PRINTF("Peer address: ");                      									\
     PRINT6ADDR((addr)->peer_addr);                                  \
-    PRINTF("\nNextlayer proto: %hhu\n", (addr)->nextlayer_proto);     \
-    PRINTF("My port: %hu\n", (addr)->my_port);                      \
-    PRINTF("Peer port: %hu\n", (addr)->peer_port);                  \
+    PRINTF("\nNextlayer proto: %u\n", (addr)->nextlayer_proto);     \
+    PRINTF("My port: %u\n", (addr)->my_port);                      \
+    PRINTF("Peer port: %u\n", (addr)->peer_port);                  \
   } while(0)
 
 // Prints the contents of an ipsec_addr_set_t located at the given address
@@ -88,9 +88,9 @@
 		PRINTF("Peer address from to: ");																													\
 		PRINT6ADDR((addr_set)->peer_addr_from);                                                   \
     PRINT6ADDR((addr_set)->peer_addr_to);                                                     \
-    PRINTF("\nNextlayer proto: %hhu\n", (addr_set)->nextlayer_proto);                         \
-    PRINTF("My ports: %hu - %hu\n", (addr_set)->my_port_from, (addr_set)->my_port_to);        \
-    PRINTF("Peer ports: %hu - %hu\n", (addr_set)->peer_port_from, (addr_set)->peer_port_to);  \
+    PRINTF("\nNextlayer proto: %u\n", (addr_set)->nextlayer_proto);                         \
+    PRINTF("My ports: %u - %u\n", (addr_set)->my_port_from, (addr_set)->my_port_to);        \
+    PRINTF("Peer ports: %u - %u\n", (addr_set)->peer_port_from, (addr_set)->peer_port_to);  \
   } while(0)
 
 #else

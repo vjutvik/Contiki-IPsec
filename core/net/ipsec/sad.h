@@ -63,10 +63,10 @@ extern uint32_t next_sad_local_spi;
     PRINTF("Window: 0x%x\n", (entry)->win);               \
     PRINTF("Time of creation: %u\n", (entry)->time_of_creation);    \
     PRINTF("Bytes transported: %u\n", (entry)->bytes_transported);  \
-    PRINTF("SA proto: %hhu\n", (entry)->sa.proto);                  \
-    PRINTF("Encr type: %hhu\n", (entry)->sa.encr);         \
+    PRINTF("SA proto: %u\n", (entry)->sa.proto);                  \
+    PRINTF("Encr type: %u\n", (entry)->sa.encr);         \
     MEMPRINTF("Encr keymat", (entry)->sa.sk_e,  SA_ENCR_KEYMATLEN_BY_SA((entry)->sa));  \
-    PRINTF("Integ type: %hhu\n", (entry)->sa.integ);         \
+    PRINTF("Integ type: %u\n", (entry)->sa.integ);         \
     MEMPRINTF("Integ keymat", (entry)->sa.sk_a,  SA_INTEG_KEYMATLEN_BY_TYPE((entry)->sa.integ)); \
   } while(0)
 
