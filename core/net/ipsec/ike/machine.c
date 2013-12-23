@@ -202,6 +202,7 @@ void ike_statem_init()
 
 ike_statem_session_t *ike_statem_session_init()
 {
+	PRINTF(IPSEC_IKE "Allocating memory for IKE session struct\n");
   ike_statem_session_t *session = ipsec_malloc(sizeof(ike_statem_session_t));
 
 	if (session == NULL) {
@@ -219,6 +220,7 @@ ike_statem_session_t *ike_statem_session_init()
 
   session->my_msg_id = session->peer_msg_id = 0;
 
+	PRINTF(IPSEC_IKE "Allocating memory for IKE session ephemeral info struct\n");
   // malloc() will do as this memory will soon be freed and thus won't clog up the heap for long.
   session->ephemeral_info = ipsec_malloc(sizeof(ike_statem_ephemeral_info_t));
 
@@ -310,6 +312,7 @@ void ike_statem_remove_session(ike_statem_session_t *session)
   */
 void ike_statem_clean_session(ike_statem_session_t *session)
 {
+	PRINTF(IPSEC_IKE "Freeing IKE session's emphemeral information\n");
   ipsec_free(session->ephemeral_info);
 }
 
@@ -457,7 +460,7 @@ void ike_statem_send(ike_statem_session_t *session, uint16_t len)
   transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT) - transmit;
 
 	uint32_t arch_second = RTIMER_ARCH_SECOND;
-	printf("CPU time: %u, TRANSMIT time: %u, arch second %u\n", cpu, transmit, arch_second);
+	printf(IPSEC_IKE "Transmission time: CPU time %u, TRANSMIT time: %u, arch second(?) %u\n", cpu, transmit, arch_second);
 	#endif
 }
 

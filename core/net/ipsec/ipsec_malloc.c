@@ -72,6 +72,7 @@ void *ipsec_malloc(size_t size)
 void ipsec_free(void *ptr)
 {
 	PRINTF(IPSEC "Freeing memory at %p\n", ptr);
+	free(ptr);
 }
 
 /** @} */

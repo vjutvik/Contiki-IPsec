@@ -80,7 +80,7 @@ u8_t *cover(void)
 u16_t get_cover_consumed(u8_t *buff)
 {
 	u16_t i;
-	for (i = STACK_MAX_MEM - 5; i > 4 && strncmp((const char *) (buff + i), "hhhhh", 5); i -= 5)
+	for (i = STACK_MAX_MEM - 5; i > 4 && strncmp((const char *) (buff + i), "hhhhh", 5); --i)
 		;
 	return i;
 }

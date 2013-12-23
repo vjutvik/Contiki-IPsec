@@ -96,8 +96,10 @@ state_return_t ike_statem_state_parse_authreq(ike_statem_session_t *session)
     //IKE_STATEM_INCRPEERMSGID(session);  // Since we've recognized the peer's message
     
     // FIX: We need to cleanup here, but how do we handle retransmissions of the above transition?
-    // Remove stuff that we don't need
-    // ike_statem_clean_session(session);
+    // This is an unsolved problem as of now, but it can be fixed by allowing the session struct to
+		// remain for some time and only remove it when we are certain that the peer has finished.
+		// Remove stuff that we don't need    
+		ike_statem_clean_session(session);	// Ignoring problem described above as for now
     
     return STATE_SUCCESS;
   }

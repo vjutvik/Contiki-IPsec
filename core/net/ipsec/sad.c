@@ -122,6 +122,7 @@ uint8_t sad_incoming_replay(sad_entry_t *entry, uint32_t seqno)
   */
 sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
 {
+	PRINTF(IPSEC "Allocating memory for outgoing SA struct\n");
   sad_entry_t *newentry = ipsec_malloc(sizeof(sad_entry_t));
 
 	if (newentry == NULL) {
@@ -156,6 +157,7 @@ sad_entry_t *sad_create_outgoing_entry(uint32_t time_of_creation)
   */
 sad_entry_t *sad_create_incoming_entry(uint32_t time_of_creation)
 {
+	PRINTF(IPSEC "Allocating memory for incoming SA struct\n");
   sad_entry_t *newentry = ipsec_malloc(sizeof(sad_entry_t));
 
 	if (newentry == NULL) {
