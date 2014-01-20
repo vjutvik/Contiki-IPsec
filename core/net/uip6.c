@@ -95,8 +95,8 @@
 // IPsec stuff start
 #define IPSECDBG_PRINTF(...) printf(__VA_ARGS__)
 #define MEMPRINT(...) memprint(__VA_ARGS__)
-// #define IPSECDBG_PRINTF(...) 
-// #define MEMPRINT(...) 
+//#define IPSECDBG_PRINTF(...) 
+//#define MEMPRINT(...) 
 // IPsec stuff ends
 
 //#define DEBUG DEBUG_NONE
